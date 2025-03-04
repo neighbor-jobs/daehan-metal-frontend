@@ -1,0 +1,25 @@
+# 텍스트 파일들은 LF로 저장하고, Windows에서 체크아웃할 때 CRLF로 변환
+* text=auto
+
+# 쉘 스크립트(.sh)와 관련 파일들은 항상 LF 유지
+*.sh text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# 배치 스크립트(.bat)와 Windows에서만 필요한 파일들은 CRLF 유지
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 바이너리 파일 (이미지, 폰트 등)은 줄바꿈 변환 없음
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.mp4 binary
+*.zip binary

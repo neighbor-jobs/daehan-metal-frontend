@@ -1,8 +1,34 @@
 import React from "react";
 import {Box, Button, Grid2} from "@mui/material";
-import {menuTypeArr} from '../types/headerMenu.ts';
+import {MenuType, menuTypeArr} from '../types/headerMenu.ts';
+import {useNavigate} from 'react-router-dom';
+import {useHeaderStore} from '../stores/headerStore.ts';
 
 const Home = (): React.JSX.Element => {
+  const navigate = useNavigate();
+  const { setSelectedType, setSelectedSubType } = useHeaderStore();
+
+  const handleMainNav = (menuType: MenuType) => {
+    setSelectedType(menuType);
+    setSelectedSubType(null);
+    switch (menuType) {
+      case MenuType.RevenueManage:
+        navigate('/revenue');
+        break;
+      case MenuType.PurchaseManage:
+        navigate('/purchase');
+        break;
+      case MenuType.InventoryManage:
+        navigate('/item');
+        break;
+      case MenuType.ClientManage:
+        navigate('/client');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
   return (
     <Box
       component="section"
@@ -22,6 +48,7 @@ const Home = (): React.JSX.Element => {
           <Button
             key={index}
             variant='outlined'
+            onClick={() => handleMainNav(label.value)}
             sx={{
               width: 130,
               height: 130,

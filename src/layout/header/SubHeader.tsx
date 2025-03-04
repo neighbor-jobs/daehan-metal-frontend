@@ -8,7 +8,7 @@ interface SubHeaderProps {
 }
 
 const SubHeader = ({subMenu, handleChange}: SubHeaderProps): React.JSX.Element => {
-  const [value, setValue] = useState<number | null>(null);
+  const [value, setValue] = useState<number | boolean>(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);

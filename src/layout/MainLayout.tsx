@@ -6,6 +6,8 @@ const MainLayout = (): React.JSX.Element => {
   return (
     <Box
       sx={{
+        display: 'flex',
+        flexDirection: 'column',
         height: '100vh',
       }}
     >

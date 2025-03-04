@@ -1,14 +1,22 @@
-import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import dailySalesMock from '../../mock/dailySalesMock.ts';
-import {DailySalesColumn} from '../../types/tableColumns.ts';
+// UI
+import {
+  Box,
+  Button,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow
+} from '@mui/material';
+
+// project
+import DateRangePicker from '../../components/DateRangePicker';
+import { DailySalesColumn } from '../../types/tableColumns';
+import { formatCurrency, formatDecimal } from '../../utils/format';
+import dailySalesMock from '../../mock/dailySalesMock';
 
 const columns: readonly DailySalesColumn[] = [
   {
@@ -36,103 +44,129 @@ const columns: readonly DailySalesColumn[] = [
     label: '수량',
     minWidth: 100,
     align: 'right',
+    format: formatDecimal
   },
   {
     id: 'material-price',
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
     id: 'processing-price',
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
     id: 'vcut-count',
     label: 'V컷수',
     minWidth: 100,
     align: 'right',
+    format: formatDecimal
   },
   {
     id: 'length',
     label: '길이',
     minWidth: 100,
     align: 'right',
+    format: formatDecimal
   },
   {
     id: 'unit-price',
     label: '단가',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
+  },
+  {
+    id: 'total-amount',
+    label: '금액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
+    id: 'paying-amount',
+    label: '입금액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
   },
 ];
 
 const rows = dailySalesMock;
 
 const DailySales = () => {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
 
   return (
-    <Paper sx={{width: '100%', overflow: 'hidden'}}>
-      <TableContainer sx={{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table" size='small'>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{minWidth: column.minWidth}}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row, rowIndex) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+      }}>
+        {/* date picker */}
+        <DateRangePicker onChange={() => console.log('render')}/>
+        <Button
+          variant="outlined"
+          onClick={() => console.log('search')}
+        >
+          확인
+        </Button>
+      </Box>
+      <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
+        <TableContainer sx={{maxHeight: 440}}>
+          <Table stickyHeader aria-label="sticky table" size='small'>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{minWidth: column.minWidth}}
+                  >
+                    {column.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows
+                .map((row, rowIndex) => {
+                  return (
+                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align}>
+                            {column.format
+                              ? column.format(value)
+                              : value}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={5}>합계</TableCell>
+                <TableCell align='right'>재료비</TableCell>
+                <TableCell align='right'>가공비</TableCell>
+                <TableCell colSpan={3} align='right' />
+                <TableCell align='right'>총합</TableCell>
+                <TableCell colSpan={2} align='right'></TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Box>
   );
 }
 

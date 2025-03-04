@@ -1,9 +1,17 @@
-export interface DailySalesColumn {
-  id: 'date' | 'client' | 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price';
+export interface RevenueMainColumn {
+  id: 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'amount' | 'total-amount' |'paying-amount' ;
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
+}
+
+export interface DailySalesColumn {
+  id: 'date' | 'client' | 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'total-amount' | 'paying-amount';
+  label: string;
+  minWidth?: number;
+  align?: 'right';
+  format?: (value: string) => string;
 }
 
 export interface ClientSalesColumn {
@@ -11,7 +19,7 @@ export interface ClientSalesColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
 }
 
 export interface ClientSalesSummaryColumn {
@@ -19,7 +27,7 @@ export interface ClientSalesSummaryColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
 }
 
 export interface ItemSalesColumn {
@@ -27,7 +35,7 @@ export interface ItemSalesColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
 }
 
 export interface ItemSalesSummaryColumn {
@@ -35,7 +43,7 @@ export interface ItemSalesSummaryColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
 }
 
 export interface ClientOutstandingBalanceColumn {
@@ -43,5 +51,5 @@ export interface ClientOutstandingBalanceColumn {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: number) => string;
+  format?: (value: string) => string;
 }

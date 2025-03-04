@@ -10,6 +10,8 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import TablePagination from '@mui/material/TablePagination';
 import itemSalesSummaryMock from '../../mock/itemSalesSummayMock.ts';
+import {Box, Button} from '@mui/material';
+import DateRangePicker from '../../components/DateRangePicker.tsx';
 
 const columns: readonly ItemSalesSummaryColumn[] = [
   {
@@ -79,54 +81,71 @@ const ItemSalesSummary = (): React.JSX.Element => {
     setPage(0);
   };
   return (
-    <Paper sx={{width: '100%', overflow: 'hidden'}}>
-      <TableContainer sx={{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table" size='small'>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{minWidth: column.minWidth}}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+      }}>
+        {/* date picker */}
+        <DateRangePicker onChange={() => console.log('render')}/>
+        <Button
+          variant="outlined"
+          onClick={() => console.log('search')}
+        >
+          확인
+        </Button>
+      </Box>
+      <Paper sx={{width: '100%', overflow: 'hidden'}}>
+        <TableContainer sx={{maxHeight: 440}}>
+          <Table stickyHeader aria-label="sticky table" size='small'>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{minWidth: column.minWidth}}
+                  >
+                    {column.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((row) => {
+                  return (
+                    <TableRow hover role="checkbox" tabIndex={-1}>
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align}>
+                            {column.format && typeof value === 'number'
+                              ? column.format(value)
+                              : value}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 100]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </Paper>
+    </Box>
   )
 }
 

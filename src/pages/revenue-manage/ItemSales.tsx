@@ -9,6 +9,10 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import TablePagination from '@mui/material/TablePagination';
 import itemSalesMock from '../../mock/itemSalesMock.ts';
+import {Autocomplete, Box, Button, TextField} from '@mui/material';
+import DateRangePicker from '../../components/DateRangePicker.tsx';
+import {clientList} from '../../mock/clientList.ts';
+import * as React from 'react';
 
 const columns: readonly ItemSalesColumn[] = [
   {
@@ -19,12 +23,12 @@ const columns: readonly ItemSalesColumn[] = [
   {
     id: 'client',
     label: '거래처명',
-    minWidth: 100,
+    minWidth: 140,
   },
   {
     id: 'count',
     label: '수량',
-    minWidth: 100,
+    minWidth: 80,
     align: 'right',
   },
   {
@@ -54,7 +58,7 @@ const columns: readonly ItemSalesColumn[] = [
   {
     id: 'vcut-count',
     label: 'V컷수',
-    minWidth: 100,
+    minWidth: 80,
     align: 'right',
   },
   {
@@ -89,7 +93,7 @@ const ItemSales = (): React.JSX.Element => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const rows = itemSalesMock;
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -98,54 +102,91 @@ const ItemSales = (): React.JSX.Element => {
     setPage(0);
   };
   return (
-    <Paper sx={{width: '100%', overflow: 'hidden'}}>
-      <TableContainer sx={{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table" size='small'>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{minWidth: column.minWidth}}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+      }}>
+        {/* date picker */}
+        <DateRangePicker onChange={() => console.log('render')}/>
+        <Autocomplete
+          freeSolo
+          options={clientList.map((option) => option)}
+          renderInput={(params) =>
+            <TextField {...params}
+                       placeholder='품목' size='small'
+                       sx={{minWidth: 150}}
+            />
+          }
+        />
+        <Autocomplete
+          freeSolo
+          options={clientList.map((option) => option)}
+          renderInput={(params) =>
+            <TextField {...params}
+                       placeholder='규격' size='small'
+                       sx={{minWidth: 150}}
+            />
+          }
+        />
+        <Button
+          variant="outlined"
+          onClick={() => console.log('search')}
+        >
+          확인
+        </Button>
+      </Box>
+      <Paper sx={{width: '100%', overflow: 'hidden'}}>
+        <TableContainer sx={{maxHeight: 440}}>
+          <Table stickyHeader aria-label="sticky table" size='small'>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{minWidth: column.minWidth}}
+                  >
+                    {column.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((row, rowIdx) => {
+                  return (
+                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align}>
+                            {column.format && typeof value === 'number'
+                              ? column.format(value)
+                              : value}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 100]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </Paper>
+    </Box>
   )
 }
 

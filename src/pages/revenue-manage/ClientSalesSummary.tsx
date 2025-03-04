@@ -1,15 +1,21 @@
-import {ClientSalesSummaryColumn} from '../../types/tableColumns.ts';
-import {useState} from 'react';
-import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock.ts';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import TablePagination from '@mui/material/TablePagination';
-import Paper from '@mui/material/Paper';
-import * as React from 'react';
+// UI
+import {
+  Box,
+  Button,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow
+} from '@mui/material';
+import DateRangePicker from '../../components/DateRangePicker';
+
+// projects
+import { ClientSalesSummaryColumn } from '../../types/tableColumns';
+import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock';
 
 const columns: readonly ClientSalesSummaryColumn[] = [
   {
@@ -57,67 +63,74 @@ const columns: readonly ClientSalesSummaryColumn[] = [
 
 
 const ClientSalesSummary = ():React.JSX.Element => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const rows = clientSalesSummaryMock;
-
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
   return (
-    <Paper sx={{width: '100%', overflow: 'hidden'}}>
-      <TableContainer sx={{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table" size='small'>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{minWidth: column.minWidth}}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+      }}>
+        {/* date picker */}
+        <DateRangePicker onChange={() => console.log('render')}/>
+        <Button
+          variant="outlined"
+          onClick={() => console.log('search')}
+        >
+          확인
+        </Button>
+      </Box>
+      <Paper sx={{width: '100%', overflow: 'hidden'}}>
+        <TableContainer sx={{maxHeight: 440}}>
+          <Table stickyHeader aria-label="sticky table" size='small'>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{minWidth: column.minWidth}}
+                  >
+                    {column.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows
+                .map((row) => {
+                  return (
+                    <TableRow hover role="checkbox" tabIndex={-1}>
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align}>
+                            {column.format
+                              ? column.format(value)
+                              : value}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell>합계</TableCell>
+                <TableCell align='right'>재료비</TableCell>
+                <TableCell align='right'>가공비</TableCell>
+                <TableCell align='right' />
+                <TableCell align='right'>금액</TableCell>
+                <TableCell align='right'>수금액</TableCell>
+                <TableCell align='right'>잔액</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Box>
   )
 }
 

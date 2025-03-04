@@ -1,14 +1,22 @@
-import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import TablePagination from '@mui/material/TablePagination';
-import clientSalesMock from '../../mock/clientSalesMock.ts';
 import {ClientSalesColumn} from '../../types/tableColumns.ts';
+import clientSalesMock from '../../mock/clientSalesMock.ts';
+import {clientList} from '../../mock/clientList.ts';
+
+// UI
+import {
+  Autocomplete,
+  Box,
+  TextField,
+  Paper,
+  Table,
+  TableContainer,
+  TableRow,
+  TableCell,
+  TableHead,
+  TableBody,
+  Button, TableFooter
+} from '@mui/material';
+import DateRangePicker from '../../components/DateRangePicker.tsx';
 
 const columns: readonly ClientSalesColumn[] = [
   {id: 'date', label: '날짜', minWidth: 100},
@@ -80,68 +88,88 @@ const columns: readonly ClientSalesColumn[] = [
 
 
 const ClientSales = (): React.JSX.Element => {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const rows = clientSalesMock;
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
+  // handler
+  const handleSearch = () => {
+    /* 날짜 & 업체명 필터링 */
+    console.log('필터링');
+  }
 
   return (
-    <Paper sx={{width: '100%', overflow: 'hidden'}}>
-      <TableContainer sx={{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table" size='small'>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{minWidth: column.minWidth}}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row) => {
-                return (
-                  <TableRow hover role="checkbox" tabIndex={-1}>
-                    {columns.map((column) => {
-                      const value = row[column.id];
-                      return (
-                        <TableCell key={column.id} align={column.align}>
-                          {column.format && typeof value === 'number'
-                            ? column.format(value)
-                            : value}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+      }}>
+        {/* date picker */}
+        <DateRangePicker onChange={() => console.log('render')}/>
+        <Autocomplete
+          freeSolo
+          options={clientList.map((option) => option)}
+          renderInput={(params) =>
+            <TextField {...params}
+                       placeholder='거래처명' size='small'
+                       sx={{minWidth: 150}}
+            />
+          }
+        />
+        <Button
+          variant="outlined"
+          onClick={() => handleSearch}
+        >
+          확인
+        </Button>
+      </Box>
+
+      <Paper sx={{width: '100%', overflow: 'hidden'}}>
+        <TableContainer sx={{maxHeight: 440}}>
+          <Table stickyHeader aria-label="sticky table" size='small'>
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{minWidth: column.minWidth}}
+                  >
+                    {column.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows
+                .map((row, rowIdx) => {
+                  return (
+                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
+                      {columns.map((column) => {
+                        const value = row[column.id];
+                        return (
+                          <TableCell key={column.id} align={column.align}>
+                            {column.format
+                              ? column.format(value)
+                              : value}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={9}>합계</TableCell>
+                <TableCell align='right'>매출액계</TableCell>
+                <TableCell align='right'>수금액계</TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Box>
   );
 }
 export default ClientSales;
