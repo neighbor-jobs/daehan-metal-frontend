@@ -1,17 +1,10 @@
-import {ItemSalesSummaryColumn} from '../../types/tableColumns.ts';
-import * as React from 'react';
-import {useState} from 'react';
-import Paper from '@mui/material/Paper';
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import TablePagination from '@mui/material/TablePagination';
-import itemSalesSummaryMock from '../../mock/itemSalesSummayMock.ts';
-import {Box, Button} from '@mui/material';
-import DateRangePicker from '../../components/DateRangePicker.tsx';
+// UI
+import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow } from '@mui/material';
+import DateRangePicker from '../../components/DateRangePicker';
+
+// project
+import { ItemSalesSummaryColumn } from '../../types/tableColumns';
+import itemSalesSummaryMock from '../../mock/itemSalesSummayMock';
 
 const columns: readonly ItemSalesSummaryColumn[] = [
   {
@@ -54,12 +47,6 @@ const columns: readonly ItemSalesSummaryColumn[] = [
     align: 'right',
   },
   {
-    id: 'vcut-count',
-    label: 'V컷수',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
     id: 'amount',
     label: '금액',
     minWidth: 100,
@@ -68,18 +55,7 @@ const columns: readonly ItemSalesSummaryColumn[] = [
 ];
 
 const ItemSalesSummary = (): React.JSX.Element => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const rows = itemSalesSummaryMock;
-
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
   return (
     <Box>
       <Box sx={{
@@ -115,7 +91,6 @@ const ItemSalesSummary = (): React.JSX.Element => {
             </TableHead>
             <TableBody>
               {rows
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1}>
@@ -123,7 +98,7 @@ const ItemSalesSummary = (): React.JSX.Element => {
                         const value = row[column.id];
                         return (
                           <TableCell key={column.id} align={column.align}>
-                            {column.format && typeof value === 'number'
+                            {column.format
                               ? column.format(value)
                               : value}
                           </TableCell>
@@ -133,17 +108,19 @@ const ItemSalesSummary = (): React.JSX.Element => {
                   );
                 })}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={2}>합계</TableCell>
+                <TableCell align='right'>수량합</TableCell>
+                <TableCell align='right'>재료단가평균</TableCell>
+                <TableCell align='right'>재료비합</TableCell>
+                <TableCell align='right'>가공단가평균</TableCell>
+                <TableCell align='right'>가공비합</TableCell>
+                <TableCell colSpan={2} align='right'></TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 100]}
-          component="div"
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
       </Paper>
     </Box>
   )
