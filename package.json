@@ -15,12 +15,15 @@
     "@mui/material": "^6.4.5",
     "@mui/x-date-pickers": "^7.27.1",
     "dayjs": "^1.11.13",
+    "electron-store": "^10.0.1",
+    "pdfmake": "^0.2.18",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.2.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@types/pdfmake": "^0.2.11",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
