@@ -53,3 +53,11 @@ export interface ClientOutstandingBalanceColumn {
   align?: 'right';
   format?: (value: string) => string;
 }
+
+export interface SalesCompanyColumn {
+  id: 'company-name' | 'owner' | 'phone-number' | 'fax' | 'address' | 'business-number';
+  label: string;
+  minWidth?: number;
+  align?: 'right';
+  format?: (value: string) => string;
+}

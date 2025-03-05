@@ -8,6 +8,7 @@ import ClientOutstandingBalance from './pages/revenue-manage/ClientOutstandingBa
 import MainLayout from './layout/MainLayout.tsx';
 import RevenueMain from './pages/revenue-manage/RevenueMain.tsx';
 import Home from './pages/Home.tsx';
+import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 
 const routes = createBrowserRouter([
   {
@@ -61,7 +62,16 @@ const routes = createBrowserRouter([
       },
       {
         path: 'client',
-        element: <div>거래처관리</div>,
+        children: [
+          {
+            path: 'sales',
+            element: <SalesCompany />
+          },
+          {
+            path: 'supplier',
+            element: <div>매입처관리</div>
+          }
+        ]
       }
     ]
   }
