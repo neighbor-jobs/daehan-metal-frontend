@@ -6,7 +6,7 @@ import {useHeaderStore} from '../stores/headerStore.ts';
 
 const Home = (): React.JSX.Element => {
   const navigate = useNavigate();
-  const { setSelectedType, setSelectedSubType } = useHeaderStore();
+  const {setSelectedType, setSelectedSubType} = useHeaderStore();
 
   const handleMainNav = (menuType: MenuType) => {
     setSelectedType(menuType);
@@ -28,7 +28,6 @@ const Home = (): React.JSX.Element => {
         navigate('/');
     }
   };
-
   return (
     <Box
       component="section"

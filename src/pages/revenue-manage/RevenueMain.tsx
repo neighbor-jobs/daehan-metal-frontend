@@ -1,21 +1,16 @@
-import TableContainer from '@mui/material/TableContainer';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import TablePagination from '@mui/material/TablePagination';
-import Paper from '@mui/material/Paper';
-import {RevenueMainColumn} from '../../types/tableColumns.ts';
-import {revenueMainMock} from '../../mock/revenueMainMock.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
-import {Box, Button, InputLabel} from '@mui/material';
-import {clientList} from '../../mock/clientList.ts';
-import AutocompleteWithTopLabel from '../../components/AutocompleteWithTopLabel.tsx';
-import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
-import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
-import InputWithLabel from '../../components/InputWithLabel.tsx';
-import {useState} from 'react';
+// UI
+import { Box, Button, InputLabel, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { DesktopDatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import AutocompleteWithTopLabel from '../../components/AutocompleteWithTopLabel';
+import InputWithLabel from '../../components/InputWithLabel';
+
+// project
+import { RevenueMainColumn } from '../../types/tableColumns';
+import { revenueMainMock } from '../../mock/revenueMainMock';
+import { formatCurrency, formatDecimal } from '../../utils/format';
+import { clientList } from '../../mock/clientList';
+import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock.ts';
 
 const columns: readonly RevenueMainColumn[] = [
   {
@@ -94,20 +89,17 @@ const columns: readonly RevenueMainColumn[] = [
 ];
 
 const RevenueMain = (): React.JSX.Element => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const rows = revenueMainMock;
+  // handler
+  const generateInvoice = async () => {
+    if (window.ipcRenderer) {
+      await window.ipcRenderer.invoke('generate-and-open-pdf', clientSalesSummaryMock);
+    } else {
+      console.error('pdf 미리보기 실패');
+    }
+  }
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
   return (
-    <Box sx={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between'}}>
+    <Box sx={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', zIndex: 10}}>
       <Paper sx={{width: '100%', overflow: 'hidden', marginTop: 5, flexGrow: 1}}>
         <TableContainer sx={{maxHeight: 440}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
@@ -125,8 +117,7 @@ const RevenueMain = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              {revenueMainMock
                 .map((row, rowIndex) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
@@ -146,15 +137,6 @@ const RevenueMain = (): React.JSX.Element => {
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 100]}
-          component="div"
-          count={rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
       </Paper>
       <Box sx={{
         width: '100%',
@@ -163,6 +145,7 @@ const RevenueMain = (): React.JSX.Element => {
         display: 'flex',
         gap: 3,
         alignItems: 'center',
+        boxShadow: '0px -4px 6px rgba(0, 0, 0, 0.1)'
       }}>
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 4, width: '25%', marginX: 3}}>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -199,8 +182,12 @@ const RevenueMain = (): React.JSX.Element => {
             <InputWithLabel label='미수계 :' labelPosition='left'/>
           </Box>
         </Box>
-        <Box sx={{display: 'flex', flexDirection: 'column', marginX: 3, gap: 1, width: '20%'}}>
-          <Button variant='outlined'>거래명세표 출력</Button>
+        <Box sx={{display: 'flex', flexDirection: 'column', marginX: 3, gap: 2, width: '20%'}}>
+          <Button variant='outlined'
+                  onClick={generateInvoice}
+          >
+            거래명세표 출력
+          </Button>
           <Button variant='outlined'>수정</Button>
           <Button variant='outlined'>삭제</Button>
           <Button variant='outlined'>거래처등록</Button>
