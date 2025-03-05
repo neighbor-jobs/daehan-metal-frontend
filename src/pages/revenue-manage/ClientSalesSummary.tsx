@@ -16,6 +16,7 @@ import DateRangePicker from '../../components/DateRangePicker';
 // projects
 import { ClientSalesSummaryColumn } from '../../types/tableColumns';
 import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock';
+import Footer from '../../layout/Footer.tsx';
 
 const columns: readonly ClientSalesSummaryColumn[] = [
   {
@@ -130,6 +131,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
+      <Footer printData={clientSalesSummaryMock} ></Footer>
     </Box>
   )
 }
