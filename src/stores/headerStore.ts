@@ -10,7 +10,22 @@ interface HeaderState {
 
 export const useHeaderStore = create<HeaderState>((set) => ({
   selectedType: null,
-  setSelectedType: (type) => set({ selectedType: type }),
+  setSelectedType: async (type) => {
+    await window.ipcRenderer.invoke('set-store', 'selectedType', type);
+    set({ selectedType: type });
+  },
   selectedSubType: null,
-  setSelectedSubType: (subType) => set({ selectedSubType: subType }),
+  setSelectedSubType: async (subType) => {
+    await window.ipcRenderer.invoke('set-store', 'selectedSubType', subType);
+    set({ selectedSubType: subType });
+  },
 }));
+
+if (window.ipcRenderer) {
+  window.ipcRenderer.invoke('get-store', 'selectedType').then((type) => {
+    useHeaderStore.setState({ selectedType: type });
+  });
+  window.ipcRenderer.invoke('get-store', 'selectedSubType').then((subType) => {
+    useHeaderStore.setState({ selectedSubType: subType });
+  });
+}
