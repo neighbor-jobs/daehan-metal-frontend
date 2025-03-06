@@ -78903,7 +78903,7 @@ const companySalesSumDocDef = (companyName, date, companySalesSumData) => {
     }),
     content: [
       {
-        text: `${companyName} 매출현황`,
+        text: `${companyName} 매출집계`,
         style: "header",
         alignment: "center"
       },
