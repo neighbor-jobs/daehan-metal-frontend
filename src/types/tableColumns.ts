@@ -55,7 +55,15 @@ export interface ClientOutstandingBalanceColumn {
 }
 
 export interface SalesCompanyColumn {
-  id: 'company-name' | 'owner' | 'phone-number' | 'fax' | 'address' | 'business-number';
+  id: 'companyName' | 'owner' | 'phoneNumber' | 'fax' | 'address' | 'businessNumber';
+  label: string;
+  minWidth?: number;
+  align?: 'right';
+  format?: (value: string) => string;
+}
+
+export interface ProductMainColumn {
+  id: 'productName' | 'scale' | 'unitWeight' | 'stocks' | 'rawMatAmount' | 'manufactureAmount' | 'productLength';
   label: string;
   minWidth?: number;
   align?: 'right';
