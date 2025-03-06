@@ -1,12 +1,17 @@
-import {Box, InputLabel, OutlinedInput} from '@mui/material';
+import {Box, InputLabel, OutlinedInput, OutlinedInputProps} from '@mui/material';
 
-interface InputWithLabelProps {
+interface InputWithLabelProps extends OutlinedInputProps{
   label: string;
   labelPosition: 'left' | 'top';
   textAlign?: 'right' | 'left';
 }
 
-const InputWithLabel = ({label, labelPosition, textAlign = 'right'}: InputWithLabelProps):React.JSX.Element => {
+const InputWithLabel = ({
+                          label,
+                          labelPosition,
+                          textAlign = 'right',
+                          ...outlinedInputProps
+}: InputWithLabelProps):React.JSX.Element => {
 
   return (
     <Box
@@ -18,7 +23,7 @@ const InputWithLabel = ({label, labelPosition, textAlign = 'right'}: InputWithLa
     >
       <InputLabel sx={{fontSize: 'small', width: '25%', minWidth: 60}}>{label}</InputLabel>
       <OutlinedInput
-        type="number"
+        {...outlinedInputProps}
         size='small'
         fullWidth
         sx={{

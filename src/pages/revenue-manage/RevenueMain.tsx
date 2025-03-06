@@ -1,16 +1,29 @@
 // UI
-import { Box, Button, InputLabel, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { DesktopDatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import AutocompleteWithTopLabel from '../../components/AutocompleteWithTopLabel';
+import {
+  Box,
+  Button,
+  InputLabel,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
+} from '@mui/material';
+import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import AutocompleteWithLabel from '../../components/AutocompleteWithLabel.tsx';
 import InputWithLabel from '../../components/InputWithLabel';
 
 // project
-import { RevenueMainColumn } from '../../types/tableColumns';
-import { revenueMainMock } from '../../mock/revenueMainMock';
-import { formatCurrency, formatDecimal } from '../../utils/format';
-import { clientList } from '../../mock/clientList';
+import {RevenueMainColumn} from '../../types/tableColumns';
+import {revenueMainMock} from '../../mock/revenueMainMock';
+import {formatCurrency, formatDecimal} from '../../utils/format';
+import {clientList} from '../../mock/clientList';
 import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock.ts';
+import {useState} from 'react';
+import itemList from '../../mock/itemList.ts';
 
 const columns: readonly RevenueMainColumn[] = [
   {
@@ -89,6 +102,19 @@ const columns: readonly RevenueMainColumn[] = [
 ];
 
 const RevenueMain = (): React.JSX.Element => {
+  const [formData, setFormData] = useState({
+    client: '',
+    item: '',
+    size: '',
+    count: '',
+    materialUnitPrice: '',
+    processingUnitPrice: '',
+    vcutCount: '',
+    length: '',
+    unitPrice: '',
+    payingAmount: ''
+  });
+
   // handler
   const generateInvoice = async () => {
     if (window.ipcRenderer) {
@@ -97,6 +123,62 @@ const RevenueMain = (): React.JSX.Element => {
       console.error('pdf 미리보기 실패');
     }
   }
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [event.target.name]: event.target.value
+    });
+  };
+  const handleAutocompleteChange = (name: string, value: string) => {
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  // api
+  const productNames = itemList.map((item) => item.productName);
+  const scaleByProdName = (items, productName) => {
+    const product = items.find(item => item.productName === productName);
+    return product ? Object.keys(product.scale) : [];
+  }
+  // console.log(productNames);
+
+
+  const createRevenueItem = () => {
+    // 계산 필드 추가
+    const calculatedAmount = Number(formData.count) * Number(formData.unitPrice);
+
+    const newItem = {
+      'item': formData.item,
+      'size': formData.size,
+      'count': formData.count,
+      'material-price': (Number(formData.materialUnitPrice) * Number(formData.count)).toString(),
+      'processing-price': (Number(formData.processingUnitPrice) * Number(formData.count)).toString(),
+      'vcut-count': formData.vcutCount,
+      'length': formData.length,
+      'unit-price': formData.unitPrice,
+      'amount': calculatedAmount.toString(),
+      'total-amount': '0',
+      'paying-amount': formData.payingAmount,
+    };
+
+    revenueMainMock.push(newItem);
+    alert('매출 항목이 추가되었습니다.');
+
+    // 입력 필드 초기화
+    setFormData({
+      client: '',
+      item: '',
+      size: '',
+      count: '',
+      materialUnitPrice: '',
+      processingUnitPrice: '',
+      vcutCount:'',
+      length: '',
+      unitPrice: '',
+      payingAmount: '',
+    });  }
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', zIndex: 10}}>
@@ -143,7 +225,7 @@ const RevenueMain = (): React.JSX.Element => {
         height: '50%',
         background: '#F5F5F5',
         display: 'flex',
-        gap: 3,
+        gap: 5,
         alignItems: 'center',
         boxShadow: '0px -4px 6px rgba(0, 0, 0, 0.1)'
       }}>
@@ -160,26 +242,28 @@ const RevenueMain = (): React.JSX.Element => {
                 }}
               />
             </Box>
-            <AutocompleteWithTopLabel label='매출처' items={clientList}/>
+            <AutocompleteWithLabel label='매출처' items={clientList} labelPosition='top' onChange={(value) => handleAutocompleteChange('client', value)}/>
           </LocalizationProvider>
         </Box>
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 3, width: '25%'}}>
-          <InputWithLabel label='수량 :' labelPosition='left'/>
-          <InputWithLabel label='재료단가 :' labelPosition='left'/>
-          <InputWithLabel label='가공단가 :' labelPosition='left'/>
+          <AutocompleteWithLabel label='품명 :' items={productNames} labelPosition='left' onChange={(value) => handleAutocompleteChange('item', value)}/>
+          <AutocompleteWithLabel label='규격 :' items={scaleByProdName(itemList, formData.item)} labelPosition='left' onChange={(value) => handleAutocompleteChange('size', value)} />
+          <InputWithLabel label='수량 :' labelPosition='left' type='number' name='count' onChange={handleInputChange}/>
+          <InputWithLabel label='재료단가 :' labelPosition='left' name='materialUnitPrice' onChange={handleInputChange}/>
+          <InputWithLabel label='가공단가 :' labelPosition='left' name='processingUnitPrice' onChange={handleInputChange}/>
         </Box>
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '25%'}}>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-            <InputWithLabel label='V컷수 :' labelPosition='left'/>
-            <InputWithLabel label='길이 :' labelPosition='left'/>
-            <InputWithLabel label='단가 :' labelPosition='left'/>
-            <InputWithLabel label='계 :' labelPosition='left'/>
+            <InputWithLabel label='V컷수 :' labelPosition='left' name='vcutCount' onChange={handleInputChange}/>
+            <InputWithLabel label='길이 :' labelPosition='left' name='length' onChange={handleInputChange}/>
+            <InputWithLabel label='단가 :' labelPosition='left' name='unitPrice' onChange={handleInputChange}/>
+            <InputWithLabel label='계 :' labelPosition='left' />
           </Box>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-            <InputWithLabel label='미수금 :' labelPosition='left'/>
+            <InputWithLabel label='미수금 :' labelPosition='left' disabled/>
             <InputWithLabel label='매출계 :' labelPosition='left'/>
-            <InputWithLabel label='입금액 :' labelPosition='left'/>
-            <InputWithLabel label='미수계 :' labelPosition='left'/>
+            <InputWithLabel label='입금액 :' labelPosition='left' name='payingAmount' onChange={handleInputChange}/>
+            <InputWithLabel label='미수계 :' labelPosition='left' disabled/>
           </Box>
         </Box>
         <Box sx={{display: 'flex', flexDirection: 'column', marginX: 3, gap: 2, width: '20%'}}>
@@ -190,7 +274,11 @@ const RevenueMain = (): React.JSX.Element => {
           </Button>
           <Button variant='outlined'>수정</Button>
           <Button variant='outlined'>삭제</Button>
-          <Button variant='outlined'>거래처등록</Button>
+          <Button variant='outlined'
+                  onClick={createRevenueItem}
+          >
+            거래처등록
+          </Button>
           <Button variant='outlined'>닫기</Button>
         </Box>
       </Box>
