@@ -16,7 +16,7 @@ import InputWithLabel from '../../components/InputWithLabel.tsx';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
-    id: 'company-name',
+    id: 'companyName',
     label: '거래처명',
   },
   {
@@ -24,7 +24,7 @@ const columns: readonly SalesCompanyColumn[] = [
     label: '대표자',
   },
   {
-    id: 'phone-number',
+    id: 'phoneNumber',
     label: '전화번호',
   }, {
     id: 'fax',
@@ -35,13 +35,30 @@ const columns: readonly SalesCompanyColumn[] = [
     label: '주소',
   },
   {
-    id: 'business-number',
+    id: 'businessNumber',
     label: '사업자등록번호',
   }
 ];
 
 const SalesCompanyPage = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    'companyName': '',
+    'owner': '',
+    'phoneNumber': '',
+    'fax': '',
+    'address': '',
+    'businessNumber': '',
+  })
+
+  // handler
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [event.target.name]: event.target.value
+    });
+  };
+  console.log(formData);
 
   return (
     <Box>
@@ -68,11 +85,8 @@ const SalesCompanyPage = (): React.JSX.Element => {
             component: 'form',
             onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
               event.preventDefault();
-              const formData = new FormData(event.currentTarget);
-              const formJson = Object.fromEntries((formData as any).entries());
-              const email = formJson.email;
-              console.log(email);
-              setOpen(false)
+              salesCompanyMock.push(formData);
+              setOpen(false);
             },
           },
         }}
@@ -81,12 +95,12 @@ const SalesCompanyPage = (): React.JSX.Element => {
         <DialogContent
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
-          <InputWithLabel label='거래처명' labelPosition='left' />
-          <InputWithLabel label='대표자' labelPosition='left' />
-          <InputWithLabel label='전화번호' labelPosition='left' />
-          <InputWithLabel label='팩스번호' labelPosition='left' />
-          <InputWithLabel label='주소' labelPosition='left' />
-          <InputWithLabel label='사업자등록번호' labelPosition='left' />
+          <InputWithLabel name='companyName' label='거래처명' labelPosition='left' onChange={handleInputChange}/>
+          <InputWithLabel name='owner' label='대표자' labelPosition='left' onChange={handleInputChange}/>
+          <InputWithLabel  name='phoneNumber' label='전화번호' labelPosition='left' onChange={handleInputChange} type='tel' />
+          <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}/>
+          <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange}/>
+          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleInputChange}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>취소</Button>
