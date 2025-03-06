@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import DailySales from './pages/revenue-manage/DailySales.tsx';
 import ClientSales from './pages/revenue-manage/ClientSales.tsx';
 import ClientSalesSummary from './pages/revenue-manage/ClientSalesSummary.tsx';
@@ -10,7 +10,7 @@ import RevenueMain from './pages/revenue-manage/RevenueMain.tsx';
 import Home from './pages/Home.tsx';
 import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 
-const routes = createBrowserRouter([
+const routes = createHashRouter([
   {
     path: '/',
     element: <MainLayout />,

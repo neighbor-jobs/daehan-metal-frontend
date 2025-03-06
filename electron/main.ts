@@ -28,11 +28,13 @@ process.env.APP_ROOT = path.join(__dirname, '..')
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
+export const RENDERER_DIST = path.join(app.getAppPath(), 'dist')
 
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
-export const fontPath = path.join(process.env.VITE_PUBLIC, 'fonts');
-// export const fontPath = path.join(app.getAppPath(), "fonts");
+process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
+  ? path.join(process.env.APP_ROOT, 'public', 'fonts') // 개발 환경
+  : path.join(process.resourcesPath, 'fonts') // 프로덕션 환경에서는 resourcesPath 사용
+
+export const fontPath = process.env.VITE_PUBLIC
 
 let win: BrowserWindow | null
 
@@ -41,12 +43,15 @@ function createWindow() {
     // icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      contextIsolation: true,
+      webSecurity: false,
     },
   })
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
+    win.webContents.send('main-process-message', `Render path: ${RENDERER_DIST}`)
   })
 
   if (VITE_DEV_SERVER_URL) {

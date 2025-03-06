@@ -26,4 +26,12 @@ export default defineConfig({
         : {},
     }),
   ],
+  base: './',
+  build: {
+    outDir: 'dist',  // 빌드 결과물 위치
+    assetsDir: 'assets', // 정적 파일 경로 설정
+    rollupOptions: {
+      input: path.resolve(__dirname, 'index.html'), // index.html 경로 명시
+    },
+  },
 })

@@ -2,6 +2,9 @@
   "name": "erp",
   "private": true,
   "version": "0.0.0",
+  "author": {
+    "name": "대한금속"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,11 +14,10 @@
     "start": "electron .",
     "build:osx": "electron-builder --mac",
     "build:linux": "npm run build:linux32 && npm run build:linux64",
-    "build:linux32": "electron-builder --linux --ia32",
-    "build:linux64": "electron-builder --linux --x64",
-    "build:win": "npm run build:win32 && npm run build:win64",
-    "build:win32": "electron-builder --win portable --ia32",
-    "build:win64": "electron-builder --win portable --x64"
+    "build:linux32": "vite build && electron-builder --linux --ia32",
+    "build:linux64": "vite build && electron-builder --linux --x64",
+    "build:win32": "vite build && electron-builder --win portable --ia32",
+    "build:win64": "vite build && electron-builder --win portable --x64"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -49,24 +51,40 @@
   },
   "main": "dist-electron/main.js",
   "build": {
-    "appId": "대한금속ERP",
+    "appId": "com.daehanmetal.electron",
     "productName": "ERP",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "extraResources": [
       {
-        "from": "public/fonts",
-        "to": "fonts"
+        "from": "./public/fonts",
+        "to": "./fonts",
+        "filter": "**/*"
       }
     ],
     "files": [
       "dist/**",
-      "dist-electron/**"
+      "dist-electron/**",
+      "public/**/*",
+      "resources/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": [{
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }],
       "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "language": 1042,
+      "shortcutName": "대한금속ERP"
     }
   }
 }
