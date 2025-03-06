@@ -9,6 +9,7 @@ import MainLayout from './layout/MainLayout.tsx';
 import RevenueMain from './pages/revenue-manage/RevenueMain.tsx';
 import Home from './pages/Home.tsx';
 import SalesCompany from './pages/company-manage/SalesCompany.tsx';
+import ProductMain from './pages/product-manage/ProductMain.tsx';
 
 const routes = createBrowserRouter([
   {
@@ -58,7 +59,7 @@ const routes = createBrowserRouter([
       },
       {
         path: 'item',
-        element: <div>품목관리</div>,
+        element: <ProductMain />
       },
       {
         path: 'client/',
