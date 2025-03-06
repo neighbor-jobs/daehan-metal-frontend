@@ -1,5 +1,5 @@
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
-
+/*
 export const invoiceDocDefinition = (invoiceData: any) => {
   const docDefinition: TDocumentDefinitions = {
     content: [
@@ -25,6 +25,7 @@ export const invoiceDocDefinition = (invoiceData: any) => {
   }
   return docDefinition;
 }
+*/
 
 export const companySalesSumDocDef = (companyName: string, date: Date, companySalesSumData: any[]) => {
   const today = new Date();

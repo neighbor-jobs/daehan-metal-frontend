@@ -1,6 +1,6 @@
 import {
   Box,
-  Button,
+  Button, Dialog, DialogContent, DialogTitle, DialogActions,
   Paper,
   Table,
   TableBody,
@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import {SalesCompanyColumn} from '../../types/tableColumns.ts';
 import salesCompanyMock from '../../mock/salesCompanyMock.ts';
+import React, {useState} from 'react';
+import InputWithLabel from '../../components/InputWithLabel.tsx';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -39,6 +41,7 @@ const columns: readonly SalesCompanyColumn[] = [
 ];
 
 const SalesCompanyPage = (): React.JSX.Element => {
+  const [open, setOpen] = useState(false);
 
   return (
     <Box>
@@ -50,11 +53,46 @@ const SalesCompanyPage = (): React.JSX.Element => {
       }}>
         <Button
           variant="outlined"
-          onClick={() => console.log('search')}
+          onClick={() => setOpen(true)}
         >
           등록
         </Button>
       </Box>
+
+      {/* dialog */}
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        slotProps={{
+          paper: {
+            component: 'form',
+            onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+              event.preventDefault();
+              const formData = new FormData(event.currentTarget);
+              const formJson = Object.fromEntries((formData as any).entries());
+              const email = formJson.email;
+              console.log(email);
+              setOpen(false)
+            },
+          },
+        }}
+      >
+        <DialogTitle>거래처등록</DialogTitle>
+        <DialogContent
+          sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
+        >
+          <InputWithLabel label='거래처명' labelPosition='left' />
+          <InputWithLabel label='대표자' labelPosition='left' />
+          <InputWithLabel label='전화번호' labelPosition='left' />
+          <InputWithLabel label='팩스번호' labelPosition='left' />
+          <InputWithLabel label='주소' labelPosition='left' />
+          <InputWithLabel label='사업자등록번호' labelPosition='left' />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>취소</Button>
+          <Button type="submit">등록</Button>
+        </DialogActions>
+      </Dialog>
       <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
         <TableContainer sx={{maxHeight: 440}}>
           <Table stickyHeader aria-label="sticky table" size='small'>

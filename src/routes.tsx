@@ -61,14 +61,14 @@ const routes = createBrowserRouter([
         element: <div>품목관리</div>,
       },
       {
-        path: 'client',
+        path: 'client/',
         children: [
           {
-            path: 'sales',
+            path: 'sales/',
             element: <SalesCompany />
           },
           {
-            path: 'supplier',
+            path: 'supplier/',
             element: <div>매입처관리</div>
           }
         ]

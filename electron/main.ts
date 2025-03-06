@@ -29,10 +29,10 @@ process.env.APP_ROOT = path.join(__dirname, '..')
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
-export const fontPath = path.join(process.env.APP_ROOT, 'electron/fonts');
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
-
+export const fontPath = path.join(process.env.VITE_PUBLIC, 'fonts');
+// export const fontPath = path.join(app.getAppPath(), "fonts");
 
 let win: BrowserWindow | null
 
