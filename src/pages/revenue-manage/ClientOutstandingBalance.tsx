@@ -5,6 +5,7 @@ import DateRangePicker from '../../components/DateRangePicker';
 // project
 import { ClientOutstandingBalanceColumn } from '../../types/tableColumns';
 import clientOutstandingBalanceMock from '../../mock/clientOutstandingBalanceMock';
+import Footer from '../../layout/Footer.tsx';
 
 const columns: readonly ClientOutstandingBalanceColumn[] = [
   {
@@ -109,6 +110,7 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
+      <Footer printData={clientOutstandingBalanceMock}></Footer>
     </Box>
   )
 }

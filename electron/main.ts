@@ -7,7 +7,7 @@ import pdfMake from 'pdfmake/build/pdfmake';
 import {readFileSync} from 'fs';
 import * as fs from 'node:fs';
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
-import {companySalesSumDocDef} from './templetes.ts';
+import {companySalesDocDef, companySalesSumDocDef, itemSalesSumDocDef, outstandingAmountDocDef} from './templetes.ts';
 import {RevenueManageMenuType} from '../src/types/headerMenu.ts';
 
 createRequire(import.meta.url);
@@ -40,7 +40,6 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
-    // icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -108,6 +107,16 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
     switch (printType) {
       case '거래처별 매출집계':
         docDefinition = companySalesSumDocDef('주식회사 성진금속', new Date(0), data);
+        break;
+      case '거래처별 매출현황':
+        docDefinition = companySalesDocDef(new Date(), '성진금속', data);
+        break;
+      case '매출처별 미수금현황':
+        docDefinition = outstandingAmountDocDef(new Date(), data);
+        break;
+      case '품목별 매출집계':
+        docDefinition = itemSalesSumDocDef(new Date(), data);
+        break;
     }
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
     pdfDocGenerator.getBuffer((buffer) => {

@@ -17,6 +17,7 @@ import {
   Button, TableFooter
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
+import Footer from '../../layout/Footer.tsx';
 
 const columns: readonly ClientSalesColumn[] = [
   {id: 'date', label: '날짜', minWidth: 100},
@@ -169,6 +170,7 @@ const ClientSales = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
+      <Footer printData={clientSalesMock} />
     </Box>
   );
 }
