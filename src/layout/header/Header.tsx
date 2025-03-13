@@ -68,8 +68,8 @@ const Header = (): React.JSX.Element => {
       case PurchaseManageMenuType.ClientPurchase:
         navigate('/purchase/client');
         break;
-      case PurchaseManageMenuType.ItemPurchase:
-        navigate('/purchase/item');
+      case PurchaseManageMenuType.ClientPurchaseSummary:
+        navigate('/purchase/client-summary');
         break;
       case ClientManageMenuType.SalesManage:
         navigate('/client/sales');

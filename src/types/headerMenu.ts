@@ -21,7 +21,7 @@ export const revenueManageTypeArr = Object.entries(RevenueManageMenuType).map(([
 export enum PurchaseManageMenuType {
   DailyPurchase = '일별매입관리',
   ClientPurchase = '거래처별 매입현황',
-  ItemPurchase = '품목별 매입현황',
+  ClientPurchaseSummary = '거래처별 매입집계',
 }
 
 export const purchaseManageTypeArr = Object.entries(PurchaseManageMenuType).map(([key, value]) => ({key, value}));
