@@ -5,7 +5,7 @@ import DateRangePicker from '../../components/DateRangePicker';
 // project
 import { ItemSalesColumn } from '../../types/tableColumns';
 import itemSalesMock from '../../mock/itemSalesMock';
-import { clientList } from '../../mock/clientList';
+import { clientList } from '../../mock/revenue-manage/clientList.ts';
 
 const columns: readonly ItemSalesColumn[] = [
   {

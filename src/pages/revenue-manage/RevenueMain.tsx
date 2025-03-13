@@ -18,10 +18,10 @@ import InputWithLabel from '../../components/InputWithLabel';
 
 // project
 import {RevenueMainColumn} from '../../types/tableColumns';
-import {revenueMainMock} from '../../mock/revenueMainMock';
+import {revenueMainMock} from '../../mock/revenue-manage/revenueMainMock.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format';
-import {clientList} from '../../mock/clientList';
-import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock.ts';
+import {clientList} from '../../mock/revenue-manage/clientList.ts';
+import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
 import {useState} from 'react';
 import itemList from '../../mock/itemList.ts';
 

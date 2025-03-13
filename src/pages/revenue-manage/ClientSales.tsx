@@ -1,6 +1,6 @@
 import {ClientSalesColumn} from '../../types/tableColumns.ts';
-import clientSalesMock from '../../mock/clientSalesMock.ts';
-import {clientList} from '../../mock/clientList.ts';
+import clientSalesMock from '../../mock/revenue-manage/clientSalesMock.ts';
+import {clientList} from '../../mock/revenue-manage/clientList.ts';
 
 // UI
 import {

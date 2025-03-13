@@ -15,7 +15,7 @@ import DateRangePicker from '../../components/DateRangePicker';
 
 // projects
 import { ClientSalesSummaryColumn } from '../../types/tableColumns';
-import clientSalesSummaryMock from '../../mock/clientSalesSummaryMock';
+import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
 import Footer from '../../layout/Footer.tsx';
 
 const columns: readonly ClientSalesSummaryColumn[] = [

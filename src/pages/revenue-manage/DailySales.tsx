@@ -16,7 +16,7 @@ import {
 import DateRangePicker from '../../components/DateRangePicker';
 import { DailySalesColumn } from '../../types/tableColumns';
 import { formatCurrency, formatDecimal } from '../../utils/format';
-import dailySalesMock from '../../mock/dailySalesMock';
+import dailySalesMock from '../../mock/revenue-manage/dailySalesMock.ts';
 
 const columns: readonly DailySalesColumn[] = [
   {

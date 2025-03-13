@@ -4,7 +4,7 @@ import DateRangePicker from '../../components/DateRangePicker';
 
 // project
 import { ClientOutstandingBalanceColumn } from '../../types/tableColumns';
-import clientOutstandingBalanceMock from '../../mock/clientOutstandingBalanceMock';
+import clientOutstandingBalanceMock from '../../mock/revenue-manage/clientOutstandingBalanceMock.ts';
 import Footer from '../../layout/Footer.tsx';
 
 const columns: readonly ClientOutstandingBalanceColumn[] = [
