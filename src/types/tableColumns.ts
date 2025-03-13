@@ -1,5 +1,16 @@
+export interface TableColumns<T> {
+  id: T;
+  label: string;
+  minWidth?: number;
+  align?: 'right';
+  format?: (value: string) => string;
+}
+
+/*
+* ==================== 매출관리 ========================
+*/
 export interface RevenueMainColumn {
-  id: 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'amount' | 'total-amount' |'paying-amount' ;
+  id: 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'amount' | 'total-amount' | 'paying-amount';
   label: string;
   minWidth?: number;
   align?: 'right';
@@ -31,7 +42,7 @@ export interface ClientSalesSummaryColumn {
 }
 
 export interface ItemSalesColumn {
-  id: 'date' | 'client' | 'count' | 'material-unit-price' | 'material-price' |'processing-unit-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'vcut-processing-price' | 'total-amount';
+  id: 'date' | 'client' | 'count' | 'material-unit-price' | 'material-price' | 'processing-unit-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'vcut-processing-price' | 'total-amount';
   label: string;
   minWidth?: number;
   align?: 'right';
@@ -39,7 +50,7 @@ export interface ItemSalesColumn {
 }
 
 export interface ItemSalesSummaryColumn {
-  id: 'item' | 'size' | 'count' | 'material-unit-price' | 'material-price' |'processing-unit-price' | 'processing-price' | 'vcut-count' | 'amount';
+  id: 'item' | 'size' | 'count' | 'material-unit-price' | 'material-price' | 'processing-unit-price' | 'processing-price' | 'vcut-count' | 'amount';
   label: string;
   minWidth?: number;
   align?: 'right';
@@ -47,7 +58,7 @@ export interface ItemSalesSummaryColumn {
 }
 
 export interface ClientOutstandingBalanceColumn {
-  id: 'client' | 'carryover-amount' | 'sales-amount' | 'paying-amount' |'outstanding-amount' | 'phone-number';
+  id: 'client' | 'carryover-amount' | 'sales-amount' | 'paying-amount' | 'outstanding-amount' | 'phone-number';
   label: string;
   minWidth?: number;
   align?: 'right';
@@ -68,4 +79,29 @@ export interface ProductMainColumn {
   minWidth?: number;
   align?: 'right';
   format?: (value: string) => string;
+}
+
+/*
+* ==================== 매입관리 ========================
+*/
+export interface DailyPurchaseColumn {
+  id: 'date' | 'client' | 'productName' | 'scale' | 'count' | 'material-unit-price' | 'material-price' | 'processing-unit-price' | 'processing-price' | 'total-amount' | 'paying-amount' | 'remaining-amount';
+  label: string;
+  minWidth?: number;
+  align?: 'right';
+  format?: (value: string) => string;
+}
+
+export enum ClientPurchasesColumn {
+  DATE = 'date',
+  PRODUCT_NAME = 'productName',
+  SCALE = 'scale',
+  COUNT = 'count',
+  MATERIAL_UNIT_PRICE = 'materialUnitPrice',
+  MATERIAL_PRICE = 'materialPrice',
+  PROCESSING_UNIT_PRICE = 'processingUnitPrice',
+  PROCESSING_PRICE = 'processingPrice',
+  TOTAL_AMOUNT = 'totalAmount',
+  PAYING_AMOUNT = 'payingAmount',
+  REMAINING_AMOUNT = 'remainingAmount',
 }
