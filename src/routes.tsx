@@ -12,6 +12,7 @@ import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 import ProductMain from './pages/product-manage/ProductMain.tsx';
 import DailyPurchase from './pages/purchase-manage/DailyPurchase.tsx';
 import ClientPurchases from './pages/purchase-manage/ClientPurchases.tsx';
+import ClientPurchasesSummary from './pages/purchase-manage/ClientPurchasesSummary.tsx';
 
 const routes = createHashRouter([
   {
@@ -68,7 +69,7 @@ const routes = createHashRouter([
           },
           {
             path: 'client-summary/',
-            element: <ClientPurchases />
+            element: <ClientPurchasesSummary />
           }
         ]
       },

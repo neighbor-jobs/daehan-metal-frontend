@@ -105,3 +105,12 @@ export enum ClientPurchasesColumn {
   PAYING_AMOUNT = 'payingAmount',
   REMAINING_AMOUNT = 'remainingAmount',
 }
+
+export enum ClientPurchasesSummaryColumn {
+  CLIENT = 'client',
+  MATERIAL_PRICE = 'materialPrice',
+  PROCESSING_PRICE = 'processingPrice',
+  TOTAL_AMOUNT = 'totalAmount',
+  PAYING_AMOUNT = 'payingAmount',
+  REMAINING_AMOUNT = 'remainingAmount',
+}
