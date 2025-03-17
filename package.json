@@ -24,6 +24,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.5",
     "@mui/x-date-pickers": "^7.27.1",
+    "axios": "^1.8.3",
     "dayjs": "^1.11.13",
     "electron-store": "^10.0.1",
     "pdfmake": "^0.2.18",
@@ -70,13 +71,15 @@
       "resources/**/*"
     ],
     "win": {
-      "target": [{
-        "target": "nsis",
-        "arch": [
-          "x64",
-          "ia32"
-        ]
-      }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
