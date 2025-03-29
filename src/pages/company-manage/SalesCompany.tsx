@@ -1,13 +1,18 @@
 import {
   Box,
-  Button, Dialog, DialogContent, DialogTitle, DialogActions,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow, IconButton
+  TableRow
 } from '@mui/material';
 import {SalesCompanyColumn} from '../../types/tableColumns.ts';
 import React, {useEffect, useState} from 'react';
@@ -18,13 +23,12 @@ import {AxiosResponse} from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {cacheManager} from '../../utils/cacheManager.ts';
-import {formatStringList} from '../../utils/format.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
     id: 'companyName',
     label: '거래처명',
-    minWidth: 120,
+    minWidth: 100,
   },
   {
     id: 'ownerName',
@@ -36,11 +40,11 @@ const columns: readonly SalesCompanyColumn[] = [
     label: '전화번호',
     minWidth: 80,
   },
-  {
+  /*{
     id: 'locationNames',
     label: '현장명',
     format: formatStringList,
-  },
+  },*/
   {
     id: 'fax',
     label: '팩스번호',
@@ -49,25 +53,26 @@ const columns: readonly SalesCompanyColumn[] = [
   {
     id: 'businessNumber',
     label: '사업자등록번호',
-    minWidth: 80,
+    minWidth: 60,
   },
   {
     id: 'businessType',
     label: '업태',
-    minWidth: 80,
+    minWidth: 50,
 
   },
   {
     id: 'businessCategory',
     label: '종목',
-    minWidth: 80,
+    minWidth: 50,
   },
   {
     id: 'address',
     label: '주소',
-    minWidth: 120,
+    minWidth: 200,
   },
 ];
+
 
 const SalesCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);

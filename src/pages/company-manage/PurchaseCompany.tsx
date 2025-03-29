@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import {
@@ -8,81 +7,66 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle, IconButton,
+  DialogTitle,
+  IconButton,
   Paper,
-  Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import InputWithLabel from '../../components/InputWithLabel.tsx';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
-import PrintButton from '../../layout/PrintButton.tsx';
-import {SalesCompanyColumn} from '../../types/tableColumns.ts';
-import {formatStringList} from '../../utils/format.ts';
+import {PurchaseCompanyColumn, TableColumns} from '../../types/tableColumns.ts';
+import {formatPhoneNumber} from '../../utils/format.ts';
+import {GetVendorResData} from '../../types/vendorRes.ts';
+import {PatchVendorBankReqBody, PostVendorBankReqBody, PostVendorReqBody} from '../../types/vendorReq.ts';
 
-const columns: readonly SalesCompanyColumn[] = [
+const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
-    id: 'companyName',
+    id: PurchaseCompanyColumn.NAME,
     label: '거래처명',
     minWidth: 120,
   },
   {
-    id: 'ownerName',
-    label: '대표자',
+    id: PurchaseCompanyColumn.PHONE_NUMBER,
+    label: '핸드폰번호',
     minWidth: 80,
   },
   {
-    id: 'phoneNumber',
+    id: PurchaseCompanyColumn.TEL_NUMBER,
     label: '전화번호',
+    minWidth: 180,
+  },
+  {
+    id: PurchaseCompanyColumn.SUB_TEL_NUMBER,
+    label: '전화번호(2)',
     minWidth: 80,
   },
   {
-    id: 'locationNames',
-    label: '현장명',
-    format: formatStringList,
-  },
-  {
-    id: 'fax',
-    label: '팩스번호',
-    minWidth: 80,
-  },
-  {
-    id: 'businessNumber',
+    id: PurchaseCompanyColumn.BUSINESS_NUMBER,
     label: '사업자등록번호',
     minWidth: 80,
-  },
-  {
-    id: 'businessType',
-    label: '업태',
-    minWidth: 80,
-
-  },
-  {
-    id: 'businessCategory',
-    label: '종목',
-    minWidth: 80,
-  },
-  {
-    id: 'address',
-    label: '주소',
-    minWidth: 120,
-  },
-];
+  }
+]
 
 const PurchaseCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [salesCompanyList, setsalesCompanyList] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    'companyName': '',
-    'ownerName': '',
-    'phoneNumber': '',
-    'fax': undefined,
-    'address': '',
-    'businessType': undefined,
-    'businessCategory': undefined,
-    'businessNumber': undefined,
-  })
+  const [bankOpen, setBankOpen] = useState(false);
+  const [isBankEditing, setIsBankEditing] = useState(false);
+  const [purchaseCompanyList, setPurchaseCompanyList] = useState<GetVendorResData[]>([]);
+  const [formData, setFormData] = useState<PostVendorReqBody>({
+    name: '',
+    phoneNumber: '',
+    telNumber: '',
+    subTelNumber: '',
+    businessNumber: '',
+  });
+  const [bankData, setBankData] = useState<PostVendorBankReqBody | PatchVendorBankReqBody>();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,97 +76,94 @@ const PurchaseCompany = (): React.JSX.Element => {
     });
   };
   const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let value = event.target.value.replace(/\D/g, ''); // 숫자 이외 제거
-
-    if (value.length > 10) {
-      value = value.slice(0, 11); // 최대 11자리
-    }
-    let formattedValue = '';
-    if (value.length <= 3) {
-      formattedValue = value;
-    } else if (value.length <= 7) {
-      formattedValue = `${value.slice(0, 3)}-${value.slice(3)}`;
-    } else {
-      formattedValue = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
-    }
-
     setFormData({
       ...formData,
-      'phoneNumber': formattedValue,
+      [event.target.name]: formatPhoneNumber(event.target.value),
     });
   };
 
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
-      'companyName': '',
-      'ownerName': '',
-      'phoneNumber': '',
-      'fax': undefined,
-      'address': '',
-      'businessType': undefined,
-      'businessCategory': undefined,
-      'businessNumber': undefined,
+      name: '',
+      phoneNumber: '',
+      telNumber: '',
+      subTelNumber: '',
+      businessNumber: '',
     });
     setOpen(true);
   }
-  const handleEdit = (row) => {
+
+  const handleEdit = (row: GetVendorResData) => {
     setIsEditing(true);
     setFormData({
-      'companyName': row.companyName,
-      'ownerName': row.ownerName,
-      'phoneNumber': row.phoneNumber,
-      'fax': row.fax,
-      'address': row.address,
-      'businessType': row.businessType,
-      'businessCategory': row.businessCategory,
-      'businessNumber': row.businessNumber,
+      name: row.name,
+      phoneNumber: row.info.phoneNumber,
+      telNumber: row.info.telNumber,
+      subTelNumber: row.info.subTelNumber,
+      businessNumber: row.info.businessNumber,
     })
     setOpen(true);
   }
 
+  const handleBankCreate = (infoId: string) => {
+    setIsBankEditing(false);
+    setBankData({
+      infoId: infoId,
+      accountOwner: '',
+      bankName: '',
+      accountNumber: '',
+    })
+    setBankOpen(true);
+  }
+
+  const handleBankEdit = (row: GetVendorResData) => {
+    setIsBankEditing(false);
+    setBankData({
+      bankId: row.bank.id,
+      bankName: row.bank.bankName,
+      accountOwner: row.bank.accountOwner,
+      accountNumber: row.bank.accountNumber,
+    })
+    setBankOpen(true);
+  }
+
   // api
-  const fetchSalesCompanies = async () => {
-    const companies = await cacheManager.getCompanies();
-    setsalesCompanyList(companies);
-    /*const companies = await axiosInstance.get('/company?orderBy=desc');
-    setSalesCompanyList(companies.data.data || []);*/
+  const fetchPurchaseCompanies = async () => {
+    const res: AxiosResponse = await axiosInstance.get('/vendor/many');
+    setPurchaseCompanyList(res.data.data || []);
   };
 
   const handleSubmit = async () => {
-    const data = {
-      "companyName": formData.companyName,
-      "infoArgs": {
-        "ownerName": formData.ownerName,
-        "address": formData.address,
-        "fax": formData.fax,
-        "phoneNumber": formData.phoneNumber,
-        "businessNumber": formData.businessNumber,
-        "businessType": formData.businessType,
-        "businessCategory": formData.businessCategory,
-      },
-    }
+    // TODO: 에러 핸들링 추가
     if (isEditing) {
-      const res: AxiosResponse = await axiosInstance.patch('/company', data);
-      console.log('add update company data.data', res.data.data);
+      await axiosInstance.patch('/vendor', formData);
     } else {
-      const res: AxiosResponse = await axiosInstance.post('/company', data);
-      await cacheManager.addCompany(res.data.data);
-      setsalesCompanyList(await cacheManager.getCompanies());
+      await axiosInstance.post('/vendor', formData);
     }
     setOpen(false);
   }
-  // console.log('캐시값 확인: ', cacheManager.getCompanies());
-  console.log('res.data.data: ', salesCompanyList);
 
-  const delSalesCompany = async (companyName: string) => {
-    await axiosInstance.delete(`/company?companyName=${companyName}`);
+  const handleBankSubmit = async () => {
+    if (isBankEditing) {
+      await axiosInstance.patch('/vendor/bank', bankData);
+    } else {
+      await axiosInstance.post('/vendor/bank', bankData);
+    }
+    setBankOpen(false);
+  }
+
+  const delPurchaseCompany = async (companyName: string) => {
+    await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
     alert('거래처 삭제 완료');
   }
 
   useEffect(() => {
-    fetchSalesCompanies();
+    fetchPurchaseCompanies();
   }, []);
+
+  // debug
+  console.log(formData);
 
   return (
     <Box>
@@ -214,30 +195,45 @@ const PurchaseCompany = (): React.JSX.Element => {
           },
         }}
       >
-        <DialogTitle>{isEditing ? '거래처수정' : '거래처등록'}</DialogTitle>
+        <DialogTitle>{isEditing ? '매입처수정' : '매입처등록'}</DialogTitle>
         <DialogContent
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
-          <InputWithLabel name='companyName' label='거래처명' labelPosition='left' onChange={handleInputChange}
-                          value={formData.companyName}/>
-          <InputWithLabel name='ownerName' label='대표자' labelPosition='left' onChange={handleInputChange}
-                          value={formData.ownerName}/>
-          <InputWithLabel name='phoneNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
-                          placeholder='000-0000-0000' value={formData.phoneNumber}/>
-          <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
-                          value={formData.fax}/>
-          <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange}
-                          value={formData.address}/>
-          <InputWithLabel name='businessType' label='업태' labelPosition='left' onChange={handleInputChange}
-                          value={formData.businessType}/>
-          <InputWithLabel name='businessCategory' label='종목' labelPosition='left' onChange={handleInputChange}
-                          value={formData.businessCategory}/>
+          <InputWithLabel name='name' label='거래처명' labelPosition='left' onChange={handleInputChange}
+                          value={formData.name}/>
+          <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handlePhoneNumberChange}
+                          value={formData.phoneNumber}/>
+          <InputWithLabel name='telNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
+                          value={formData.telNumber}/>
+          <InputWithLabel name='subTelNumber' label='전화번호(2)' labelPosition='left' onChange={handlePhoneNumberChange}
+                          value={formData.subTelNumber}/>
           <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleInputChange}
-                          placeholder='000-00-00000' value={formData.businessNumber}/>
+                          value={formData.businessNumber}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>취소</Button>
           <Button type="submit" onClick={handleSubmit}>등록</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 은행 관련 dialog */}
+      <Dialog open={bankOpen}
+              onClose={() => setBankOpen(false)}
+      >
+        <DialogTitle>{isBankEditing ? '계좌수정' : '계좌등록'}</DialogTitle>
+        <DialogContent
+          sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
+        >
+          <InputWithLabel name='accountOwner' label='예금주' labelPosition='left' onChange={handleInputChange}
+                          value={bankData.accountOwner}/>
+          <InputWithLabel name='bankName' label='은행명' labelPosition='left' onChange={handleInputChange}
+                          value={bankData.bankName}/>
+          <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left' onChange={handleInputChange}
+                          value={bankData.accountNumber}/>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBankOpen(false)}>취소</Button>
+          <Button type="submit" onClick={handleBankSubmit}>등록</Button>
         </DialogActions>
       </Dialog>
       <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
@@ -254,43 +250,73 @@ const PurchaseCompany = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell sx={{minWidth: 80}}>예금주</TableCell>
+                <TableCell sx={{minWidth: 120}}>계좌정보</TableCell>
                 <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
             <TableBody>
-              {salesCompanyList
-                .map((row, rowIndex) => {
-                  return (
-                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                      {columns.map((column) => {
-                        const value = row[column.id];
-                        return (
-                          <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell sx={{padding: 0}}>
-                        <IconButton size='small'
-                                    onClick={() => handleEdit(row)}
+              {purchaseCompanyList && purchaseCompanyList.map((row, rowIndex) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
+                    <TableCell>
+                      {row.name}
+                    </TableCell>
+                    <TableCell>
+                      {row.info.phoneNumber}
+                    </TableCell>
+                    <TableCell>
+                      {row.info.telNumber}
+                    </TableCell>
+                    <TableCell>
+                      {row.info.subTelNumber}
+                    </TableCell>
+                    <TableCell>
+                      {row.info.businessNumber}
+                    </TableCell>
+                    {row.bank &&
+                      <>
+                        <TableCell>
+                          {row.bank.accountOwner}
+                        </TableCell>
+                        <TableCell>
+                          {row.bank.bankName + ' : ' + row.bank.accountNumber}
+                          <Button variant='text' size='small'
+                                  onClick={() => handleBankEdit(row)}
+                          >
+                            계좌정보수정
+                          </Button>
+                        </TableCell>
+                      </>
+                    }
+                    {!row.bank &&
+                      <TableCell colSpan={2}>
+                        <Button size='small'
+                                onClick={() => handleBankCreate(row.info.id)}
                         >
-                          <EditIcon fontSize='small'/>
-                        </IconButton>
-                        <IconButton color='error' size='small'
-                                    onClick={() => delSalesCompany(row['companyName'])}>
-                          <CloseIcon fontSize='small'/>
-                        </IconButton>
+                          은행정보 추가
+                        </Button>
                       </TableCell>
-                    </TableRow>
-                  );
-                })}
+                    }
+                    <TableCell sx={{padding: 0}}>
+                      <IconButton size='small'
+                                  onClick={() => handleEdit(row)}
+                      >
+                        <EditIcon fontSize='small'/>
+                      </IconButton>
+                      <IconButton color='error' size='small'
+                                  onClick={() => delPurchaseCompany(row['name'])}>
+                        <CloseIcon fontSize='small'/>
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={salesCompanyList}></PrintButton>
+      {/*<PrintButton printData={salesCompanyList}></PrintButton>*/}
     </Box>
   );
 }

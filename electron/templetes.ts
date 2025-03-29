@@ -1,9 +1,8 @@
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
-import {formatDecimal} from '../src/utils/format.ts';
+import {formatDecimal, formatCurrency} from '../src/utils/format.ts';
 
 /*
 * 거래처별 매출현황
-* TODO: 전일이월 직접 적으시는건지 자동으로 템플릿에 나오는건지?
 */
 export const companySalesDocDef = (companySalesData) => {
   console.log('printData: ', companySalesData);
@@ -45,11 +44,11 @@ export const companySalesDocDef = (companySalesData) => {
               {text: item['date'], style: 'tableText'}, // 날짜
               {text: item['item'], style: 'tableText'}, // 품명
               {text: item['size'], style: 'tableText'}, // 규격
-              {text: formatDecimal(item['count']), style: 'tableText'}, // 수량
-              {text: item['material-price'], style: 'tableText'}, // 재료비
-              {text: item['processing-price'], style: 'tableText'}, // 가공비
-              {text: item['amount'], style: 'tableText'}, // 금액
-              {text: item['remaining-amount']}, // 잔액
+              {text: formatDecimal(item['count']), alignment: 'right', style: 'tableText'}, // 수량
+              {text: formatCurrency(item['material-price']), alignment: 'right', style: 'tableText'}, // 재료비
+              {text: formatCurrency(item['processing-price']), alignment: 'right', style: 'tableText'}, // 가공비
+              {text: formatCurrency(item['amount']), alignment: 'right', style: 'tableText'}, // 금액
+              {text: formatCurrency(item['remaining-amount']), alignment: 'right'}, // 잔액
             ]),
           ],
         },
@@ -108,11 +107,11 @@ export const companySalesSumDocDef = (companySalesSumData) => {
             })),
             ...companySalesSumData.data.map((item: any) => [
               {text: item['company-name'], style: 'tableText'}, // 품명 (거래처명)
-              {text: Number(item['material-price']).toLocaleString(), style: 'tableText'}, // 재료비
-              {text: Number(item['processing-price']).toLocaleString(), style: 'tableText'}, // 가공비
-              {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText'}, // 총 금액
-              {text: Number(item['total-amount']).toLocaleString(), style: 'tableText'}, // 수금액
-              {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText'}, // 잔액
+              {text: Number(item['material-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 재료비
+              {text: Number(item['processing-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 총 금액
+              {text: Number(item['total-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 수금액
+              {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
           ],
         },
@@ -172,11 +171,11 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
               {text: item['productName'], style: 'tableText'}, // 품명
               {text: item['scale'], style: 'tableText'}, // 규격
               {text: formatDecimal(item['quantity']), style: 'tableText'}, // 수량
-              {text: item['rawMatAmount'], style: 'tableText'}, // 재료 단가
-              {text: item['totalRawMatAmount'], style: 'tableText'}, // 재료비
-              {text: item['manufactureAmount'], style: 'tableText'}, // 가공 단가
-              {text: item['totalManufactureAmount'], style: 'tableText'}, // 가공비
-              {text: item['totalSalesAmount'], style: 'tableText'}, // 금액
+              {text: formatCurrency(item['rawMatAmount']), style: 'tableText' , alignment: 'right'}, // 재료 단가
+              {text: formatCurrency(item['totalRawMatAmount']), style: 'tableText', alignment: 'right'}, // 재료비
+              {text: formatCurrency(item['manufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공 단가
+              {text: formatCurrency(item['totalManufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: formatCurrency(item['totalSalesAmount']), style: 'tableText', alignment: 'right'}, // 금액
             ]),
           ],
         },
@@ -236,18 +235,18 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
             ...outstandingAmount.data.map((item, idx) => [
               {text: `${idx + 1}`, style: 'tableText'}, // 연번
               {text: item['companyName'], style: 'tableText'}, // 거래처명
-              {text: item['carryoverAmount'], style: 'tableText'}, // 이월액
-              {text: item['salesAmount'], style: 'tableText'}, // 매출액
-              {text: item['payingAmount'], style: 'tableText'}, // 입금액
-              {text: item['outstandingAmount'], style: 'tableText'}, // 미수금
+              {text: formatCurrency(item['carryoverAmount']), style: 'tableText', alignment: 'right'}, // 이월액
+              {text: formatCurrency(item['salesAmount']), style: 'tableText', alignment: 'right'}, // 매출액
+              {text: formatCurrency(item['payingAmount']), style: 'tableText', alignment: 'right'}, // 입금액
+              {text: formatCurrency(item['outstandingAmount']), style: 'tableText', alignment: 'right'}, // 미수금
               {text: item['phoneNumber'], style: 'tableText'}, // 전화번호
             ]),
             [
               {text: '합   계', colSpan: 2}, '',
-              {text: outstandingAmount.sumCarryoverAmount},
-              {text: outstandingAmount.sumSalesAmount},
-              {text: outstandingAmount.sumPayingAmount},
-              {text: outstandingAmount.sumOutstandingAmount},
+              {text: formatCurrency(outstandingAmount.sumCarryoverAmount), alignment: 'right'},
+              {text: formatCurrency(outstandingAmount.sumSalesAmount), alignment: 'right'},
+              {text: formatCurrency(outstandingAmount.sumPayingAmount), alignment: 'right'},
+              {text: formatCurrency(outstandingAmount.sumOutstandingAmount), alignment: 'right'},
               ''
             ]
           ],
@@ -369,10 +368,10 @@ const basicInvoiceTable = (data, index) => {
           ...data.choices.map((item, index) => [
             {text: `${item.productName}`},
             {text: `${item.productScale || item.scale}`},
-            {text: `${item.quantity}`, alignment: 'right'},
-            {text: `${data.amount[index].newRawMatAmount.toLocaleString()}`, alignment: 'right'},
-            {text: `${data.amount[index].newManufactureAmount.toLocaleString()}`, alignment: 'right'},
-            {text: `${sum[index].toLocaleString()}`, alignment: 'right'},
+            {text: `${item.quantity.toFixed(3)}`, alignment: 'right'},
+            {text: `${formatCurrency(data.amount[index].newRawMatAmount)}`, alignment: 'right'},
+            {text: `${formatCurrency(data.amount[index].newManufactureAmount)}`, alignment: 'right'},
+            {text: `${sum[index].toLocaleString('ko-KR')}`, alignment: 'right'},
           ]),
           ...Array.from({length: 12 - data.choices.length}, () =>
             Array.from({length: 6}, () => ({
@@ -381,13 +380,17 @@ const basicInvoiceTable = (data, index) => {
           ),
           [{
             columns: [
-              {text: `전미수: `},
-              {text: `매출계: ${sum.reduce((acc, curr) => acc + curr, 0).toString()}`},
-              {text: `입금액: ${data.payingAmount}`},
-              {text: '미수계: '},
+              {text: `전미수: ${formatCurrency(data.carryoverAmount)} `},
+              {text: `매출계: ${formatCurrency(data.totalSalesAmount)} `},
+              {text: `입금액: ${formatCurrency(data.payingAmount)}`},
+              {text: `미수계: ${(Number(data.carryoverAmount) + Number(data.totalSalesAmount) - Number(data.payingAmount)).toLocaleString()}`},
             ],
             colSpan: 6,
-          }, '', '', '', '', '']
+          }, '', '', '', '', ''],
+          [{text: '', border: [true, true, false, true], colSpan: 4}, '', '', '',
+            {text: '인수자 : ', border: [false, true, false, true]},
+            {text: '(인)', border: [false, true, true, true]},
+          ]
         ]
       },
     },

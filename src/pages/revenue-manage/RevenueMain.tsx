@@ -78,7 +78,6 @@ const RevenueMain = (): React.JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [productList, setProductList] = useState([]);
-  // TODO: 일별 || 일별 & 매출처 별 거래 명세 불러오기
   const [formData, setFormData] = useState({
     startAt: dayjs().format('YYYY-MM-DD'),
     companyName: '',
@@ -89,12 +88,15 @@ const RevenueMain = (): React.JSX.Element => {
   const [amount, setAmount] = useState({
     totalPayingAmount: "0",
     totalSalesAmount: "0",
+    carryoverAmount: "0",
   });
   const [printData, setPrintData] = useState<{
     locationName: string[],
     companyName: string,
     payingAmount: string,
     createdAt: string,
+    carryoverAmount: string,
+    totalSalesAmount: string,
     choices: any[],
     amount: any[],
   } | null>();
@@ -151,6 +153,7 @@ const RevenueMain = (): React.JSX.Element => {
       setAmount({
         totalPayingAmount: "0",
         totalSalesAmount: "0",
+        carryoverAmount: "0"
       });
       setPrintData(null);
       setEndSeq(1);
@@ -162,11 +165,14 @@ const RevenueMain = (): React.JSX.Element => {
     setAmount({
       totalPayingAmount: res.data.data.totalPayingAmount,
       totalSalesAmount: res.data.data.totalSalesAmount,
+      carryoverAmount: res.data.data.carryoverAmount,
     });
     setPrintData({
       locationName: res.data.data.reports[0]?.locationNames || [],
       companyName: formData.companyName,
       payingAmount: res.data.data.totalPayingAmount,
+      carryoverAmount: res.data.data.carryoverAmount,
+      totalSalesAmount: res.data.data.totalSalesAmount,
       createdAt: formData.startAt,
       choices: res.data.data.reports,
       amount: res.data.data.reports.map((item) => ({
@@ -276,10 +282,10 @@ const RevenueMain = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell align='left'>전미수:</TableCell>
+                <TableCell align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
-                <TableCell colSpan={2} align='left'>미수계:</TableCell>
+                <TableCell colSpan={2} align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>

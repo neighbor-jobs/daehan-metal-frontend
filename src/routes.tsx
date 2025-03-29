@@ -11,8 +11,8 @@ import Home from './pages/Home.tsx';
 import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 import ProductMain from './pages/product-manage/ProductMain.tsx';
 import DailyPurchase from './pages/purchase-manage/DailyPurchase.tsx';
-import ClientPurchases from './pages/purchase-manage/ClientPurchases.tsx';
-import ClientPurchasesSummary from './pages/purchase-manage/ClientPurchasesSummary.tsx';
+import PurchaseMain from './pages/purchase-manage/PurchaseMain.tsx';
+import PurchaseCompany from './pages/company-manage/PurchaseCompany.tsx';
 
 const routes = createHashRouter([
   {
@@ -60,17 +60,21 @@ const routes = createHashRouter([
         path: 'purchase',
         children: [
           {
+            index: true,
+            element: <PurchaseMain />
+          },
+          {
             path: 'daily',
             element: <DailyPurchase />
           },
-          {
+          /*{
             path: 'client',
             element: <ClientPurchases />
           },
           {
             path: 'client-summary',
             element: <ClientPurchasesSummary />
-          }
+          }*/
         ]
       },
       {
@@ -85,8 +89,8 @@ const routes = createHashRouter([
             element: <SalesCompany />
           },
           {
-            path: 'supplier',
-            element: <div>매입처관리</div>
+            path: 'purchase',
+            element: <PurchaseCompany />
           }
         ]
       }

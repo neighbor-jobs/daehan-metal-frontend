@@ -296,16 +296,16 @@ const TransactionRegister = ({
     return data;
   }
 
-    const handlePrint = async () => {
-      const data = await register();
-      if (window.ipcRenderer && data) {
-        try {
-          await window.ipcRenderer.invoke('generate-and-open-pdf',RevenueManageMenuType.SalesDetail, {...data, amount});
-        } catch (error) {
-          console.error(error);
-        }
+  const handlePrint = async () => {
+    const data = await register();
+    if (window.ipcRenderer && data) {
+      try {
+        await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data, amount});
+      } catch (error) {
+        console.error(error);
       }
     }
+  }
 
   // debug
 

@@ -30,7 +30,7 @@ const Header = (): React.JSX.Element => {
         setSelectedSubType(RevenueManageMenuType.SalesDetail);
         break;
       case MenuType.PurchaseManage:
-        navigate('/purchase/daily');
+        navigate('/purchase');
         setSelectedSubType(PurchaseManageMenuType.DailyPurchase);
         break;
       case MenuType.InventoryManage:
@@ -76,24 +76,27 @@ const Header = (): React.JSX.Element => {
         navigate('/revenue/client-outstanding');
         setSubNavIdx(6);
         break;
+      case PurchaseManageMenuType.PurchaseDetail:
+        navigate('/purchase');
+        break;
       case PurchaseManageMenuType.DailyPurchase:
         navigate('/purchase/daily');
         setSubNavIdx(0);
         break;
-      case PurchaseManageMenuType.ClientPurchase:
+      /*case PurchaseManageMenuType.ClientPurchase:
         navigate('/purchase/client');
         setSubNavIdx(1);
         break;
       case PurchaseManageMenuType.ClientPurchaseSummary:
         navigate('/purchase/client-summary');
         setSubNavIdx(2);
-        break;
+        break;*/
       case ClientManageMenuType.SalesManage:
         navigate('/client/sales');
         setSubNavIdx(0);
         break;
       case ClientManageMenuType.SupplierManage:
-        navigate('/client/supplier');
+        navigate('/client/purchase');
         setSubNavIdx(1);
         break;
       default:

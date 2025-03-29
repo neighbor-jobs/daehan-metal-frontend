@@ -101,6 +101,15 @@ export interface SalesCompanyColumn {
   format?: (value: string | string[]) => string;
 }
 
+export enum PurchaseCompanyColumn {
+  NAME = 'name',
+  PHONE_NUMBER = 'phoneNumber',
+  SUB_TEL_NUMBER = 'subTelNumber',
+  TEL_NUMBER = 'telNumber',
+  BUSINESS_NUMBER = 'businessNumber',
+}
+
+
 /*
 * ==================== 품목관리 ========================
 */
@@ -145,4 +154,13 @@ export enum ClientPurchasesSummaryColumn {
   TOTAL_AMOUNT = 'totalAmount',
   PAYING_AMOUNT = 'payingAmount',
   REMAINING_AMOUNT = 'remainingAmount',
+}
+
+export enum PurchaseRegisterColumn {
+  PRODUCT_NAME = 'productName',
+  PRODUCT_PRICE = 'productPrice',
+  QUANTITY = 'quantity',
+  VAT = 'vat',
+  VAT_RATE = 'vatRate',
+  IS_PAYING = 'isPaying',
 }

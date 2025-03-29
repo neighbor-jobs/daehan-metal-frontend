@@ -48,12 +48,15 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
+    // fullscreen: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       webSecurity: false,
     },
   })
+
+  win.maximize();
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
