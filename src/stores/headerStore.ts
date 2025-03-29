@@ -13,6 +13,7 @@ export const useHeaderStore = create<HeaderState>((set) => ({
   setSelectedType: async (type) => {
     set({ selectedType: type });
     await window.ipcRenderer.invoke('set-store', 'selectedType', type);
+    console.log('store에 selected type 저장: ', type);
   },
   selectedSubType: null,
   setSelectedSubType: async (subType) => {
@@ -24,6 +25,7 @@ export const useHeaderStore = create<HeaderState>((set) => ({
 if (window.ipcRenderer) {
   window.ipcRenderer.invoke('get-store', 'selectedType').then((type) => {
     useHeaderStore.setState({ selectedType: type });
+    console.log('프로그램 진입 시 selectedType: ', type);
   });
   window.ipcRenderer.invoke('get-store', 'selectedSubType').then((subType) => {
     useHeaderStore.setState({ selectedSubType: subType });

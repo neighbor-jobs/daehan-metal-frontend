@@ -31,27 +31,27 @@ const routes = createHashRouter([
             element: <RevenueMain />
           },
           {
-            path: 'daily/',
+            path: 'daily',
             element: <DailySales />
           },
           {
-            path: 'client/',
+            path: 'client',
             element: <ClientSales />
           },
           {
-            path: 'client-summary/',
+            path: 'client-summary',
             element: <ClientSalesSummary />
           },
           {
-            path: 'item/',
+            path: 'item',
             element: <ItemSales />
           },
           {
-            path: 'item-summary/',
+            path: 'item-summary',
             element: <ItemSalesSummary />
           },
           {
-            path: 'client-outstanding/',
+            path: 'client-outstanding',
             element: <ClientOutstandingBalance />
           },
         ]
@@ -60,15 +60,15 @@ const routes = createHashRouter([
         path: 'purchase',
         children: [
           {
-            path: 'daily/',
+            path: 'daily',
             element: <DailyPurchase />
           },
           {
-            path: 'client/',
+            path: 'client',
             element: <ClientPurchases />
           },
           {
-            path: 'client-summary/',
+            path: 'client-summary',
             element: <ClientPurchasesSummary />
           }
         ]
@@ -78,14 +78,14 @@ const routes = createHashRouter([
         element: <ProductMain />
       },
       {
-        path: 'client/',
+        path: 'client',
         children: [
           {
-            path: 'sales/',
+            path: 'sales',
             element: <SalesCompany />
           },
           {
-            path: 'supplier/',
+            path: 'supplier',
             element: <div>매입처관리</div>
           }
         ]

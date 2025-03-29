@@ -14,57 +14,94 @@ import {
 import DateRangePicker from '../../components/DateRangePicker';
 
 // projects
-import { ClientSalesSummaryColumn } from '../../types/tableColumns';
-import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
-import Footer from '../../layout/Footer.tsx';
+import {ClientSalesSummaryColumn, TableColumns} from '../../types/tableColumns';
+import PrintButton from '../../layout/PrintButton.tsx';
+import {AxiosResponse} from 'axios';
+import axiosInstance from '../../api/axios.ts';
+import {useEffect, useState} from 'react';
+import dayjs from 'dayjs';
+import {formatCurrency} from '../../utils/format.ts';
 
-const columns: readonly ClientSalesSummaryColumn[] = [
+const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
   {
-    id: 'client',
+    id: ClientSalesSummaryColumn.COMPANY_NAME,
     label: '거래처명',
     minWidth: 100,
   },
   {
-    id: 'material-price',
+    id: ClientSalesSummaryColumn.TOTAL_RAW_MAT_AMOUNT,
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
-    id: 'processing-price',
+    id: ClientSalesSummaryColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
-    id: 'vcut-processing-price',
-    label: 'V컷수',
+    id: ClientSalesSummaryColumn.TOTAL_PAYING_AMOUNT,
+    label: '입금액',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
-  {
-    id: 'total-amount',
-    label: '금액',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
-    id: 'received-amount',
-    label: '수금액',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
-    id: 'remaining-amount',
-    label: '잔액',
-    minWidth: 100,
-    align: 'right',
-  }
 ];
 
 
 const ClientSalesSummary = ():React.JSX.Element => {
-  const rows = clientSalesSummaryMock;
+  const [clientSalesSumList, setClientSalesSumList] = useState([]);
+  const [date, setDate] = useState({
+    startAt: dayjs(),
+    endAt: dayjs(),
+  });
+  const [printData, setPrintData] = useState<{
+    data: any[];
+    startAt: string;
+    endAt: string;
+  } | null>(null);
+
+  const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
+    if (!start || !end) return;
+    setDate({ startAt: start, endAt: end });
+  };
+
+  const getClientSalesSumList = async (startAt: string, endAt: string) => {
+    const res: AxiosResponse = await axiosInstance.get(
+      `receipt/company/sales/summary/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`
+    );
+    console.log('get client sales sum data: ', res.data.data);
+    setClientSalesSumList(res.data.data);
+
+    const data = res.data.data?.map((item) => {
+      // TODO: NaN 처리 추가
+      const raw = Number(item.totalRawMatAmount) || 0;
+      const manu = Number(item.totalManufactureAmount) || 0;
+
+      return {
+        'company-name': item.companyName,
+        'material-price': raw,
+        'processing-price': manu,
+        'paying-amount': item.totalPayingAmount,
+        'total-amount' : raw + manu,
+        'remaining-amount' : raw + manu - Number(item.totalPayingAmount),
+      }
+    }) ?? [];
+    setPrintData({
+      data,
+      'startAt': date.startAt.format('YYYY-MM-DD'),
+      'endAt': date.endAt.format('YYYY-MM-DD'),
+    })
+
+  }
+
+  useEffect(() => {
+    getClientSalesSumList(date.startAt.format('YYYY-MM-DD'), date.endAt.format('YYYY-MM-DD'));
+  }, []);
+
   return (
     <Box>
       <Box sx={{
@@ -74,10 +111,13 @@ const ClientSalesSummary = ():React.JSX.Element => {
         marginX: 3,
       }}>
         {/* date picker */}
-        <DateRangePicker onChange={() => console.log('render')}/>
+        <DateRangePicker onChange={handleDateChange}
+                         startAt={date.startAt}
+                         endAt={date.endAt}
+        />
         <Button
           variant="outlined"
-          onClick={() => console.log('search')}
+          onClick={() => getClientSalesSumList(date.startAt.format('YYYY-MM-DD'), date.endAt.format('YYYY-MM-DD'))}
         >
           확인
         </Button>
@@ -96,11 +136,13 @@ const ClientSalesSummary = ():React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell align='right'>총액</TableCell>
+                <TableCell align='right'>잔액</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .map((row) => {
+              {clientSalesSumList &&
+                clientSalesSumList.map((row) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1}>
                       {columns.map((column) => {
@@ -113,6 +155,12 @@ const ClientSalesSummary = ():React.JSX.Element => {
                           </TableCell>
                         );
                       })}
+                      <TableCell align='right'>
+                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)).toLocaleString('ko-KR')}
+                      </TableCell>
+                      <TableCell align='right'>
+                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)-Number(row.totalPayingAmount)).toLocaleString('ko-KR')}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -122,7 +170,6 @@ const ClientSalesSummary = ():React.JSX.Element => {
                 <TableCell>합계</TableCell>
                 <TableCell align='right'>재료비</TableCell>
                 <TableCell align='right'>가공비</TableCell>
-                <TableCell align='right' />
                 <TableCell align='right'>금액</TableCell>
                 <TableCell align='right'>수금액</TableCell>
                 <TableCell align='right'>잔액</TableCell>
@@ -131,7 +178,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <Footer printData={clientSalesSummaryMock} ></Footer>
+      <PrintButton printData={printData} ></PrintButton>
     </Box>
   )
 }

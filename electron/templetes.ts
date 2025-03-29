@@ -5,7 +5,8 @@ import {formatDecimal} from '../src/utils/format.ts';
 * 거래처별 매출현황
 * TODO: 전일이월 직접 적으시는건지 자동으로 템플릿에 나오는건지?
 */
-export const companySalesDocDef = (date: Date, companyName: string, companySalesData: any[]) => {
+export const companySalesDocDef = (companySalesData) => {
+  console.log('printData: ', companySalesData);
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -16,12 +17,12 @@ export const companySalesDocDef = (date: Date, companyName: string, companySales
     }),
     content: [
       {
-        text: `${companyName} 매출 현황`,
+        text: `${companySalesData.companyName} 매출 현황`,
         style: 'header',
         alignment: 'center',
       },
       {
-        text: `검색기간: ${date.toLocaleString('ko-KR')}`,
+        text: `검색기간: ${companySalesData.startAt} ~ ${companySalesData.endAt}`,
         style: 'subheader',
         alignment: 'center',
       },
@@ -35,21 +36,20 @@ export const companySalesDocDef = (date: Date, companyName: string, companySales
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', 'auto', '*', '*', 'auto', '*', '*', '*'],
+          widths: ['*', '*', 'auto', '*', '*', '*', '*', '*'],
           body: [
-            ['날짜', '품명', '수량', '재료비', '가공비', 'V컷수', '금액', '수금액', '잔액'].map(header => ({
+            ['날짜', '품명', '규격', '수량', '재료비', '가공비', '금액', '잔액'].map(header => ({
               text: header,
             })),
-            ...companySalesData.map((item) => [
+            ...companySalesData.data.map((item) => [
+              {text: item['date'], style: 'tableText'}, // 날짜
               {text: item['item'], style: 'tableText'}, // 품명
               {text: item['size'], style: 'tableText'}, // 규격
               {text: formatDecimal(item['count']), style: 'tableText'}, // 수량
               {text: item['material-price'], style: 'tableText'}, // 재료비
               {text: item['processing-price'], style: 'tableText'}, // 가공비
-              {text: item['vcut-count'], style: 'tableText'}, // v컷수
               {text: item['amount'], style: 'tableText'}, // 금액
-              {text: item['received-amount'], style: 'tableText'}, // 수금액
-              {text: item['remaining-amount'], style: 'tableText'}, // 잔액
+              {text: item['remaining-amount']}, // 잔액
             ]),
           ],
         },
@@ -70,7 +70,8 @@ export const companySalesDocDef = (date: Date, companyName: string, companySales
 /*
 * 거래처별 매출집계
 */
-export const companySalesSumDocDef = (companyName: string, date: Date, companySalesSumData: any[]) => {
+export const companySalesSumDocDef = (companySalesSumData) => {
+  console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -81,12 +82,12 @@ export const companySalesSumDocDef = (companyName: string, date: Date, companySa
     }),
     content: [
       {
-        text: `${companyName} 매출집계`,
+        text: `거래처별 매출집계`,
         style: 'header',
         alignment: 'center',
       },
       {
-        text: `검색기간: ${date.toISOString().split('T')[0]}`,
+        text: `검색기간: ${companySalesSumData.startAt} ~ ${companySalesSumData.endAt}`,
         style: 'subheader',
         alignment: 'center',
       },
@@ -100,20 +101,17 @@ export const companySalesSumDocDef = (companyName: string, date: Date, companySa
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', '*', '*', '*', '*', '*', '*', '*'], // ✅ Full Width 적용
+          widths: ['*', '*', '*', '*', '*', '*',],
           body: [
-            ['날짜', '품명', '수량', '재료비', '가공비', 'V컷가공비', '금액', '수금액', '잔액'].map(header => ({
+            ['거래처명', '재료비', '가공비', '입금액', '총액', '잔액'].map(header => ({
               text: header,
             })),
-            ...companySalesSumData.map((item: any) => [
-              {text: new Date().toISOString().split('T')[0], style: 'tableText'}, // 임시 날짜
-              {text: item.client, style: 'tableText'}, // 품명 (거래처명)
-              {text: '1', style: 'tableText'}, // 수량 (기본값 1)
+            ...companySalesSumData.data.map((item: any) => [
+              {text: item['company-name'], style: 'tableText'}, // 품명 (거래처명)
               {text: Number(item['material-price']).toLocaleString(), style: 'tableText'}, // 재료비
               {text: Number(item['processing-price']).toLocaleString(), style: 'tableText'}, // 가공비
-              {text: Number(item['vcut-processing-price']).toLocaleString(), style: 'tableText'}, // V컷 가공비
-              {text: Number(item['total-amount']).toLocaleString(), style: 'tableText'}, // 총 금액
-              {text: Number(item['received-amount']).toLocaleString(), style: 'tableText'}, // 수금액
+              {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText'}, // 총 금액
+              {text: Number(item['total-amount']).toLocaleString(), style: 'tableText'}, // 수금액
               {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText'}, // 잔액
             ]),
           ],
@@ -135,7 +133,7 @@ export const companySalesSumDocDef = (companyName: string, date: Date, companySa
 /*
 * 품목별 매출집계
 */
-export const itemSalesSumDocDef = (date: Date, itemSalesSumData: any[]) => {
+export const itemSalesSumDocDef = (itemSalesSumData) => {
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -151,7 +149,7 @@ export const itemSalesSumDocDef = (date: Date, itemSalesSumData: any[]) => {
         alignment: 'center',
       },
       {
-        text: `검색기간: ${date.toLocaleString('ko-KR')}`,
+        text: `검색기간: ${itemSalesSumData.startAt} ~ ${itemSalesSumData.endAt}`,
         style: 'subheader',
         alignment: 'center',
       },
@@ -170,15 +168,15 @@ export const itemSalesSumDocDef = (date: Date, itemSalesSumData: any[]) => {
             ['품명', '규격', '수량', '재료단가', '재료비', '가공단가', '가공비', '금액'].map(header => ({
               text: header,
             })),
-            ...itemSalesSumData.map((item) => [
-              {text: item['item'], style: 'tableText'}, // 품명
-              {text: item['size'], style: 'tableText'}, // 규격
-              {text: formatDecimal(item['count']), style: 'tableText'}, // 수량
-              {text: item['material-unit-price'], style: 'tableText'}, // 재료 단가
-              {text: item['material-price'], style: 'tableText'}, // 재료비
-              {text: item['processing-unit-price'], style: 'tableText'}, // 가공 단가
-              {text: item['processing-price'], style: 'tableText'}, // 가공비
-              {text: item['amount'], style: 'tableText'}, // 금액
+            ...itemSalesSumData.data.map((item) => [
+              {text: item['productName'], style: 'tableText'}, // 품명
+              {text: item['scale'], style: 'tableText'}, // 규격
+              {text: formatDecimal(item['quantity']), style: 'tableText'}, // 수량
+              {text: item['rawMatAmount'], style: 'tableText'}, // 재료 단가
+              {text: item['totalRawMatAmount'], style: 'tableText'}, // 재료비
+              {text: item['manufactureAmount'], style: 'tableText'}, // 가공 단가
+              {text: item['totalManufactureAmount'], style: 'tableText'}, // 가공비
+              {text: item['totalSalesAmount'], style: 'tableText'}, // 금액
             ]),
           ],
         },
@@ -199,8 +197,9 @@ export const itemSalesSumDocDef = (date: Date, itemSalesSumData: any[]) => {
 /*
 * 미수금 현황
 */
-export const outstandingAmountDocDef = (date: Date, outstandingAmount: any[]) => {
+export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
+  console.log(outstandingAmount);
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
       columns: [
@@ -215,7 +214,7 @@ export const outstandingAmountDocDef = (date: Date, outstandingAmount: any[]) =>
         alignment: 'center',
       },
       {
-        text: `검색기간: ${date.getFullYear()}.${date.getMonth()}`,
+        text: `검색기간: ${outstandingAmount.startAt}`,
         style: 'subheader',
         alignment: 'center',
       },
@@ -234,15 +233,23 @@ export const outstandingAmountDocDef = (date: Date, outstandingAmount: any[]) =>
             ['연번', '거래처명', '이월액', '매출액', '입금액', '미수금액', '전화번호'].map(header => ({
               text: header,
             })),
-            ...outstandingAmount.map((item, idx) => [
+            ...outstandingAmount.data.map((item, idx) => [
               {text: `${idx + 1}`, style: 'tableText'}, // 연번
-              {text: item['client'], style: 'tableText'}, // 거래처명
-              {text: item['carryover-amount'], style: 'tableText'}, // 이월액
-              {text: item['sales-amount'], style: 'tableText'}, // 매출액
-              {text: item['paying-amount'], style: 'tableText'}, // 입금액
-              {text: item['outstanding-amount'], style: 'tableText'}, // 미수금
-              {text: item['phone-number'], style: 'tableText'}, // 전화번호
+              {text: item['companyName'], style: 'tableText'}, // 거래처명
+              {text: item['carryoverAmount'], style: 'tableText'}, // 이월액
+              {text: item['salesAmount'], style: 'tableText'}, // 매출액
+              {text: item['payingAmount'], style: 'tableText'}, // 입금액
+              {text: item['outstandingAmount'], style: 'tableText'}, // 미수금
+              {text: item['phoneNumber'], style: 'tableText'}, // 전화번호
             ]),
+            [
+              {text: '합   계', colSpan: 2}, '',
+              {text: outstandingAmount.sumCarryoverAmount},
+              {text: outstandingAmount.sumSalesAmount},
+              {text: outstandingAmount.sumPayingAmount},
+              {text: outstandingAmount.sumOutstandingAmount},
+              ''
+            ]
           ],
         },
       },
@@ -258,3 +265,196 @@ export const outstandingAmountDocDef = (date: Date, outstandingAmount: any[]) =>
   }
   return docDef;
 }
+
+/*
+* 거래명세서
+*/
+
+const basicInvoiceTable = (data, index) => {
+  /* data 형식 */
+  /*{
+    companyId: '530bf5a3-21c4-4241-9b91-e378b05966ed',
+      locationName: [],
+    companyName: '하림창호',
+    payingAmount: '0',
+    sequence: 1,
+    createdAt: '2025-03-28',
+    choices: [
+    {
+      bridgeId: '7d667736-21e3-4724-8ba2-ae595fe41ec9',
+      productName: 'H/L',
+      quantity: 2,
+      productScale: '0.8TX1X1600',
+      productScaleSequence: 2
+    }
+  ],
+    amount: [
+    {
+      cachedRawMatAmount: '0',
+      cachedManufactureAmount: '0',
+      newRawMatAmount: '3000',
+      newManufactureAmount: '2000'
+    }
+  ]
+  }
+*/
+  const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
+  const sum = data.choices.map((item, index) => (Number(data.amount[index].newRawMatAmount) + Number(data.amount[index].newManufactureAmount)) * item.quantity)
+  const [firstRowNames, secondRowNames] =
+    data.locationName.length > 3
+      ? [data.locationName.slice(0, 3), data.locationName.slice(3)]
+      : [data.locationName, []];
+  return [
+    {
+      table: {
+        widths: ['*', '*', 'auto', '*', 'auto', 'auto', '*'],
+        body: [
+          [{
+            text: '거    래    명    세    서',
+            style: 'header',
+            colSpan: 6,
+            alignment: 'center',
+            border: [true, true, false, true]
+          }, '', '', '', '', '',
+            {text: `${text}`, alignment: 'right', border: [false, true, true, true]}
+          ],
+          [
+            {
+              text: `${data.createdAt}\n\n\u00A0\u00A0\u00A0${data.companyName}\u00A0\u00A0\u00A0\u00A0귀하\n\n\u00A0\u00A0\u00A0아래와 같이 계산합니다.`,
+              rowSpan: 4,
+              colSpan: 2
+            }, '',
+            {text: '공        급        자', colSpan: 5, alignment: 'center'}, '', '', '', ''
+          ],
+          ['', '', {text: '등 록 번 호', alignment: 'center'},
+            {text: '122 - 86 - 29029', colSpan: 4, alignment: 'center'}, '', '', ''
+          ],
+          ['', '',
+            {text: '상 호', alignment: 'center'},
+            {text: '대한금속이엔지(주)', colSpan: 2, alignment: 'center'}, '',
+            {text: '성 명', alignment: 'center'},
+            {text: '박신석', alignment: 'center'}
+          ],
+          ['', '',
+            {text: '사 업 장 주 소', alignment: 'center'},
+            {text: '인천 계양구 평리길 92(평동 85-3)', colSpan: 4, alignment: 'center'}, '', '', ''
+          ],
+          [{text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, border: [true, true, true, false]}, '',
+            {text: '업 태', alignment: 'center'},
+            {text: '제조업', alignment: 'center'},
+            {text: '종 목', alignment: 'center'},
+            {text: '일반철물제작', colSpan: 2, alignment: 'center'}, ''
+          ],
+          [{text: `${secondRowNames?.join(', ')}`, colSpan: 2, border: [true, false, true, true]}, '',
+            {text: '전 화', alignment: 'center'},
+            {text: '032-543-2756,7', alignment: 'center'},
+            {text: '팩 스', alignment: 'center'},
+            {text: '032-543-2763', colSpan: 2, alignment: 'center'}, ''
+          ],
+        ],
+      },
+    },
+    {
+      table: {
+        widths: ['*', '*', 50, '*', '*', '*'],
+        body: [
+          [
+            {text: '품  목', alignment: 'center', border: [true, false, true, true]},
+            {text: '규  격', alignment: 'center', border: [true, false, true, true]},
+            {text: '수  량', alignment: 'center', border: [true, false, true, true]},
+            {text: '재료단가', alignment: 'center', border: [true, false, true, true]},
+            {text: '가공단가', alignment: 'center', border: [true, false, true, true]},
+            {text: '계', alignment: 'center', border: [true, false, true, true]}
+          ],
+          ...data.choices.map((item, index) => [
+            {text: `${item.productName}`},
+            {text: `${item.productScale || item.scale}`},
+            {text: `${item.quantity}`, alignment: 'right'},
+            {text: `${data.amount[index].newRawMatAmount.toLocaleString()}`, alignment: 'right'},
+            {text: `${data.amount[index].newManufactureAmount.toLocaleString()}`, alignment: 'right'},
+            {text: `${sum[index].toLocaleString()}`, alignment: 'right'},
+          ]),
+          ...Array.from({length: 12 - data.choices.length}, () =>
+            Array.from({length: 6}, () => ({
+              text: ' ',
+            }))
+          ),
+          [{
+            columns: [
+              {text: `전미수: `},
+              {text: `매출계: ${sum.reduce((acc, curr) => acc + curr, 0).toString()}`},
+              {text: `입금액: ${data.payingAmount}`},
+              {text: '미수계: '},
+            ],
+            colSpan: 6,
+          }, '', '', '', '', '']
+        ]
+      },
+    },
+  ];
+}
+
+export const invoiceDocDef = (data: any) => {
+  console.log(data);
+  /*
+  *   /*{
+  companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',
+  locationName: [],
+  companyName: '푸주옥',
+  payingAmount: '0',
+  sequence: 2,
+  createdAt: '2025-03-29',
+  choices: [
+    {
+      bridgeId: '375dc75a-1796-46e4-84dc-0509d3b6dcfb',
+      productName: '회색징크',
+      quantity: 0,
+      productScale: '0.5TX4X3000',
+      productScaleSequence: 2
+    }
+  ],
+  amount: [
+    {
+      cachedRawMatAmount: '200',
+      cachedManufactureAmount: '300',
+      newRawMatAmount: '200',
+      newManufactureAmount: '300'
+    }
+  ]
+}
+
+  *
+  * */
+
+  const docDef: TDocumentDefinitions = {
+    content: [
+      ...basicInvoiceTable(data, 0),
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0, y1: 0,
+            x2: 530, y2: 0, // 너비 조절 (A4 기준이면 약 500~550 추천)
+            lineWidth: 0.5,
+            dash: {length: 2, space: 2}
+          }
+        ],
+        margin: [0, 15, 0, 15]
+      },
+      ...basicInvoiceTable(data, 1),
+    ],
+    styles: {
+      header: {
+        fontSize: 12,
+      },
+      subheader: {
+        fontSize: 14,
+      },
+    },
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 9,
+    },
+  };
+  return docDef;
+};

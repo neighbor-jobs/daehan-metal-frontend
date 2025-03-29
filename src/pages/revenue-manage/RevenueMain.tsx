@@ -1,188 +1,241 @@
 // UI
 import {
+  Autocomplete,
   Box,
   Button,
-  InputLabel,
+  InputLabel, Pagination,
   Paper,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
+  TableContainer, TableFooter,
   TableHead,
-  TableRow
+  TableRow,
+  TextField
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
-import AutocompleteWithLabel from '../../components/AutocompleteWithLabel.tsx';
-import InputWithLabel from '../../components/InputWithLabel';
 
 // project
-import {RevenueMainColumn} from '../../types/tableColumns';
-import {revenueMainMock} from '../../mock/revenue-manage/revenueMainMock.ts';
+import {RevenueMainColumn, TableColumns} from '../../types/tableColumns';
 import {formatCurrency, formatDecimal} from '../../utils/format';
-import {clientList} from '../../mock/revenue-manage/clientList.ts';
-import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
-import {useState} from 'react';
-import itemList from '../../mock/itemList.ts';
+import {useCallback, useEffect, useState} from 'react';
+import TransactionRegister from './TransactionRegister.tsx';
+import dayjs from 'dayjs';
+import {cacheManager} from '../../utils/cacheManager.ts';
+import {AxiosResponse} from 'axios';
+import axiosInstance from '../../api/axios.ts';
+import PrintButton from '../../layout/PrintButton.tsx';
 
-const columns: readonly RevenueMainColumn[] = [
+const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
-    id: 'item',
+    id: RevenueMainColumn.PRODUCT_NAME,
     label: '품명',
-    minWidth: 170,
+    minWidth: 140,
   },
   {
-    id: 'size',
+    id: RevenueMainColumn.SCALE,
     label: '규격',
     minWidth: 140,
   },
   {
-    id: 'count',
+    id: RevenueMainColumn.LOCATION_NAMES,
+    label: '현장명',
+    minWidth: 140,
+    format: (value: string[]) => value.join(', ')
+  },
+  {
+    id: RevenueMainColumn.QUANTITY,
     label: '수량',
     minWidth: 80,
     align: 'right',
     format: formatDecimal,
   },
   {
-    id: 'material-price',
-    label: '재료비',
+    id: RevenueMainColumn.RAW_MAT_AMOUNT,
+    label: '재료단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
   {
-    id: 'processing-price',
-    label: '가공비',
+    id: RevenueMainColumn.MANUFACTURE_AMOUNT,
+    label: '가공단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
   {
-    id: 'vcut-count',
-    label: 'V컷수',
-    minWidth: 80,
-    align: 'right',
-    format: formatDecimal,
-  },
-  {
-    id: 'length',
+    id: RevenueMainColumn.PRODUCT_LENGTH,
     label: '길이',
     minWidth: 100,
     align: 'right',
     format: formatDecimal,
   },
-  {
-    id: 'unit-price',
-    label: '단가',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  },
-  {
-    id: 'amount',
-    label: '금액',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  },
-  {
-    id: 'total-amount',
-    label: '총액',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  },
-  {
-    id: 'paying-amount',
-    label: '입금액',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  }
 ];
 
 const RevenueMain = (): React.JSX.Element => {
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [salesCompanyList, setSalesCompanyList] = useState([]);
+  const [productList, setProductList] = useState([]);
+  // TODO: 일별 || 일별 & 매출처 별 거래 명세 불러오기
   const [formData, setFormData] = useState({
-    client: '',
-    item: '',
-    size: '',
-    count: '',
-    materialUnitPrice: '',
-    processingUnitPrice: '',
-    vcutCount: '',
-    length: '',
-    unitPrice: '',
-    payingAmount: ''
+    startAt: dayjs().format('YYYY-MM-DD'),
+    companyName: '',
+    sequence: 1,
   });
+  const [report, setReport] = useState([]);
+  const [endSeq, setEndSeq] = useState<number>(1);
+  const [amount, setAmount] = useState({
+    totalPayingAmount: "0",
+    totalSalesAmount: "0",
+  });
+  const [printData, setPrintData] = useState<{
+    locationName: string[],
+    companyName: string,
+    payingAmount: string,
+    createdAt: string,
+    choices: any[],
+    amount: any[],
+  } | null>();
 
-  // handler
-  const generateInvoice = async () => {
-    if (window.ipcRenderer) {
-      await window.ipcRenderer.invoke('generate-and-open-pdf', clientSalesSummaryMock);
-    } else {
-      console.error('pdf 미리보기 실패');
-    }
+  const handleCompanyChange = useCallback((_event, newValue: string | null) => {
+    const selectedCompany = salesCompanyList.find((company) => company.companyName === newValue);
+    setFormData((prev) => ({
+      ...prev,
+      companyName: selectedCompany ? newValue : "",
+    }));
+  }, [salesCompanyList]);
+
+  const handlePageChange = (_event, value:number) => {
+    setFormData(prev => ({
+      ...prev,
+      sequence: value,
+    }))
+    getReceipt(value);
   }
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value
-    });
-  };
-  const handleAutocompleteChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+
+  /*    "data": {
+        "reports": [
+            {
+                "choiceId": "eba765c5-a8cd-44c3-8ba6-1aac656bd5c4",
+                "receiptId": "ace4cd23-5323-4beb-a09d-68202fa5a34a",
+                "companyName": "하나금속",
+                "productName": "하장바",
+                "vCutAmount": "0",
+                "rawMatAmount": "58000",
+                "manufactureAmount": "20800",
+                "quantity": 1,
+                "productLength": "0.000",
+                "scale": "H/L1.2TX4X4000",
+                "vCut": "0",
+                "createdAt": "2025-03-28T00:00:00.000Z",
+                "locationNames": [
+                    "dd"
+                ]
+            }
+        ],
+        "totalSalesAmount": "78800",
+        "totalPayingAmount": "0",
+        "carryoverAmount": "NaN",
+        "endSequence": 13
+    },*/
+
 
   // api
-  const productNames = itemList.map((item) => item.productName);
-  const scaleByProdName = (items, productName) => {
-    const product = items.find(item => item.productName === productName);
-    return product ? Object.keys(product.scale) : [];
+  const getReceipt = async (sequence = 1) => {
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${formData.companyName}&orderBy=desc&startAt=${formData.startAt}&sequence=${sequence}`);
+
+    if (res.data.statusCode === 204) {
+      setReport([]);
+      setAmount({
+        totalPayingAmount: "0",
+        totalSalesAmount: "0",
+      });
+      setPrintData(null);
+      setEndSeq(1);
+      alert('해당 거래 내역이 존재하지 않습니다.');
+      return;
+    }
+    setReport(res.data.data.reports);
+    setEndSeq(res.data.data.endSequence);
+    setAmount({
+      totalPayingAmount: res.data.data.totalPayingAmount,
+      totalSalesAmount: res.data.data.totalSalesAmount,
+    });
+    setPrintData({
+      locationName: res.data.data.reports[0]?.locationNames || [],
+      companyName: formData.companyName,
+      payingAmount: res.data.data.totalPayingAmount,
+      createdAt: formData.startAt,
+      choices: res.data.data.reports,
+      amount: res.data.data.reports.map((item) => ({
+        newRawMatAmount: item.rawMatAmount,
+        newManufactureAmount: item.manufactureAmount,
+      }))
+    })
   }
-  // console.log(productNames);
 
-
-  const createRevenueItem = () => {
-    // 계산 필드 추가
-    const calculatedAmount = Number(formData.count) * Number(formData.unitPrice);
-
-    const newItem = {
-      'item': formData.item,
-      'size': formData.size,
-      'count': formData.count,
-      'material-price': (Number(formData.materialUnitPrice) * Number(formData.count)).toString(),
-      'processing-price': (Number(formData.processingUnitPrice) * Number(formData.count)).toString(),
-      'vcut-count': formData.vcutCount,
-      'length': formData.length,
-      'unit-price': formData.unitPrice,
-      'amount': calculatedAmount.toString(),
-      'total-amount': '0',
-      'paying-amount': formData.payingAmount,
-    };
-
-    revenueMainMock.push(newItem);
-    alert('매출 항목이 추가되었습니다.');
-
-    // 입력 필드 초기화
-    setFormData({
-      client: '',
-      item: '',
-      size: '',
-      count: '',
-      materialUnitPrice: '',
-      processingUnitPrice: '',
-      vcutCount:'',
-      length: '',
-      unitPrice: '',
-      payingAmount: '',
-    });  }
+  // 캐시 데이터 불러오기
+  useEffect(() => {
+    const fetchSalesCompanies = async () => {
+      const companies = await cacheManager.getCompanies();
+      const products = await cacheManager.getProducts();
+      setSalesCompanyList(companies);
+      setProductList(products);
+    }
+    fetchSalesCompanies();
+  }, []);
 
   return (
-    <Box sx={{display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', zIndex: 10}}>
-      <Paper sx={{width: '100%', overflow: 'hidden', marginTop: 5, flexGrow: 1}}>
+    <Box sx={{position: 'relative'}}>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginX: 3,
+        marginY: 1,
+      }}
+      >
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}>
+            <InputLabel sx={{fontSize: 'small',}}>매출일</InputLabel>
+            <DesktopDatePicker
+              views={['day']}
+              format="YYYY/MM/DD"
+              defaultValue={dayjs()}
+              onChange={(value) => setFormData(prev=>({...prev, startAt: value.format('YYYY-MM-DD')}))}
+              slotProps={{
+                textField: {size: 'small'},
+                calendarHeader: {format: 'YYYY/MM'},
+              }}
+            />
+          </Box>
+        </LocalizationProvider>
+        <Autocomplete
+          freeSolo
+          options={salesCompanyList.map((option) => option.companyName)}
+          onChange={handleCompanyChange}
+          value={formData.companyName}
+          renderInput={(params) =>
+            <TextField {...params}
+                       placeholder='거래처명' size='small'
+                       sx={{minWidth: 150}}
+            />
+          }
+        />
+        <Button
+          variant="outlined"
+          onClick={() => getReceipt(formData.sequence)}
+        >
+          확인
+        </Button>
+      </Box>
+      <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
         <TableContainer sx={{maxHeight: 440}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
@@ -196,11 +249,12 @@ const RevenueMain = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell align='right'>금액</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {revenueMainMock
-                .map((row, rowIndex) => {
+              {report &&
+                report.map((row, rowIndex) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                       {columns.map((column) => {
@@ -213,75 +267,45 @@ const RevenueMain = (): React.JSX.Element => {
                           </TableCell>
                         );
                       })}
+                      <TableCell align='right'>
+                        {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell align='left'>전미수:</TableCell>
+                <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
+                <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
+                <TableCell colSpan={2} align='left'>미수계:</TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
       <Box sx={{
-        width: '100%',
-        height: '50%',
-        background: '#F5F5F5',
         display: 'flex',
-        gap: 5,
         alignItems: 'center',
-        boxShadow: '0px -4px 6px rgba(0, 0, 0, 0.1)'
+        justifyContent: 'center',
+        marginTop: 4,
       }}>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 4, width: '25%', marginX: 3}}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box>
-              <InputLabel sx={{fontSize: 'small',}}>매출일</InputLabel>
-              <DesktopDatePicker
-                views={['day']}
-                format="YYYY/MM/DD"
-                slotProps={{
-                  textField: {size: 'small'},
-                  calendarHeader: {format: 'YYYY/MM'},
-                }}
-              />
-            </Box>
-            <AutocompleteWithLabel label='매출처' items={clientList} labelPosition='top' onChange={(value) => handleAutocompleteChange('client', value)}/>
-          </LocalizationProvider>
-        </Box>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 3, width: '25%'}}>
-          <AutocompleteWithLabel label='품명 :' items={productNames} labelPosition='left' onChange={(value) => handleAutocompleteChange('item', value)}/>
-          <AutocompleteWithLabel label='규격 :' items={scaleByProdName(itemList, formData.item)} labelPosition='left' onChange={(value) => handleAutocompleteChange('size', value)} />
-          <InputWithLabel label='수량 :' labelPosition='left' type='number' name='count' onChange={handleInputChange}/>
-          <InputWithLabel label='재료단가 :' labelPosition='left' name='materialUnitPrice' onChange={handleInputChange}/>
-          <InputWithLabel label='가공단가 :' labelPosition='left' name='processingUnitPrice' onChange={handleInputChange}/>
-        </Box>
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, width: '25%'}}>
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-            <InputWithLabel label='V컷수 :' labelPosition='left' name='vcutCount' onChange={handleInputChange}/>
-            <InputWithLabel label='길이 :' labelPosition='left' name='length' onChange={handleInputChange}/>
-            <InputWithLabel label='단가 :' labelPosition='left' name='unitPrice' onChange={handleInputChange}/>
-            <InputWithLabel label='계 :' labelPosition='left' />
-          </Box>
-          <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.5}}>
-            <InputWithLabel label='미수금 :' labelPosition='left' disabled/>
-            <InputWithLabel label='매출계 :' labelPosition='left'/>
-            <InputWithLabel label='입금액 :' labelPosition='left' name='payingAmount' onChange={handleInputChange}/>
-            <InputWithLabel label='미수계 :' labelPosition='left' disabled/>
-          </Box>
-        </Box>
-        <Box sx={{display: 'flex', flexDirection: 'column', marginX: 3, gap: 2, width: '20%'}}>
-          <Button variant='outlined'
-                  onClick={generateInvoice}
-          >
-            거래명세표 출력
-          </Button>
-          <Button variant='outlined'>수정</Button>
-          <Button variant='outlined'>삭제</Button>
-          <Button variant='outlined'
-                  onClick={createRevenueItem}
-          >
-            거래처등록
-          </Button>
-          <Button variant='outlined'>닫기</Button>
-        </Box>
+        <Pagination count={endSeq} shape="rounded" onChange={handlePageChange} />
       </Box>
+      <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
+        <Button variant='contained'
+                onClick={() => setOpenDialog(true)}
+                sx={{ marginY: 1 }}
+        >
+          등록
+        </Button>
+        <PrintButton printData={printData} value='인쇄' />
+      </Box>
+      <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
+                           salesCompanyList={salesCompanyList}
+                           productList={productList}
+      />
     </Box>
   )
 }

@@ -12,7 +12,7 @@ import {
   TableRow
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
-import Footer from '../../layout/Footer.tsx';
+import PrintButton from '../../layout/PrintButton.tsx';
 import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
 import clientPurchasesSummaryMock from '../../mock/purchase-manage/clientPurchasesSummaryMock.ts';
 import {formatCurrency} from '../../utils/format.ts';
@@ -126,7 +126,7 @@ const ClientPurchasesSummary = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <Footer printData={clientSalesSummaryMock} ></Footer>
+      <PrintButton printData={clientSalesSummaryMock} ></PrintButton>
     </Box>
   )
 }

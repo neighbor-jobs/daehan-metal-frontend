@@ -5,15 +5,18 @@ import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} fro
 interface SubHeaderProps {
   subMenu: { key: string, value: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType }[]
   handleChange: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType) => void
+  idx: number
 }
 
-const SubHeader = ({subMenu, handleChange}: SubHeaderProps): React.JSX.Element => {
-  const [value, setValue] = useState<number | boolean>(false);
+const SubHeader = ({subMenu, handleChange, idx}: SubHeaderProps): React.JSX.Element => {
+  const [value, setValue] = useState<number | boolean>(idx);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
     handleChange(subMenu[newValue].value);
   };
+
+  console.log('sub header value: ', value);
 
   return (
     <Box>

@@ -3,78 +3,110 @@ export interface TableColumns<T> {
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: string) => string;
+  format?: (value: string | string[], numValue?: number) => string;
 }
 
 /*
 * ==================== 매출관리 ========================
 */
-export interface RevenueMainColumn {
-  id: 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'amount' | 'total-amount' | 'paying-amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum RevenueMainColumn {
+  PRODUCT_NAME = 'productName',
+  SCALE = 'scale',
+  LOCATION_NAMES = 'locationNames',
+  QUANTITY = 'quantity',
+  RAW_MAT_AMOUNT = 'rawMatAmount',
+  MANUFACTURE_AMOUNT = 'manufactureAmount',
+  PRODUCT_LENGTH = 'productLength',
 }
 
-export interface DailySalesColumn {
-  id: 'date' | 'client' | 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'total-amount' | 'paying-amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum TransactionRegisterColumn {
+  ITEM = 'item',
+  SCALE = 'scale',
+  COUNT = 'count',
+  MATERIAL_PRICE = 'materialPrice',
+  MATERIAL_TOTAL_PRICE = 'materialTotalPrice',
+  PROCESSING_PRICE = 'processingPrice',
+  PROCESSING_TOTAL_PRICE = 'processingTotalPrice',
+  TOTAL_AMOUNT = 'totalAmount',
 }
 
-export interface ClientSalesColumn {
-  id: 'date' | 'item' | 'size' | 'count' | 'material-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'total-amount' | 'received-amount' | 'remaining-amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum DailySalesColumn {
+  DATE = 'createdAt',
+  COMPANY_NAME = 'companyName',
+  PRODUCT_NAME = 'productName',
+  SCALE = 'scale',
+  QUANTITY = 'quantity',
+  RAW_MAT_AMOUNT = 'rawMatAmount',
+  MANUFACTURE_AMOUNT = 'manufactureAmount',
+  PRODUCT_LENGTH = 'productLength',
 }
 
-export interface ClientSalesSummaryColumn {
-  id: 'client' | 'material-price' | 'processing-price' | 'vcut-processing-price' | 'total-amount' | 'received-amount' | 'remaining-amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum ClientSalesColumn {
+  DATE = 'createdAt',
+  PRODUCT_NAME = 'productName',
+  SCALE = 'scale',
+  QUANTITY = 'quantity',
+  TOTAL_RAW_MAT_AMOUNT = 'rawMatAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'manufactureAmount',
+  PRODUCT_LENGTH = 'productLength',
 }
 
-export interface ItemSalesColumn {
-  id: 'date' | 'client' | 'count' | 'material-unit-price' | 'material-price' | 'processing-unit-price' | 'processing-price' | 'vcut-count' | 'length' | 'unit-price' | 'vcut-processing-price' | 'total-amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum ClientSalesSummaryColumn {
+  COMPANY_NAME = 'companyName',
+  TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
+  TOTAL_PAYING_AMOUNT = 'totalPayingAmount',
 }
 
-export interface ItemSalesSummaryColumn {
-  id: 'item' | 'size' | 'count' | 'material-unit-price' | 'material-price' | 'processing-unit-price' | 'processing-price' | 'vcut-count' | 'amount';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum ItemSalesColumn {
+  DATE = 'createdAt',
+  COMPANY_NAME = 'companyName',
+  QUANTITY = 'quantity',
+  RAW_MAT_AMOUNT = 'rawMatAmount',
+  TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
+  MANUFACTURE_AMOUNT = 'manufactureAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
+  PRODUCT_LENGTH = 'productLength',
+  TOTAL_SALES_AMOUNT = 'totalSalesAmount',
 }
 
-export interface ClientOutstandingBalanceColumn {
-  id: 'client' | 'carryover-amount' | 'sales-amount' | 'paying-amount' | 'outstanding-amount' | 'phone-number';
-  label: string;
-  minWidth?: number;
-  align?: 'right';
-  format?: (value: string) => string;
+export enum ItemSalesSummaryColumn {
+  PRODUCT_NAME = 'productName',
+  SCALE = 'scale',
+  QUANTITY = 'quantity',
+  RAW_MAT_AMOUNT = 'rawMatAmount',
+  TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
+  MANUFACTURE_AMOUNT = 'manufactureAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
+  TOTAL_SALES_AMOUNT = 'totalSalesAmount',
 }
+export enum ClientOutstandingBalanceColumn {
+  COMPANY_NAME = 'companyName',
+  CARRYOVER_AMOUNT = 'carryoverAmount',
+  SALES_AMOUNT = 'salesAmount',
+  PAYING_AMOUNT = 'payingAmount',
+  OUTSTANDING_AMOUNT = 'outstandingAmount',
+  PHONE_NUMBER = 'phoneNumber',
+}
+
+/*
+* ==================== 거래처관리 ========================
+*/
 
 export interface SalesCompanyColumn {
-  id: 'companyName' | 'owner' | 'phoneNumber' | 'fax' | 'address' | 'businessNumber';
+  id: 'companyName' | 'ownerName' | 'phoneNumber' | 'locationNames' | 'fax' | 'address' | 'businessType' | 'businessCategory' | 'businessNumber';
   label: string;
   minWidth?: number;
   align?: 'right';
-  format?: (value: string) => string;
+  format?: (value: string | string[]) => string;
 }
 
+/*
+* ==================== 품목관리 ========================
+*/
+
 export interface ProductMainColumn {
-  id: 'productName' | 'scale' | 'unitWeight' | 'stocks' | 'rawMatAmount' | 'manufactureAmount' | 'productLength';
+  id: 'productName' | 'scale' | 'unitWeight' | 'stocks' | 'vCut' | 'vCutAmount' | 'productLength';
   label: string;
   minWidth?: number;
   align?: 'right';

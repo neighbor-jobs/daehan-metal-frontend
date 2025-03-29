@@ -6,11 +6,13 @@ import { Dayjs } from "dayjs";
 
 interface DateRangePickerProps {
   onChange: (startDate: Dayjs | null, endDate: Dayjs | null) => void;
+  startAt?: Dayjs | null;
+  endAt?: Dayjs | null;
 }
 
-const DateRangePicker = ({ onChange }: DateRangePickerProps): React.JSX.Element => {
-  const [startDate, setStartDate] = useState<Dayjs | null>(null);
-  const [endDate, setEndDate] = useState<Dayjs | null>(null);
+const DateRangePicker = ({ onChange, startAt, endAt }: DateRangePickerProps): React.JSX.Element => {
+  const [startDate, setStartDate] = useState<Dayjs | null>(startAt);
+  const [endDate, setEndDate] = useState<Dayjs | null>(endAt);
 
   const handleStartDateChange = (newDate: Dayjs | null) => {
     setStartDate(newDate);

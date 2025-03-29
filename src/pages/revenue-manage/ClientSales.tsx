@@ -1,73 +1,72 @@
-import {ClientSalesColumn} from '../../types/tableColumns.ts';
-import clientSalesMock from '../../mock/revenue-manage/clientSalesMock.ts';
-import {clientList} from '../../mock/revenue-manage/clientList.ts';
+import {ClientSalesColumn, TableColumns} from '../../types/tableColumns.ts';
 
 // UI
 import {
   Autocomplete,
   Box,
-  TextField,
+  Button,
   Paper,
   Table,
-  TableContainer,
-  TableRow,
-  TableCell,
-  TableHead,
   TableBody,
-  Button, TableFooter
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TextField
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
-import Footer from '../../layout/Footer.tsx';
+import PrintButton from '../../layout/PrintButton.tsx';
+import {useCallback, useEffect, useState} from 'react';
+import dayjs from 'dayjs';
+import {cacheManager} from '../../utils/cacheManager.ts';
+import {AxiosResponse} from 'axios';
+import axiosInstance from '../../api/axios.ts';
 
-const columns: readonly ClientSalesColumn[] = [
-  {id: 'date', label: '날짜', minWidth: 100},
+const columns: readonly TableColumns<ClientSalesColumn>[] = [
   {
-    id: 'item',
-    label: '품명',
-    minWidth: 170,
+    id: ClientSalesColumn.DATE,
+    label: '날짜',
+    minWidth: 100,
+    format: (date) => date.split('T')[0],
   },
   {
-    id: 'size',
+    id: ClientSalesColumn.PRODUCT_NAME,
+    label: '품명',
+    minWidth: 140,
+  },
+  {
+    id: ClientSalesColumn.SCALE,
     label: '규격',
     minWidth: 140,
   },
   {
-    id: 'count',
+    id: ClientSalesColumn.QUANTITY,
     label: '수량',
     minWidth: 100,
     align: 'right',
   },
   {
-    id: 'material-price',
+    id: ClientSalesColumn.TOTAL_RAW_MAT_AMOUNT,
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    // format: (rawMatAmount: string, quantity: number) => (Number(rawMatAmount) * quantity).toLocaleString('ko-KR')
   },
   {
-    id: 'processing-price',
+    id: ClientSalesColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    // format: (manufactureAmount: string, quantity: number) => (Number(manufactureAmount) * quantity).toLocaleString('ko-KR')
   },
   {
-    id: 'vcut-count',
-    label: 'V컷수',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
-    id: 'length',
+    id: ClientSalesColumn.PRODUCT_LENGTH,
     label: '길이',
     minWidth: 100,
     align: 'right',
   },
-  {
-    id: 'unit-price',
-    label: '단가',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
+  /*{
     id: 'total-amount',
     label: '금액',
     minWidth: 100,
@@ -84,18 +83,91 @@ const columns: readonly ClientSalesColumn[] = [
     label: '잔액',
     minWidth: 100,
     align: 'right',
-  }
+  }*/
 ];
 
 
 const ClientSales = (): React.JSX.Element => {
-  const rows = clientSalesMock;
+  // TODO: 미수금 현황 api로 받아온 후 잔액 부분 업데이트
+
+  const [salesCompanyList, setSalesCompanyList] = useState([]);
+  const [date, setDate] = useState({
+    startAt: dayjs(),
+    endAt: dayjs(),
+  });
+  const [companyName, setCompanyName] = useState('');
+  const [reports, setReports] = useState([]);
+  const [amount, setAmount] = useState({
+    totalPayingAmount: '0',
+    totalSalesAmount: '0',
+  })
+  const [printData, setPrintData] = useState<{
+    data: any[];
+    companyName: string;
+    startAt: string;
+    endAt: string;
+  } | null>(null);
 
   // handler
-  const handleSearch = () => {
-    /* 날짜 & 업체명 필터링 */
-    console.log('필터링');
+  const handleCompanyChange = useCallback((_event, newValue: string | null) => {
+    const selectedCompany = salesCompanyList.find((company) => company.companyName === newValue);
+    setCompanyName(selectedCompany ? newValue : '');
+  }, [salesCompanyList]);
+
+  const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
+    if (!start || !end) return;
+    setDate({startAt: start, endAt: end});
+  };
+
+  // api
+  const getClientSales = async () => {
+    const res: AxiosResponse = await axiosInstance.get(`receipt/company/sales/report?companyName=${companyName}&orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
+    setReports(res.data.data.reports);
+    setAmount({
+      totalPayingAmount: res.data.data.totalPayingAmount,
+      totalSalesAmount: res.data.data.totalSalesAmount,
+    })
+
+    const getOutstanding = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}`)
+    let outstanding = Number(getOutstanding.data.data.find((item) => item.companyName === companyName)?.outstandingAmount);
+
+    const data = res.data.data.reports?.map((item) => {
+      const raw = Number(item.rawMatAmount) || 0;
+      const manu = Number(item.manufactureAmount) || 0;
+      const quantity = item.quantity;
+
+      const materialPrice = raw * quantity;
+      const processingPrice = manu * quantity;
+      const total = materialPrice + processingPrice;
+
+      outstanding = isNaN(outstanding) ? total : outstanding + total;
+
+      return {
+        'date': item.createdAt.split('T')[0],
+        'item': item.productName,
+        'size': item.scale,
+        'count': item.quantity,
+        'material-price': materialPrice,
+        'processing-price': processingPrice,
+        'amount': total,
+        'remaining-amount' : outstanding,
+      }
+    }) ?? [];
+    setPrintData({
+      data,
+      'companyName': companyName,
+      'startAt': date.startAt.format('YYYY-MM-DD'),
+      'endAt': date.endAt.format('YYYY-MM-DD'),
+    })
   }
+
+  useEffect(() => {
+    const getCompanies = async () => {
+      const companies = await cacheManager.getCompanies();
+      setSalesCompanyList(companies);
+    }
+    getCompanies();
+  }, []);
 
   return (
     <Box>
@@ -106,10 +178,12 @@ const ClientSales = (): React.JSX.Element => {
         marginX: 3,
       }}>
         {/* date picker */}
-        <DateRangePicker onChange={() => console.log('render')}/>
+        <DateRangePicker onChange={handleDateChange} startAt={date.startAt} endAt={date.endAt}/>
         <Autocomplete
           freeSolo
-          options={clientList.map((option) => option)}
+          options={salesCompanyList.map((option) => option.companyName)}
+          value={companyName}
+          onChange={handleCompanyChange}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='거래처명' size='small'
@@ -119,7 +193,7 @@ const ClientSales = (): React.JSX.Element => {
         />
         <Button
           variant="outlined"
-          onClick={() => handleSearch}
+          onClick={getClientSales}
         >
           확인
         </Button>
@@ -139,38 +213,43 @@ const ClientSales = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell align='right' sx={{minWidth: 80}}>금액</TableCell>
+                <TableCell align='right' sx={{minWidth: 80}}>잔액</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .map((row, rowIdx) => {
-                  return (
-                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
-                      {columns.map((column) => {
-                        const value = row[column.id];
-                        return (
-                          <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  );
-                })}
+              {reports && reports.map((row, rowIdx) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
+                    {columns.map((column) => {
+                      const value = row[column.id];
+                      return (
+                        <TableCell key={column.id} align={column.align}>
+                          {column.format
+                            ? column.format(value)
+                            : value}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell>금액</TableCell>
+                    <TableCell>잔액</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={9}>합계</TableCell>
-                <TableCell align='right'>매출액계</TableCell>
-                <TableCell align='right'>수금액계</TableCell>
+                <TableCell align='right'>합계 :</TableCell>
+                <TableCell align='right'>매출액계 : </TableCell>
+                <TableCell align='right'>{amount.totalSalesAmount}</TableCell>
+                <TableCell align='right'>수금액계 : </TableCell>
+                <TableCell align='right'>{amount.totalPayingAmount}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
-      <Footer printData={clientSalesMock} />
+      <PrintButton printData={printData} />
     </Box>
   );
 }

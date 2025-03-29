@@ -28,6 +28,8 @@ const Home = (): React.JSX.Element => {
         navigate('/');
     }
   };
+
+
   return (
     <Box
       component="section"

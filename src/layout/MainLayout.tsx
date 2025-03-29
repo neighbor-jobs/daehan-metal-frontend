@@ -9,6 +9,7 @@ const MainLayout = (): React.JSX.Element => {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
+        overflowY: 'auto',
       }}
     >
       <Header />

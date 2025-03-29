@@ -1,51 +1,120 @@
 // UI
-import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow } from '@mui/material';
-import DateRangePicker from '../../components/DateRangePicker';
+import {
+  Box,
+  Button,
+  InputLabel,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow
+} from '@mui/material';
 
 // project
-import { ClientOutstandingBalanceColumn } from '../../types/tableColumns';
-import clientOutstandingBalanceMock from '../../mock/revenue-manage/clientOutstandingBalanceMock.ts';
-import Footer from '../../layout/Footer.tsx';
+import {ClientOutstandingBalanceColumn, TableColumns} from '../../types/tableColumns';
+import PrintButton from '../../layout/PrintButton.tsx';
+import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import {useEffect, useState} from 'react';
+import axiosInstance from '../../api/axios.ts';
+import {AxiosResponse} from 'axios';
+import {formatCurrency} from '../../utils/format.ts';
 
-const columns: readonly ClientOutstandingBalanceColumn[] = [
+const columns: readonly TableColumns<ClientOutstandingBalanceColumn>[] = [
   {
-    id: 'client',
+    id: ClientOutstandingBalanceColumn.COMPANY_NAME,
     label: '거래처명',
     minWidth: 100,
   },
   {
-    id: 'carryover-amount',
+    id: ClientOutstandingBalanceColumn.CARRYOVER_AMOUNT,
     label: '이월액',
     align: 'right',
     minWidth: 100,
+    format: formatCurrency,
   },
   {
-    id: 'sales-amount',
+    id: ClientOutstandingBalanceColumn.SALES_AMOUNT,
     label: '매출액',
     align: 'right',
     minWidth: 100,
+    format: formatCurrency,
   },
   {
-    id: 'paying-amount',
+    id: ClientOutstandingBalanceColumn.PAYING_AMOUNT,
     label: '입금액',
     align: 'right',
     minWidth: 100,
+    format: formatCurrency,
   },
   {
-    id: 'outstanding-amount',
+    id: ClientOutstandingBalanceColumn.OUTSTANDING_AMOUNT,
     label: '미수금',
     align: 'right',
     minWidth: 100,
+    format: formatCurrency,
   },
   {
-    id: 'phone-number',
+    id: ClientOutstandingBalanceColumn.PHONE_NUMBER,
     label: '전화번호',
     minWidth: 100,
   }
 ];
 
 const ClientOutstandingBalance = ():React.JSX.Element => {
-  const rows = clientOutstandingBalanceMock;
+  const [startAt, setStartAt] = useState(dayjs());
+  const [data, setData] = useState([]);
+  const [tableFooter, setTableFooter] = useState({
+    sumSalesAmount: 0,
+    sumPayingAmount: 0,
+    sumCarryoverAmount: 0,
+    sumOutstandingAmount: 0,
+  });
+  const [printData, setPrintData] = useState<{
+    startAt: string,
+    data: any[],
+    sumSalesAmount: string,
+    sumPayingAmount: string,
+    sumCarryoverAmount: string,
+    sumOutstandingAmount: string,
+  } | null>();
+
+  const getClientReceivable = async () => {
+    let s: number = 0, p: number =0, c: number =0, o: number = 0;
+    const res: AxiosResponse = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${startAt.format('YYYY-MM-DD')}`)
+    res.data.data.map(item => {
+      s += Number(item.salesAmount);
+      p += Number(item.payingAmount);
+      c += Number(item.carryoverAmount);
+      o += Number(item.outstandingAmount);
+    })
+    setData(res.data.data);
+    setTableFooter({
+      sumSalesAmount: s,
+      sumPayingAmount: p,
+      sumCarryoverAmount: c,
+      sumOutstandingAmount: o
+    })
+    setPrintData({
+      data: res.data.data,
+      startAt: startAt.format('YYYY-MM-DD'),
+      sumSalesAmount: s.toLocaleString(),
+      sumPayingAmount: p.toLocaleString(),
+      sumCarryoverAmount: c.toLocaleString(),
+      sumOutstandingAmount: o.toLocaleString()
+    })
+  }
+
+  useEffect(() => {
+    getClientReceivable();
+  }, []);
+
+  // debug
+
   return (
     <Box>
       <Box sx={{
@@ -53,12 +122,31 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
         alignItems: 'center',
         justifyContent: 'space-between',
         marginX: 3,
+        marginY: 1,
       }}>
         {/* date picker */}
-        <DateRangePicker onChange={() => console.log('render')}/>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}>
+            <InputLabel sx={{fontSize: 'small',}}>검색일자</InputLabel>
+            <DesktopDatePicker
+              views={['day']}
+              format="YYYY/MM/DD"
+              defaultValue={dayjs()}
+              onChange={(value) => setStartAt(value)}
+              slotProps={{
+                textField: {size: 'small'},
+                calendarHeader: {format: 'YYYY/MM'},
+              }}
+            />
+          </Box>
+        </LocalizationProvider>
         <Button
           variant="outlined"
-          onClick={() => console.log('search')}
+          onClick={getClientReceivable}
         >
           확인
         </Button>
@@ -80,7 +168,7 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
+              {data
                 .map((row, rowIdx) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
@@ -101,16 +189,16 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
             <TableFooter>
               <TableRow>
                 <TableCell>합계</TableCell>
-                <TableCell align='right'>이월액</TableCell>
-                <TableCell align='right'>매출액</TableCell>
-                <TableCell align='right'>입금액</TableCell>
-                <TableCell align='right'>미수금액</TableCell>
+                <TableCell align='right'>{tableFooter.sumCarryoverAmount}</TableCell>
+                <TableCell align='right'>{tableFooter.sumSalesAmount}</TableCell>
+                <TableCell align='right'>{tableFooter.sumPayingAmount}</TableCell>
+                <TableCell align='right'>{tableFooter.sumOutstandingAmount}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
-      <Footer printData={clientOutstandingBalanceMock}></Footer>
+      <PrintButton printData={printData}></PrintButton>
     </Box>
   )
 }

@@ -1,62 +1,139 @@
 // UI
-import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow } from '@mui/material';
+import {
+  Box,
+  Button,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableFooter,
+  TableHead,
+  TableRow
+} from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker';
 
 // project
-import { ItemSalesSummaryColumn } from '../../types/tableColumns';
-import itemSalesSummaryMock from '../../mock/itemSalesSummayMock';
-import Footer from '../../layout/Footer';
+import {ItemSalesSummaryColumn, TableColumns} from '../../types/tableColumns';
+import PrintButton from '../../layout/PrintButton.tsx';
+import {useEffect, useState} from 'react';
+import {AxiosResponse} from 'axios';
+import axiosInstance from '../../api/axios.ts';
+import dayjs from 'dayjs';
+import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 
-const columns: readonly ItemSalesSummaryColumn[] = [
+const columns: readonly TableColumns<ItemSalesSummaryColumn>[] = [
   {
-    id: 'item',
+    id: ItemSalesSummaryColumn.PRODUCT_NAME,
     label: '품명',
     minWidth: 170,
   },
   {
-    id: 'size',
+    id: ItemSalesSummaryColumn.SCALE,
     label: '규격',
     minWidth: 140,
   },
   {
-    id: 'count',
+    id: ItemSalesSummaryColumn.QUANTITY,
     label: '수량',
     minWidth: 100,
     align: 'right',
+    format: formatDecimal,
   },
   {
-    id: 'material-unit-price',
+    id: ItemSalesSummaryColumn.RAW_MAT_AMOUNT,
     label: '재료단가',
     minWidth: 100,
     align: 'right',
-  },{
-    id: 'material-price',
+    format: formatCurrency,
+  }, {
+    id: ItemSalesSummaryColumn.TOTAL_RAW_MAT_AMOUNT,
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
-    id: 'processing-unit-price',
+    id: ItemSalesSummaryColumn.MANUFACTURE_AMOUNT,
     label: '가공단가',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
-    id: 'processing-price',
+    id: ItemSalesSummaryColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   },
   {
-    id: 'amount',
+    id: ItemSalesSummaryColumn.TOTAL_SALES_AMOUNT,
     label: '금액',
     minWidth: 100,
     align: 'right',
+    format: formatCurrency
   }
 ];
 
 const ItemSalesSummary = (): React.JSX.Element => {
-  const rows = itemSalesSummaryMock;
+  const [itemSalesSumList, setItemSalesSumList] = useState([]);
+  const [date, setDate] = useState({
+    startAt: dayjs(),
+    endAt: dayjs(),
+  });
+  const [tableFooter, setTableFooter] = useState({
+    countSum: 0,
+    rawSum: 0,
+    manuSum: 0,
+    sum: 0,
+  });
+  const [printData, setPrintData] = useState<{
+    data: any[];
+    startAt: string;
+    endAt: string;
+  } | null>(null);
+
+  const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
+    if (!start || !end) return;
+    setDate({startAt: start, endAt: end});
+  };
+
+  const getItemSalesSumList = async () => {
+    const res: AxiosResponse = await axiosInstance.get(`receipt/product/summary/report?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
+    let c: number = 0, r: number = 0, m: number = 0, s: number = 0;
+    const data = res.data.data.map((item) => {
+      c += item.salesReport.quantity;
+      r += Number(item.totalRawMatAmount);
+      m += Number(item.totalManufactureAmount);
+      s += Number(item.totalSalesAmount);
+      return {
+        ...item.salesReport,
+        totalManufactureAmount: item.totalManufactureAmount,
+        totalRawMatAmount: item.totalRawMatAmount,
+        totalSalesAmount: item.totalSalesAmount,
+      }
+    });
+    setItemSalesSumList(data);
+    setPrintData({
+      data: data,
+      startAt: date.startAt.format('YYYY-MM-DD'),
+      endAt: date.endAt.format('YYYY-MM-DD'),
+    })
+    setTableFooter({
+      countSum: c,
+      rawSum: r,
+      manuSum: m,
+      sum: s,
+    })
+  }
+
+  useEffect(() => {
+    getItemSalesSumList();
+  }, []);
+
+  console.log(itemSalesSumList);
+
   return (
     <Box>
       <Box sx={{
@@ -66,16 +143,16 @@ const ItemSalesSummary = (): React.JSX.Element => {
         marginX: 3,
       }}>
         {/* date picker */}
-        <DateRangePicker onChange={() => console.log('render')}/>
+        <DateRangePicker onChange={handleDateChange} startAt={date.startAt} endAt={date.endAt}/>
         <Button
           variant="outlined"
-          onClick={() => console.log('search')}
+          onClick={getItemSalesSumList}
         >
           확인
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer sx={{maxHeight: 440}}>
+        <TableContainer>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -91,39 +168,38 @@ const ItemSalesSummary = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
-                .map((row) => {
-                  return (
-                    <TableRow hover role="checkbox" tabIndex={-1}>
-                      {columns.map((column) => {
-                        const value = row[column.id];
-                        return (
-                          <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  );
-                })}
+              {itemSalesSumList && itemSalesSumList.map((row) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1}>
+                    {columns.map((column) => {
+                      const value = row[column.id];
+                      return (
+                        <TableCell key={column.id} align={column.align}>
+                          {column.format
+                            ? column.format(value)
+                            : value}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
             </TableBody>
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={2}>합계</TableCell>
-                <TableCell align='right'>수량합</TableCell>
-                <TableCell align='right'>재료단가평균</TableCell>
-                <TableCell align='right'>재료비합</TableCell>
-                <TableCell align='right'>가공단가평균</TableCell>
-                <TableCell align='right'>가공비합</TableCell>
-                <TableCell colSpan={2} align='right'></TableCell>
+                <TableCell align='right'>{tableFooter.countSum.toFixed(3)}</TableCell>
+                <TableCell align='right'></TableCell>
+                <TableCell align='right'>{tableFooter.rawSum.toLocaleString()}</TableCell>
+                <TableCell align='right'></TableCell>
+                <TableCell align='right'>{tableFooter.manuSum.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sum.toLocaleString()}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
-      <Footer printData={itemSalesSummaryMock} ></Footer>
+      <PrintButton printData={printData}></PrintButton>
     </Box>
   )
 }

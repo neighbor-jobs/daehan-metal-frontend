@@ -8,6 +8,7 @@ export enum MenuType {
 export const menuTypeArr = Object.entries(MenuType).map(([key, value]) => ({key, value}));
 
 export enum RevenueManageMenuType {
+  SalesDetail = '매출조회',
   DailySales ='일별매출현황',
   ClientSales = '거래처별 매출현황',
   ClientSalesSummary = '거래처별 매출집계',

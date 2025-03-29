@@ -1,23 +1,23 @@
+import React, {useEffect, useState} from 'react';
+import {cacheManager} from '../../utils/cacheManager.ts';
+import {AxiosResponse} from 'axios';
+import axiosInstance from '../../api/axios.ts';
 import {
   Box,
-  Button, Dialog, DialogContent, DialogTitle, DialogActions,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle, IconButton,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow, IconButton
+  Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow
 } from '@mui/material';
-import {SalesCompanyColumn} from '../../types/tableColumns.ts';
-import React, {useEffect, useState} from 'react';
 import InputWithLabel from '../../components/InputWithLabel.tsx';
-import axiosInstance from '../../api/axios.ts';
-import CloseIcon from '@mui/icons-material/Close';
-import {AxiosResponse} from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
 import PrintButton from '../../layout/PrintButton.tsx';
-import {cacheManager} from '../../utils/cacheManager.ts';
+import {SalesCompanyColumn} from '../../types/tableColumns.ts';
 import {formatStringList} from '../../utils/format.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
@@ -69,10 +69,10 @@ const columns: readonly SalesCompanyColumn[] = [
   },
 ];
 
-const SalesCompany = (): React.JSX.Element => {
+const PurchaseCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
+  const [salesCompanyList, setsalesCompanyList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     'companyName': '',
     'ownerName': '',
@@ -111,7 +111,7 @@ const SalesCompany = (): React.JSX.Element => {
       'phoneNumber': formattedValue,
     });
   };
-  // console.log(formData);
+
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
@@ -144,7 +144,7 @@ const SalesCompany = (): React.JSX.Element => {
   // api
   const fetchSalesCompanies = async () => {
     const companies = await cacheManager.getCompanies();
-    setSalesCompanyList(companies);
+    setsalesCompanyList(companies);
     /*const companies = await axiosInstance.get('/company?orderBy=desc');
     setSalesCompanyList(companies.data.data || []);*/
   };
@@ -168,7 +168,7 @@ const SalesCompany = (): React.JSX.Element => {
     } else {
       const res: AxiosResponse = await axiosInstance.post('/company', data);
       await cacheManager.addCompany(res.data.data);
-      setSalesCompanyList(await cacheManager.getCompanies());
+      setsalesCompanyList(await cacheManager.getCompanies());
     }
     setOpen(false);
   }
@@ -295,4 +295,4 @@ const SalesCompany = (): React.JSX.Element => {
   );
 }
 
-export default SalesCompany;
+export default PurchaseCompany;
