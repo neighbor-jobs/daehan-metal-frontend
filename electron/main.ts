@@ -13,7 +13,8 @@ import {
   companySalesSumDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
-  outstandingAmountDocDef
+  outstandingAmountDocDef,
+  purchaseReceiptDocRef
 } from './templetes.ts';
 import {RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
@@ -174,7 +175,8 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
         docDefinition = itemSalesSumDocDef(data);
         break;
       case RevenueManageMenuType.ClientList:
-        docDefinition = companyListDocRef(data)
+        // docDefinition = companyListDocRef(data)
+        docDefinition = purchaseReceiptDocRef(data)
         break
       default:
         throw new Error(`Unknown print type: ${printType}`);

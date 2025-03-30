@@ -295,7 +295,36 @@ const SalesCompany = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={salesCompanyList}></PrintButton>
+      <PrintButton printData={salesCompanyList}/>
+      {/* <PrintButton printData={
+        {
+          telNumber: '032-588-0497',
+          subTelNumber: '032-588-0499',
+          phoneNumber: '010-2284-7264',
+          bankName: '국민',
+          accountNumber: '170037-0400-3452',
+          records: [
+            {
+              createdAt: '02월 06일',
+              productName: '현금입금',
+              vat: true,
+              productPrice: '34944640',
+              payableBalance: '0',
+            },
+            {
+              createdAt: '02월 06일',
+              productName: 'STS 304 H/L 1.5*5*10=1',
+              vat: true,
+              quantity: 1,
+              unitPrice: '243000',
+              totalSalesAmount: '243000',
+              totalVatPrice: '24300',
+              totalPrice: '267300',
+              payableBalance: '267300',
+            }
+          ]
+        }
+      }></PrintButton> */}
     </Box>
   );
 }

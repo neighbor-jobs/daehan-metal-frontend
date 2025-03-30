@@ -67,6 +67,62 @@ export const companySalesDocDef = (companySalesData) => {
 }
 
 /**
+ * 매입처 관리대장장
+ */
+export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
+  return {
+    pageSize: 'A4', // A4 크기 유지
+    content: [
+      {
+        text: `매출처리스트`,
+        style: 'header',
+        alignment: 'center',
+        marginBottom: 5,
+      },
+      {
+        text: `T ${data.telNumber}  F ${data.subTelNumber}  HP ${data.phoneNumber}  ${data.bankName} ${data.accountNumber}`,
+        style: {
+          fontSize: 8,
+        },
+        marginBottom: 5,
+        alignment: 'center'
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: ['10%', '20%', '5%', '5%', '10%', '10%', '10%', '10%', '12%', '12%'],
+          body: [
+            ['날짜', '품명', '세액', '수량', '단가', '매입금액', '매입세액', '합계', '입금', '잔액'].map(header => ({
+              text: header,
+            })),
+            ...data.records.map((item: any) => [
+              {text: item.createdAt, style: 'tableText', alignment: 'center'}, // 날짜
+              {text: item.productName, style: 'tableText', alignment: 'center'}, // 품명
+              {text: item.vat ? '별도' : '포함', style: 'tableText', alignment: 'center'}, // 세액 포함 여부
+              {text: item.quantity ? Number(item.quantity).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 수량
+              {text: item.unitPrice ? Number(item.unitPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 단가
+              {text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '-', style: 'tableText', alignment: 'right'}, // 매입금액
+              {text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '-', style: 'tableText', alignment: 'right'}, // 매입세액
+              {text: item.totalPrice ? Number(item.totalPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 합계
+              {text: item.productPrice ? Number(item.productPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 입금
+              {text: Number(item.payableBalance).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
+            ]),
+          ],
+        },
+      },
+    ],
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 7,
+    },
+    styles: {
+      header: { fontSize: 14 },
+      subheader: { fontSize: 10, marginBottom: 20 },
+    },
+  }
+}
+
+/**
  * 매출처 리스트
  */
 export const companyListDocRef = (data): TDocumentDefinitions => {
