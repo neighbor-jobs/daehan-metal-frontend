@@ -40,5 +40,22 @@ export const formatPhoneNumber = (input: string): string => {
   return input;
 };
 
+export const formatBusinessNumber = (input : string): string | null => {
+  const digitsOnly = input.replace(/[^0-9]/g, '');
+
+  if (digitsOnly.length !== 10) return null;
+
+  // 포맷팅
+  const formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 5)}-${digitsOnly.slice(5)}`;
+
+  // 형식 확인: 000-00-00000
+  const isValid = /^\d{3}-\d{2}-\d{5}$/.test(formatted);
+  return isValid ? formatted : null;
+}
+
+export const formatVatRate = (input: string) => {
+  return input + '%';
+}
+
 /* 소수점 3자리 유효성 검사 */
 export const decimalRegex = /^\d*\.?\d{0,3}$/;

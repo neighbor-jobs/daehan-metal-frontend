@@ -13,10 +13,9 @@ import {
   companySalesSumDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
-  outstandingAmountDocDef,
-  purchaseReceiptDocRef
+  outstandingAmountDocDef, purchaseReceiptDocRef
 } from './templetes.ts';
-import {RevenueManageMenuType} from '../src/types/headerMenu.ts';
+import {PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {productStore} from './store/productStore.ts';
 
@@ -155,7 +154,7 @@ pdfMake.fonts = {
   },
 };
 
-ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType , data) => {
+ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType , data) => {
   return new Promise((resolve, reject) => {
     let docDefinition: TDocumentDefinitions;
     switch (printType) {
@@ -175,9 +174,11 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
         docDefinition = itemSalesSumDocDef(data);
         break;
       case RevenueManageMenuType.ClientList:
-        // docDefinition = companyListDocRef(data)
+        docDefinition = companyListDocRef(data)
+        break;
+      case PurchaseManageMenuType.MonthlyPurchase:
         docDefinition = purchaseReceiptDocRef(data)
-        break
+        break;
       default:
         throw new Error(`Unknown print type: ${printType}`);
     }

@@ -2,7 +2,7 @@ export interface TableColumns<T> {
   id: T;
   label: string;
   minWidth?: number;
-  align?: 'right';
+  align?: 'right' | 'center';
   format?: (value: string | string[], numValue?: number) => string;
 }
 
@@ -80,6 +80,7 @@ export enum ItemSalesSummaryColumn {
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   TOTAL_SALES_AMOUNT = 'totalSalesAmount',
 }
+
 export enum ClientOutstandingBalanceColumn {
   COMPANY_NAME = 'companyName',
   CARRYOVER_AMOUNT = 'carryoverAmount',
@@ -147,6 +148,19 @@ export enum ClientPurchasesColumn {
   REMAINING_AMOUNT = 'remainingAmount',
 }
 
+export enum MonthlyPurchaseColumn {
+  CREATED_AT = 'createdAt',
+  PRODUCT_NAME = 'productName',
+  QUANTITY = 'quantity',
+  UNIT_PRICE = 'unitPrice',
+  TOTAL_SALES_AMOUNT = 'totalSalesAmount',
+  TOTAL_VAT_AMOUNT = 'totalVatAmount',
+  TOTAL_PRICE = 'totalPrice',
+  PRODUCT_PRICE = 'productPrice',
+  PAYABLE_BALANCE = 'payableBalance',
+}
+
+
 export enum ClientPurchasesSummaryColumn {
   CLIENT = 'client',
   MATERIAL_PRICE = 'materialPrice',
@@ -160,7 +174,11 @@ export enum PurchaseRegisterColumn {
   PRODUCT_NAME = 'productName',
   PRODUCT_PRICE = 'productPrice',
   QUANTITY = 'quantity',
+  MANUFACTURE_AMOUNT = "manufactureAmount",
+  TOTAL_MANUFACTURE_AMOUNT = "totalManufactureAmount",
+  RAW_MAT_AMOUNT = "rawMatAmount",
+  TOTAL_RAW_MAT_AMOUNT = "totalRawMatAmount",
   VAT = 'vat',
   VAT_RATE = 'vatRate',
-  IS_PAYING = 'isPaying',
+  IS_PAYING = 'isPaying'
 }

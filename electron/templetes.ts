@@ -74,7 +74,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
     pageSize: 'A4', // A4 크기 유지
     content: [
       {
-        text: `매출처리스트`,
+        text: `${data.companyName}`,
         style: 'header',
         alignment: 'center',
         marginBottom: 5,

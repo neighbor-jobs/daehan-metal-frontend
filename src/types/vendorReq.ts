@@ -8,17 +8,17 @@ export interface PostVendorReqBody {
 
 export interface PostVendorBankReqBody {
   // 모두 필수값
-  infoId: string;
-  bankName: string;
-  accountNumber: string;
-  accountOwner: string;
+  infoId: string | null;
+  bankName: string | null;
+  accountNumber: string | null;
+  accountOwner: string | null;
 }
 
 export interface PatchVendorBankReqBody {
-  bankId: string;         // 필수
-  bankName: string;
-  accountNumber: string;
-  accountOwner: string;
+  bankId: string | null;         // 필수
+  bankName: string | null;
+  accountNumber: string | null;
+  accountOwner: string | null;
 }
 
 export interface PostVendorReceiptReqBody {
@@ -26,8 +26,10 @@ export interface PostVendorReceiptReqBody {
   companyName: string;
   productName: string;
   productPrice: string;
+  manufactureAmount: string,
+  rawMatAmount: string,
   quantity: number;
-  vatRate: number;
+  vatRate: number | string;
   vat?: boolean;
   isPaying?: boolean;
 }

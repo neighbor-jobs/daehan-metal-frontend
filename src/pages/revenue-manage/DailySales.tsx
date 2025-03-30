@@ -26,7 +26,7 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
     id: DailySalesColumn.DATE,
     label: '날짜',
     minWidth: 100,
-    format: (date) => date.split('T')[0],
+    format: (date: string) => date.split('T')[0],
   },
   {
     id: DailySalesColumn.COMPANY_NAME,
@@ -91,8 +91,8 @@ const DailySales = () => {
     setDailySalesList(res.data.data.reports);
   }
 
-  const handleSearch = () => {
-    getDailySalesList(date.startAt.format('YYYY-MM-DD'), date.endAt.format('YYYY-MM-DD'));
+  const handleSearch = async () => {
+    await getDailySalesList(date.startAt.format('YYYY-MM-DD'), date.endAt.format('YYYY-MM-DD'));
   };
 
   useEffect(() => {

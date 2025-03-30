@@ -1,7 +1,7 @@
 import {
   Autocomplete,
   Box,
-  Button,
+  Button, Checkbox, IconButton,
   Input,
   InputLabel,
   Paper,
@@ -10,75 +10,202 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  TextField
+  TableRow, TextField,
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {moveFocusToNextInput} from '../../utils/focus.ts';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
-import {PostVendorReceiptReqBody} from '../../types/vendorReq.ts';
+import {formatCurrency, formatDecimal, formatVatRate} from '../../utils/format.ts';
+import CloseIcon from '@mui/icons-material/Close';
+import axiosInstance from '../../api/axios.ts';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
     id: PurchaseRegisterColumn.PRODUCT_NAME,
     label: '품명',
-    minWidth: 170,
+    minWidth: 200,
   },
   {
     id: PurchaseRegisterColumn.QUANTITY,
     label: '수량',
-    minWidth: 90,
+    minWidth: 50,
     align: 'right',
     format: formatDecimal,
   },
   {
-    id: PurchaseRegisterColumn.PRODUCT_PRICE,
-    label: '금액',
-    minWidth: 170,
+    id: PurchaseRegisterColumn.RAW_MAT_AMOUNT,
+    label: '재료단가',
+    minWidth: 100,
     align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: PurchaseRegisterColumn.TOTAL_RAW_MAT_AMOUNT,
+    label: '재료비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: PurchaseRegisterColumn.MANUFACTURE_AMOUNT,
+    label: '가공단가',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: PurchaseRegisterColumn.TOTAL_MANUFACTURE_AMOUNT,
+    label: '가공비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: PurchaseRegisterColumn.PRODUCT_PRICE,
+    label: '입금액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
   },
   {
     id: PurchaseRegisterColumn.VAT,
     label: '세금',
     minWidth: 70,
-    align: 'right',
+    align: 'center',
   },
   {
     id: PurchaseRegisterColumn.VAT_RATE,
-    label: '비율',
-    minWidth: 80,
+    label: '세금비율',
+    minWidth: 30,
     align: 'right',
-    format: formatCurrency,
+    format: formatVatRate,
   },
   {
     id: PurchaseRegisterColumn.IS_PAYING,
-    label: '지불여부',
-    minWidth: 70,
-    align: 'right',
+    label: '입금',
+    minWidth: 30,
+    align: 'center',
   },
 ];
-const defaultReceipt: PostVendorReceiptReqBody = {
+const defaultReceipt = {
   vendorId: '',
   companyName: '',
   productName: '',
   productPrice: '',
-  quantity: 0,
-  vatRate: 0,
+  rawMatAmount: '',
+  manufactureAmount: '',
+  quantity: 1,
+  vatRate: 0.1,
+  vat: true,
+  isPaying: false,
 }
 
 const PurchaseMain = (): React.JSX.Element => {
   const [receipts, setReceipts] = useState(
     Array.from({length: 1}, () => ({...defaultReceipt}))
   );
+  const [purchaseCompanyList, setPurchaseCompanyList] = useState([]);
+  const [header, setHeader] = useState({
+    createdAt: dayjs().format('YYYY-MM-DD'),
+    companyName: '',
+    vendorId: '',
+  });
+
+  // handler
+  const handleCompanyChange = useCallback((_event, newValue: string | null) => {
+    const selectedCompany = purchaseCompanyList.find((company) => company.name === newValue);
+    setHeader(prev => ({
+      ...prev,
+      companyName: selectedCompany.name,
+      vendorId: selectedCompany.id,
+    }))
+  }, [purchaseCompanyList]);
+
 
   const addRow = () => {
     setReceipts(prev => [...prev, {...defaultReceipt}]);
   }
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
+    setReceipts((prev) =>
+      prev.map((item, i) => (i === rowIndex ? {
+        ...item,
+        [event.target.name]: event.target.value
+      } : item))
+    )
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, rowIndex: number) => {
+    setReceipts((prev) =>
+      prev.map((item, i) =>
+        i === rowIndex ? {...item, [e.target.name]: e.target.checked} : item
+      )
+    );
+  };
+
+  const handleDeleteRow = (index: number) => {
+    setReceipts((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    const transformedReceipts = receipts.map((item) => {
+      if (item.isPaying) {
+        return {
+          ...item,
+          createdAt: header.createdAt,
+          vendorId: header.vendorId,
+          companyName: header.companyName,
+          quantity: 1,
+          rawMatAmount: undefined,
+          manufactureAmount: undefined,
+        };
+      } else {
+        return {
+          ...item,
+          createdAt: header.createdAt,
+          quantity: Number(item.quantity),
+          vendorId: header.vendorId,
+          companyName: header.companyName,
+          productPrice: undefined,
+        };
+      }
+    });
+
+    for (let i=0; i<receipts.length; i++) {
+      try {
+        await axiosInstance.post('/vendor/receipt', transformedReceipts[i]);
+      } catch (error) {
+        alert('거래를 다시 등록해주세요');
+      }
+    }
+    setReceipts([{...defaultReceipt}]);
+    setHeader({
+      createdAt: dayjs().format('YYYY-MM-DD'),
+      companyName: '',
+      vendorId: '',
+    })
+  }
+
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const res = await axiosInstance.get('/vendor/many');
+        setPurchaseCompanyList(res.data.data);
+      } catch (error) {
+        alert('새로고침 요망');
+      }
+    }
+    fetch();
+  }, [])
+
+  // debug
+  console.log(receipts);
+  console.log('매입처 리스트: ', purchaseCompanyList);
 
   return (
     <Box sx={{
@@ -87,9 +214,9 @@ const PurchaseMain = (): React.JSX.Element => {
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
         marginX: 3,
         marginY: 1,
+        gap: 10
       }}
       >
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -103,11 +230,30 @@ const PurchaseMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
-              // onChange={(value) => setFormData(prev=>({...prev, startAt: value.format('YYYY-MM-DD')}))}
+              onChange={(value) => setHeader(prev=>({...prev, createdAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
                 calendarHeader: {format: 'YYYY/MM'},
               }}
+            />
+          </Box>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}>
+            <InputLabel sx={{fontSize: 'small',}}>매입처명</InputLabel>
+            <Autocomplete
+              freeSolo
+              options={purchaseCompanyList.map((item) => item.name)}
+              onChange={handleCompanyChange}
+              value={receipts[0]?.companyName || ''}
+              renderInput={(params) =>
+                <TextField {...params}
+                           size='small'
+                           sx={{minWidth: 150}}
+                />
+              }
             />
           </Box>
         </LocalizationProvider>
@@ -118,7 +264,12 @@ const PurchaseMain = (): React.JSX.Element => {
         flexGrow: 1,
       }}>
         <TableContainer>
-          <Table size='small'>
+          <Table size='small'
+                 sx={{
+                   '& .MuiTableCell-root': {
+                     paddingY: '2px',
+                   },
+                 }}>
             <TableHead>
               <TableRow>
                 {columns.map((column) => (
@@ -130,6 +281,7 @@ const PurchaseMain = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell>삭제</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -139,14 +291,20 @@ const PurchaseMain = (): React.JSX.Element => {
                   <TableCell>
                     <Input size='small'
                            fullWidth
-                           disableUnderline
                            value={row.productName}
+                           name='productName'
+                           inputProps={{
+                             'data-input-id': `productName-${rowIndex}`,
+                             onKeyDown: (e) => {
+                               if (e.key === 'Enter') moveFocusToNextInput(`productName-${rowIndex}`);
+                             }
+                           }}
+                           onChange={(e) => handleInputChange(e, rowIndex)}
                     />
                   </TableCell>
                   {/* 수량 */}
                   <TableCell>
                     <Input size='small'
-                           disableUnderline
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
@@ -156,50 +314,129 @@ const PurchaseMain = (): React.JSX.Element => {
                              }
                            }}
                            value={row.quantity}
-                           // onChange={(e) => handleQuantityChange(e, rowIndex)}
+                           name='quantity'
+                           onChange={(e) => handleInputChange(e, rowIndex)}
                            data-table-input/>
-
                   </TableCell>
-                  {/* 금액 */}
                   <TableCell>
+                    {/* 재료단가 */}
                     <Input size='small'
-                           disableUnderline
+                           disableUnderline={row.isPaying}
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `newRawMatAmount-${rowIndex}`,
+                             'data-input-id': `rawMatAmount-${rowIndex}`,
                              onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`newRawMatAmount-${rowIndex}`);
+                               if (e.key === 'Enter') moveFocusToNextInput(`rawMatAmount-${rowIndex}`);
                              }
                            }}
+                           name='rawMatAmount'
+                           value={formatCurrency(row.rawMatAmount)}
+                           onChange={(event) => handleInputChange(event, rowIndex)}
+                           data-table-input/>
+                  </TableCell>
+                  <TableCell>
+                    {/* 재료비 */}
+                    <Input size='small'
+                           disableUnderline
+                           disabled
+                           fullWidth
+                           inputProps={{
+                             sx: {textAlign: 'right'},
+                             'data-input-id': `totalRawMatAmount-${rowIndex}`,
+                           }}
+                           name='totalRawMatAmount'
+                           value={(Number(row.rawMatAmount) * Number(row.quantity)).toLocaleString()}
+                           data-table-input/>
+                  </TableCell>
+                  <TableCell>
+                    {/* 가공단가 */}
+                    <Input size='small'
+                           disableUnderline={row.isPaying}
+                           inputProps={{
+                             sx: {textAlign: 'right'},
+                             'data-input-id': `manufactureAmount-${rowIndex}`,
+                             onKeyDown: (e) => {
+                               if (e.key === 'Enter') {
+                                 moveFocusToNextInput(`manufactureAmount-${rowIndex}`);
+                                 addRow();
+                               }
+                             }
+                           }}
+                           name='manufactureAmount'
+                           value={formatCurrency(row.manufactureAmount)}
+                           onChange={(e) => handleInputChange(e, rowIndex)}
+                           data-table-input/>
+                  </TableCell>
+                  <TableCell>
+                    {/* 가공비 */}
+                    <Input size='small'
+                           disabled
+                           disableUnderline
+                           inputProps={{
+                             sx: {textAlign: 'right'},
+                           }}
+                           name='totalManufactureAmount'
+                           value={(Number(row.manufactureAmount) * Number(row.quantity)).toLocaleString()}
+                           data-table-input/>
+                  </TableCell>
+                  {/* 입금액 */}
+                  <TableCell align='right'>
+                    <Input size='small'
+                           disabled={!row.isPaying}
+                           disableUnderline={!row.isPaying}
+                           inputProps={{
+                             sx: {textAlign: 'right'},
+                           }}
                            name='productPrice'
-                           value={row.productPrice}
-                           // onChange={(event) => handleAmountChange(event, rowIndex)}
+                           onChange={(e) => handleInputChange(e, rowIndex)}
+                           value={formatCurrency(row.productPrice)}
                            data-table-input/>
                   </TableCell>
                   {/* 세금 */}
-                  <TableCell align='right'>
-                    <Button variant='outlined' size='small'>세금</Button>
+                  <TableCell align='center'>
+                    <Checkbox size='small'
+                              onChange={(e) => handleCheckboxChange(e, rowIndex)}
+                              name='vat'
+                              disabled={row.isPaying}
+                              checked={row.vat}
+                    />
                   </TableCell>
                   {/* 세금 비율 */}
                   <TableCell>
                     <Input size='small'
                            disableUnderline
+                           disabled={!row.vat || row.isPaying}
                            fullWidth
                            value={row.vatRate}
                            inputProps={{
                              sx: {textAlign: 'right'},
                            }}
+                           name='vatRate'
+                           onChange={(e) => {
+                             handleInputChange(e, rowIndex);
+                           }}
                            data-table-input/>
                   </TableCell>
-                  {/* 지불 여부 */}
-                  <TableCell align='right'>
-                    <Button>ㅇㅇㅇ</Button>
+                  {/* 입금 여부 */}
+                  <TableCell align='center'>
+                    <Checkbox size='small'
+                              onChange={(e) => handleCheckboxChange(e, rowIndex)}
+                              name='isPaying'
+                    />
+                  </TableCell>
+                  {/* 행 삭제 */}
+                  <TableCell>
+                    <IconButton size='small' onClick={() => {
+                      handleDeleteRow(rowIndex)
+                    }}>
+                      <CloseIcon fontSize='small'/>
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={10} align="center">
                   <Button
                     fullWidth
                     size="small"
@@ -219,18 +456,15 @@ const PurchaseMain = (): React.JSX.Element => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 4,
+        marginTop: 2,
       }}>
-      </Box>
-      {/*<Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'
-                onClick={() => setOpenDialog(true)}
-                sx={{ marginY: 1 }}
+                sx={{marginY: 1}}
+                onClick={handleSubmit}
         >
           등록
         </Button>
-        <PrintButton printData={printData} value='인쇄' />
-      </Box>*/}
+      </Box>
     </Box>
   )
 }

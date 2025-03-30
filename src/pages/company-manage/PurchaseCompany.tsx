@@ -21,7 +21,7 @@ import InputWithLabel from '../../components/InputWithLabel.tsx';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import {PurchaseCompanyColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatPhoneNumber} from '../../utils/format.ts';
+import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
 import {GetVendorResData} from '../../types/vendorRes.ts';
 import {PatchVendorBankReqBody, PostVendorBankReqBody, PostVendorReqBody} from '../../types/vendorReq.ts';
 
@@ -39,7 +39,7 @@ const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
     id: PurchaseCompanyColumn.TEL_NUMBER,
     label: '전화번호',
-    minWidth: 180,
+    minWidth: 80,
   },
   {
     id: PurchaseCompanyColumn.SUB_TEL_NUMBER,
@@ -49,7 +49,7 @@ const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
     id: PurchaseCompanyColumn.BUSINESS_NUMBER,
     label: '사업자등록번호',
-    minWidth: 80,
+    minWidth: 50,
   }
 ]
 
@@ -61,12 +61,17 @@ const PurchaseCompany = (): React.JSX.Element => {
   const [purchaseCompanyList, setPurchaseCompanyList] = useState<GetVendorResData[]>([]);
   const [formData, setFormData] = useState<PostVendorReqBody>({
     name: '',
-    phoneNumber: '',
-    telNumber: '',
-    subTelNumber: '',
-    businessNumber: '',
+    phoneNumber: undefined,
+    telNumber: undefined,
+    subTelNumber: undefined,
+    businessNumber: undefined,
   });
-  const [bankData, setBankData] = useState<PostVendorBankReqBody | PatchVendorBankReqBody>();
+  const [bankData, setBankData] = useState<PostVendorBankReqBody | PatchVendorBankReqBody>({
+    infoId: undefined,
+    bankName: undefined,
+    accountNumber: undefined,
+    accountOwner: undefined,
+  });
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,15 +86,21 @@ const PurchaseCompany = (): React.JSX.Element => {
       [event.target.name]: formatPhoneNumber(event.target.value),
     });
   };
-
+  const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const val = formatBusinessNumber(event.target.value);
+    setFormData({
+      ...formData,
+      businessNumber: val,
+    })
+  }
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
       name: '',
-      phoneNumber: '',
-      telNumber: '',
-      subTelNumber: '',
-      businessNumber: '',
+      phoneNumber: undefined,
+      telNumber: undefined,
+      subTelNumber: undefined,
+      businessNumber: undefined,
     });
     setOpen(true);
   }
@@ -118,7 +129,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   }
 
   const handleBankEdit = (row: GetVendorResData) => {
-    setIsBankEditing(false);
+    setIsBankEditing(true);
     setBankData({
       bankId: row.bank.id,
       bankName: row.bank.bankName,
@@ -137,10 +148,17 @@ const PurchaseCompany = (): React.JSX.Element => {
   const handleSubmit = async () => {
     // TODO: 에러 핸들링 추가
     if (isEditing) {
-      await axiosInstance.patch('/vendor', formData);
+      await axiosInstance.patch('/vendor', {
+        vendorName: formData.name,
+        telNumber: formData.telNumber,
+        phoneNumber: formData.phoneNumber,
+        subTelNumber: formData.subTelNumber,
+        businessNumber: formData.businessNumber,
+      });
     } else {
       await axiosInstance.post('/vendor', formData);
     }
+    await fetchPurchaseCompanies();
     setOpen(false);
   }
 
@@ -150,11 +168,13 @@ const PurchaseCompany = (): React.JSX.Element => {
     } else {
       await axiosInstance.post('/vendor/bank', bankData);
     }
+    await fetchPurchaseCompanies();
     setBankOpen(false);
   }
 
   const delPurchaseCompany = async (companyName: string) => {
     await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
+    await fetchPurchaseCompanies();
     alert('거래처 삭제 완료');
   }
 
@@ -207,7 +227,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                           value={formData.telNumber}/>
           <InputWithLabel name='subTelNumber' label='전화번호(2)' labelPosition='left' onChange={handlePhoneNumberChange}
                           value={formData.subTelNumber}/>
-          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleBusinessNumberChange}
                           value={formData.businessNumber}/>
         </DialogContent>
         <DialogActions>
@@ -225,11 +245,11 @@ const PurchaseCompany = (): React.JSX.Element => {
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
           <InputWithLabel name='accountOwner' label='예금주' labelPosition='left' onChange={handleInputChange}
-                          value={bankData.accountOwner}/>
+                          value={bankData?.accountOwner}/>
           <InputWithLabel name='bankName' label='은행명' labelPosition='left' onChange={handleInputChange}
-                          value={bankData.bankName}/>
+                          value={bankData?.bankName}/>
           <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left' onChange={handleInputChange}
-                          value={bankData.accountNumber}/>
+                          value={bankData?.accountNumber}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBankOpen(false)}>취소</Button>
@@ -251,7 +271,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                   </TableCell>
                 ))}
                 <TableCell sx={{minWidth: 80}}>예금주</TableCell>
-                <TableCell sx={{minWidth: 120}}>계좌정보</TableCell>
+                <TableCell sx={{minWidth: 200}}>계좌정보</TableCell>
                 <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
@@ -283,8 +303,9 @@ const PurchaseCompany = (): React.JSX.Element => {
                           {row.bank.bankName + ' : ' + row.bank.accountNumber}
                           <Button variant='text' size='small'
                                   onClick={() => handleBankEdit(row)}
+                                  sx={{fontSize: 11}}
                           >
-                            계좌정보수정
+                            계좌수정
                           </Button>
                         </TableCell>
                       </>
@@ -293,6 +314,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                       <TableCell colSpan={2}>
                         <Button size='small'
                                 onClick={() => handleBankCreate(row.info.id)}
+                                sx={{fontSize: 11}}
                         >
                           은행정보 추가
                         </Button>

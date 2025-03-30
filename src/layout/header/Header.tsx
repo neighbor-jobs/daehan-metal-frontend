@@ -31,7 +31,7 @@ const Header = (): React.JSX.Element => {
         break;
       case MenuType.PurchaseManage:
         navigate('/purchase');
-        setSelectedSubType(PurchaseManageMenuType.DailyPurchase);
+        setSelectedSubType(PurchaseManageMenuType.PurchaseDetail);
         break;
       case MenuType.InventoryManage:
         navigate('/item');
@@ -78,10 +78,15 @@ const Header = (): React.JSX.Element => {
         break;
       case PurchaseManageMenuType.PurchaseDetail:
         navigate('/purchase');
+        setSubNavIdx(0);
         break;
-      case PurchaseManageMenuType.DailyPurchase:
+      /*case PurchaseManageMenuType.DailyPurchase:
         navigate('/purchase/daily');
         setSubNavIdx(0);
+        break;*/
+      case PurchaseManageMenuType.MonthlyPurchase:
+        navigate('/purchase/monthly');
+        setSubNavIdx(1);
         break;
       /*case PurchaseManageMenuType.ClientPurchase:
         navigate('/purchase/client');

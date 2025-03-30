@@ -10,9 +10,9 @@ import RevenueMain from './pages/revenue-manage/RevenueMain.tsx';
 import Home from './pages/Home.tsx';
 import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 import ProductMain from './pages/product-manage/ProductMain.tsx';
-import DailyPurchase from './pages/purchase-manage/DailyPurchase.tsx';
 import PurchaseMain from './pages/purchase-manage/PurchaseMain.tsx';
 import PurchaseCompany from './pages/company-manage/PurchaseCompany.tsx';
+import MonthlyPurchase from './pages/purchase-manage/MonthlyPurchase.tsx';
 
 const routes = createHashRouter([
   {
@@ -63,9 +63,13 @@ const routes = createHashRouter([
             index: true,
             element: <PurchaseMain />
           },
-          {
+          /*{
             path: 'daily',
             element: <DailyPurchase />
+          },*/
+          {
+            path: 'monthly',
+            element: <MonthlyPurchase />
           },
           /*{
             path: 'client',

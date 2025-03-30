@@ -54,7 +54,7 @@ class ProductStore {
     try {
       // 1번 페이지를 가져오기 (totalPages 확인)
       const firstPageResponse: AxiosResponse = await axios.get(
-        `https://composed-smashing-dory.ngrok-free.app/product?page=1&orderBy=desc`
+        `http://localhost:3000/product?page=1&orderBy=desc`
       );
 
       const totalPages = firstPageResponse.data.data.totalCount;

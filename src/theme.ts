@@ -14,7 +14,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           width: 210,
-          height: 230,
+          height: 250,
         }
       }
     },
@@ -38,7 +38,7 @@ const theme = createTheme({
       styleOverrides: {
         paper: {
           width: 210,
-          height: 230,
+          height: 250,
         }
       }
     },
@@ -90,6 +90,43 @@ const theme = createTheme({
         monthButton: {
           padding: 0,
           margin: 0,
+          fontSize: '0.8rem',
+        }
+      }
+    },
+    MuiMonthCalendar: {
+      styleOverrides: {
+        root: {
+          width: '100%',
+          padding: 0,
+          margin: 1,
+        },
+        monthButton: {
+          fontSize: '0.8rem',
+          padding: 0,
+          margin: 0,
+        }
+      }
+    },
+    MuiPickersYear: {
+      styleOverrides: {
+        root: {
+          width: '100%',
+          padding: 0,
+          margin: 0,
+        },
+        yearButton: {
+          fontSize: '0.8rem',
+          padding: 0,
+          margin: 0,
+          width: 50,
+        }
+      }
+    },
+    MuiYearCalendar: {
+      styleOverrides: {
+        root: {
+          width: 230,
         }
       }
     },
