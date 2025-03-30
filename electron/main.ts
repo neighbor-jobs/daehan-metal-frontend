@@ -8,6 +8,7 @@ import {readFileSync} from 'fs';
 import * as fs from 'node:fs';
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {
+  companyListDocRef,
   companySalesDocDef,
   companySalesSumDocDef,
   invoiceDocDef,
@@ -172,6 +173,9 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
       case RevenueManageMenuType.ItemSalesSummary:
         docDefinition = itemSalesSumDocDef(data);
         break;
+      case RevenueManageMenuType.ClientList:
+        docDefinition = companyListDocRef(data)
+        break
       default:
         throw new Error(`Unknown print type: ${printType}`);
     }

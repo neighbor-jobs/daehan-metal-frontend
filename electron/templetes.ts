@@ -66,6 +66,81 @@ export const companySalesDocDef = (companySalesData) => {
   return docDef;
 }
 
+/**
+ * 매출처 리스트
+ */
+export const companyListDocRef = (data): TDocumentDefinitions => {
+  const today = new Date();
+  return {
+    pageOrientation: 'landscape', // 🔥 페이지를 가로로 설정
+    pageSize: 'A4', // A4 크기 유지
+    header: (currPage, pageCount) => ({
+      columns: [{ text: `Page ${currPage} / ${pageCount}`, alignment: 'right' }],
+      margin: [40, 10, 40, 0],
+    }),
+    content: [
+      {
+        text: `매출처리스트`,
+        style: 'header',
+        alignment: 'center',
+      },
+      {
+        text: `출력일자: ${today.toISOString().split('T')[0]}`,
+        style: {
+          fontSize: 8,
+          marginBottom: 5,
+        },
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: ['5%', '12%', '6%', '12%', '10%', '10%', '10%', '10%', '30%'], // 칼럼 크기 조정
+          body: [
+            // 헤더
+            ['연번', '거래처명', '대표자', '전화번호', '팩스번호', '사업자번호', '업태', '종목', '주소'].map(header => ({
+              text: header,
+              noWrap: true,
+            })),
+            // 데이터 행
+            ...data.map((item: any, index: number) => [
+              { text: `${index + 1}`, style: 'tableText', alignment: 'right' }, // 연번
+              { text: item.companyName ?? '', style: 'tableText' }, // 거래처명
+              { text: item.ownerName ?? '', style: 'tableText', alignment: 'right' }, // 대표자
+              { text: item.phoneNumber ?? '', style: 'tableText', alignment: 'right' }, // 전화번호
+              { text: item.fax ?? '', style: 'tableText', alignment: 'right' }, // 팩스
+              { text: item.businessNumber ?? '', style: 'tableText', alignment: 'right' }, // 사업자 번호
+              { text: truncateText(item.businessType ?? '', 10), style: 'tableText', alignment: 'right', noWrap: true }, // 업태
+              { text: truncateText(item.businessCategory ?? '', 10), style: 'tableText', alignment: 'right', noWrap: true }, // 종목
+              { 
+                text: truncateText(item.address ?? '', 35), 
+                style: 'tableText', 
+                alignment: 'right', 
+                noWrap: true, // 주소도 칸을 넘어서지 않게 설정
+                width: 40 // 최대 너비 제한 (예제 값, 조정 가능)
+              }, // 주소
+            ]),
+          ],
+        },
+      },
+      // 표 바깥에 텍스트 추가
+      {
+        text: '대한금속이엔지(주)',
+        style: 'tableText',
+        alignment: 'center',
+        margin: [0, 10, 0, 0], // 여백 추가
+      },
+    ],
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 9,
+    },
+    styles: {
+      header: { fontSize: 14 },
+      subheader: { fontSize: 10, marginBottom: 20 },
+    },
+  };
+};
+
 /*
 * 거래처별 매출집계
 */
@@ -460,4 +535,11 @@ export const invoiceDocDef = (data: any) => {
     },
   };
   return docDef;
+};
+
+/**
+ * 긴 문자열을 일정 길이에서 자르고 "..."을 붙여주는 함수
+ */
+const truncateText = (text: string, maxLength: number) => {
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 };

@@ -15,6 +15,7 @@ export enum RevenueManageMenuType {
   ItemSales = '품목별 매출현황',
   ItemSalesSummary = '품목별 매출집계',
   ClientOutstandingBalance = '매출처별 미수금현황',
+  ClientList = '매출처관리',
 }
 
 export const revenueManageTypeArr = Object.entries(RevenueManageMenuType).map(([key, value]) => ({key, value}));
