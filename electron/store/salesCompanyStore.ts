@@ -56,7 +56,7 @@ class CompanyStore {
   public async fetchAndUpdateCompanies() {
     try {
       const response: AxiosResponse = await axios.get<SalesCompanyInfo[]>(
-        `http://localhost:3000/company?orderBy=desc`
+        `http://https://saving-finer-fly.ngrok-free.app/company?orderBy=desc`
       );
       this.replaceCache(response.data.data);
       console.log("✅ 거래처 리스트 업데이트 완료");

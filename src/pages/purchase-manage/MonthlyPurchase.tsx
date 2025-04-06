@@ -62,7 +62,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
     align: 'right',
     format: formatCurrency,
   },
-{
+  {
     id: MonthlyPurchaseColumn.TOTAL_PRICE,
     label: '합계',
     minWidth: 100,
@@ -86,7 +86,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
 ];
 
 
-const MonthlyPurchase = () : React.JSX.Element => {
+const MonthlyPurchase = (): React.JSX.Element => {
   const [formData, setFormData] = useState({
     standardDate: dayjs(),
     companyName: '',
@@ -98,10 +98,18 @@ const MonthlyPurchase = () : React.JSX.Element => {
 
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = purchaseCompanyList.find((company) => company.name === newValue);
+    if (!selectedCompany) {
+      setFormData(prev => ({
+        ...prev,
+        companyName: newValue || '',
+      }));
+      setSelectedCompanyData({});
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       companyName: selectedCompany.name,
-    }))
+    }));
     setSelectedCompanyData({
       companyName: selectedCompany.name,
       telNumber: selectedCompany.info?.telNumber || '',
@@ -169,7 +177,7 @@ const MonthlyPurchase = () : React.JSX.Element => {
               views={['year', 'month']}
               format="YYYY/MM"
               defaultValue={dayjs()}
-              onChange={(value) => setFormData(prev=>({...prev, standardDate: value}))}
+              onChange={(value) => setFormData(prev => ({...prev, standardDate: value}))}
               slotProps={{
                 textField: {size: 'small'},
               }}
@@ -220,7 +228,8 @@ const MonthlyPurchase = () : React.JSX.Element => {
                       <TableCell>{row.productName}</TableCell>
                       <TableCell align='right'>{row.quantity.toFixed(3)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.unitPrice)}</TableCell>
-                      <TableCell align='right'>{(Number(row.totalRawMatAmount) + Number(row.totalManufactureAmount)).toLocaleString()}</TableCell>
+                      <TableCell
+                        align='right'>{(Number(row.totalRawMatAmount) + Number(row.totalManufactureAmount)).toLocaleString()}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.totalVatPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.totalPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.productPrice)}</TableCell>
@@ -234,7 +243,7 @@ const MonthlyPurchase = () : React.JSX.Element => {
                 <TableCell colSpan={2}>합계</TableCell>
                 <TableCell align='right'>재료비</TableCell>
                 <TableCell align='right'>가공비</TableCell>
-                <TableCell colSpan={2} align='right' />
+                <TableCell colSpan={2} align='right'/>
                 <TableCell align='right'>총합</TableCell>
                 <TableCell colSpan={2} align='right'></TableCell>
               </TableRow>
@@ -243,7 +252,7 @@ const MonthlyPurchase = () : React.JSX.Element => {
         </TableContainer>
       </Paper>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
-        <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄' />
+        <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄'/>
       </Box>
     </Box>
   )

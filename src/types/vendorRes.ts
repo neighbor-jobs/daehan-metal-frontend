@@ -3,14 +3,14 @@ export interface PostVendorResData {
   name: string,
   info: {
    id: string,
-   telNumber: string | null,
-   subTelNumber: string | null,
-   phoneNumber: string | null,
-   businessNumber: string | null,
-   bankId: string | null,
-   createdAt: string | null
+   telNumber: string | undefined,
+   subTelNumber: string | undefined,
+   phoneNumber: string | undefined,
+   businessNumber: string | undefined,
+   bankId: string | undefined,
+   createdAt: string | undefined,
   },
-  receipts: any[],
+  receipts: any[] | undefined,
   createdAt: string
 }
 

@@ -28,7 +28,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     id: ClientSalesColumn.DATE,
     label: '날짜',
     minWidth: 100,
-    format: (date) => date.split('T')[0],
+    format: (date: string) => date.split('T')[0],
   },
   {
     id: ClientSalesColumn.PRODUCT_NAME,
