@@ -76,7 +76,7 @@ class ProductStore {
   private async fetchAdditionalPage(page: number) {
     try {
       const response: AxiosResponse = await axios.get(
-        `https://saving-finer-fly.ngrok-free.app/product?page=${page}&orderBy=desc`
+        `http://localhost:3000/product?page=${page}&orderBy=desc`
       );
       response.data.data.products.forEach((product) => this.cache.set(product.id, product));
       console.log(`✅ ${page}번 페이지 품목 추가 완료`);

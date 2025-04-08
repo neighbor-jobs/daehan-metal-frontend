@@ -15,7 +15,7 @@ import {
   itemSalesSumDocDef,
   outstandingAmountDocDef, purchaseReceiptDocRef
 } from './templetes.ts';
-import {PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
+import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {productStore} from './store/productStore.ts';
 
@@ -154,7 +154,7 @@ pdfMake.fonts = {
   },
 };
 
-ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType , data) => {
+ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType, data) => {
   return new Promise((resolve, reject) => {
     let docDefinition: TDocumentDefinitions;
     switch (printType) {
@@ -173,7 +173,7 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
       case RevenueManageMenuType.ItemSalesSummary:
         docDefinition = itemSalesSumDocDef(data);
         break;
-      case RevenueManageMenuType.ClientList:
+      case ClientManageMenuType.SalesManage:
         docDefinition = companyListDocRef(data)
         break;
       case PurchaseManageMenuType.MonthlyPurchase:
