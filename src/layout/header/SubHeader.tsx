@@ -16,7 +16,7 @@ const SubHeader = ({subMenu, handleChange, idx}: SubHeaderProps): React.JSX.Elem
     handleChange(subMenu[newValue].value);
   };
 
-  console.log('sub header value: ', value);
+  // console.log('sub header value: ', value);
 
   return (
     <Box>

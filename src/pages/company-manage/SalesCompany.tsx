@@ -168,7 +168,7 @@ const SalesCompany = (): React.JSX.Element => {
     }
     if (isEditing) {
       const res: AxiosResponse = await axiosInstance.patch('/company', data);
-      console.log('add update company data.data', res.data.data);
+      // console.log('add update company data.data', res.data.data);
     } else {
       const res: AxiosResponse = await axiosInstance.post('/company', data);
       setSalesCompanyList((prev) => ([res.data.data, ...prev]));
@@ -176,7 +176,7 @@ const SalesCompany = (): React.JSX.Element => {
     setOpen(false);
   }
   // console.log('캐시값 확인: ', cacheManager.getCompanies());
-  console.log('res.data.data: ', salesCompanyList);
+  // console.log('res.data.data: ', salesCompanyList);
 
   const delSalesCompany = async (companyName: string) => {
     await axiosInstance.delete(`/company?companyName=${companyName}`);

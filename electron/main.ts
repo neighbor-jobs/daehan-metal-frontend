@@ -99,7 +99,7 @@ app.whenReady().then(async () => {
 
 // 데이터 가져오기
 ipcMain.handle('get-store', (_, key) => {
-  console.log('데이터 경로: ', app.getPath('userData'));
+  // console.log('데이터 경로: ', app.getPath('userData'));
   return store.get(key);
 });
 

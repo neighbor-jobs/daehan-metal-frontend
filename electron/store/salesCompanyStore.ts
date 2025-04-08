@@ -48,7 +48,7 @@ class CompanyStore {
 
   /** 초기화 메서드 (앱 실행 후 호출) */
   public async initialize() {
-    console.log("🚀 서버에서 거래처 목록 가져오기...");
+    // console.log("🚀 서버에서 거래처 목록 가져오기...");
     await this.fetchAndUpdateCompanies();
   }
 
@@ -59,7 +59,7 @@ class CompanyStore {
         `http://localhost:3000/company?orderBy=desc`
       );
       this.replaceCache(response.data.data);
-      console.log("✅ 거래처 리스트 업데이트 완료");
+      // console.log("✅ 거래처 리스트 업데이트 완료");
     } catch (error) {
       console.error("❌ 거래처 리스트 업데이트 실패:", error);
     }

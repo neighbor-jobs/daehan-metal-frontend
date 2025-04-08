@@ -43,7 +43,7 @@ class ProductStore {
 
   /** 초기화 메서드 (앱 실행 후 호출) */
   public async initialize() {
-    console.log("🚀 서버에서 품목 & 규격 목록 가져오기...");
+    // console.log("🚀 서버에서 품목 & 규격 목록 가져오기...");
     await this.fetchAndUpdateProducts();
     this.saveToStore();
   }
@@ -60,7 +60,7 @@ class ProductStore {
       const totalPages = firstPageResponse.data.data.totalCount;
       firstPageResponse.data.data.products.forEach((product) => this.cache.set(product.id, product));
 
-      console.log(`✅ 1번 페이지 품목 업데이트 완료 (총 ${totalPages} 페이지)`);
+      // console.log(`✅ 1번 페이지 품목 업데이트 완료 (총 ${totalPages} 페이지)`);
 
       // 2페이지 이상이 존재하면 추가적으로 요청
       for (let page = 2; page <= totalPages; page++) {
@@ -79,7 +79,7 @@ class ProductStore {
         `http://localhost:3000/product?page=${page}&orderBy=desc`
       );
       response.data.data.products.forEach((product) => this.cache.set(product.id, product));
-      console.log(`✅ ${page}번 페이지 품목 추가 완료`);
+      // console.log(`✅ ${page}번 페이지 품목 추가 완료`);
     } catch (error) {
       console.error(`❌ ${page}번 페이지 품목 가져오기 실패:`, error);
     }

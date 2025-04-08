@@ -11,7 +11,7 @@ interface FooterProps {
 
 const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
   const {selectedSubType} = useHeaderStore();
-  console.log(printData);
+  // console.log(printData);
 
   // handler
   const handlePrint = async () => {

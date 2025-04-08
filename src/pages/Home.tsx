@@ -22,7 +22,7 @@ const Home = (): React.JSX.Element => {
         navigate('/item');
         break;
       case MenuType.ClientManage:
-        navigate('/client');
+        navigate('/client/sales');
         break;
       default:
         navigate('/');

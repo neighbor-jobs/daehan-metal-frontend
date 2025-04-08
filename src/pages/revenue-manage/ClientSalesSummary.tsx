@@ -73,7 +73,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
     const res: AxiosResponse = await axiosInstance.get(
       `receipt/company/sales/summary/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`
     );
-    console.log('get client sales sum data: ', res.data.data);
+    // console.log('get client sales sum data: ', res.data.data);
     setClientSalesSumList(res.data.data);
 
     const data = res.data.data?.map((item) => {

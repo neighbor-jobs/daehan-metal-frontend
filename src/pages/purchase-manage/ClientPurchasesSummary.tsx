@@ -12,9 +12,6 @@ import {
   TableRow
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
-import PrintButton from '../../layout/PrintButton.tsx';
-import clientSalesSummaryMock from '../../mock/revenue-manage/clientSalesSummaryMock.ts';
-import clientPurchasesSummaryMock from '../../mock/purchase-manage/clientPurchasesSummaryMock.ts';
 import {formatCurrency} from '../../utils/format.ts';
 
 const columns: readonly TableColumns<ClientPurchasesSummaryColumn>[] = [
@@ -95,6 +92,7 @@ const ClientPurchasesSummary = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
+{/*
               {clientPurchasesSummaryMock
                 .map((row) => {
                   return (
@@ -112,6 +110,7 @@ const ClientPurchasesSummary = (): React.JSX.Element => {
                     </TableRow>
                   );
                 })}
+*/}
             </TableBody>
             <TableFooter>
               <TableRow>
@@ -126,7 +125,7 @@ const ClientPurchasesSummary = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={clientSalesSummaryMock} ></PrintButton>
+      {/*<PrintButton></PrintButton>*/}
     </Box>
   )
 }

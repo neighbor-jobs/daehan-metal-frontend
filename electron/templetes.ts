@@ -5,7 +5,7 @@ import {formatDecimal, formatCurrency} from '../src/utils/format.ts';
 * 거래처별 매출현황
 */
 export const companySalesDocDef = (companySalesData) => {
-  console.log('printData: ', companySalesData);
+  // console.log('printData: ', companySalesData);
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -201,7 +201,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
 * 거래처별 매출집계
 */
 export const companySalesSumDocDef = (companySalesSumData) => {
-  console.log(companySalesSumData)
+  // console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -329,7 +329,7 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
 */
 export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
-  console.log(outstandingAmount);
+  // console.log(outstandingAmount);
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
       columns: [
@@ -529,7 +529,7 @@ const basicInvoiceTable = (data, index) => {
 }
 
 export const invoiceDocDef = (data: any) => {
-  console.log(data);
+  // console.log(data);
   /*
   *   /*{
   companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',

@@ -204,8 +204,8 @@ const PurchaseMain = (): React.JSX.Element => {
   }, [])
 
   // debug
-  console.log(receipts);
-  console.log('매입처 리스트: ', purchaseCompanyList);
+  // console.log(receipts);
+  // console.log('매입처 리스트: ', purchaseCompanyList);
 
   return (
     <Box sx={{
