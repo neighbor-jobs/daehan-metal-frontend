@@ -5,16 +5,16 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
+  IconButton, Pagination,
   Paper,
   Table,
   TableBody,
   TableCell,
-  TableContainer, TableFooter,
-  TableHead, TablePagination,
+  TableContainer,
+  TableHead,
   TableRow
 } from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import InputWithLabel from '../../components/InputWithLabel.tsx';
 import {ProductMainColumn} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
@@ -22,7 +22,6 @@ import axiosInstance from '../../api/axios.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
-import getAllProducts from '../../api/getAllProducts.ts';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -89,7 +88,11 @@ const ProductMain = (): React.JSX.Element => {
     newName: '',
   });
   const [productList, setProductList] = useState([]); // 데이터 원본
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState({
+    page: 1,
+    totalPages: 1,
+  });
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const formatProdList = productList.flatMap((item) =>
     item.info.scales.map(({id, scale, snapshot}) => ({
       id: item.id,
@@ -157,15 +160,26 @@ const ProductMain = (): React.JSX.Element => {
   }
 
   const handleChangePage = (_event, newPage: number) => {
-    setPage(newPage);
+    setPage(prevState => ({
+      ...prevState,
+      page: newPage,
+    }));
+    getProductList(newPage);
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
   };
+
   // api
-  const getProductList = async () => {
-    const products = await getAllProducts();
-    setProductList(products);
+  const getProductList = async (page: number = 1) => {
+    const products = await axiosInstance.get(`/product?page=${page}&orderBy=desc`);
+    setProductList(products.data.data.products);
+    setPage(prev => ({
+      ...prev,
+      totalPages: products.data.data.totalCount,
+    }))
   }
 
-  // console.log('get product list: ', productList);
   useEffect(() => {
     getProductList();
   }, []);
@@ -292,7 +306,7 @@ const ProductMain = (): React.JSX.Element => {
         overflow: 'auto',
         flexGrow: 1,
       }}>
-        <TableContainer>
+        <TableContainer sx={{maxHeight: 'calc(100vh - 170px)'}} ref={tableContainerRef}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -339,20 +353,16 @@ const ProductMain = (): React.JSX.Element => {
                   );
                 })}
             </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TablePagination
-                  rowsPerPageOptions={[]}
-                  colSpan={8}
-                  count={productList.length}
-                  rowsPerPage={-1}
-                  page={page}
-                  onPageChange={handleChangePage}
-                />
-              </TableRow>
-            </TableFooter>
           </Table>
         </TableContainer>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <Pagination
+            count={page.totalPages}
+            shape="rounded"
+            page={page.page}
+            onChange={handleChangePage}
+          />
+        </Box>
       </Paper>
     </Box>
   )
