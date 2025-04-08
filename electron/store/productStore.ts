@@ -4,13 +4,13 @@ import axios, {AxiosResponse} from 'axios';
 interface Snapshot {
   id: string;
   sequence: number;
-  manufactureAmount: string;
-  vCutAmount: string;
-  rawMatAmount: string;
-  productLength: string;
-  stocks: number;
-  unitWeight: string;
-  vCut: string;
+  manufactureAmount?: string;
+  vCutAmount?: string;
+  rawMatAmount?: string;
+  productLength?: string;
+  stocks?: number;
+  unitWeight?: string;
+  vCut?: string;
   createdAt: string;
 }
 
@@ -54,7 +54,7 @@ class ProductStore {
     try {
       // 1번 페이지를 가져오기 (totalPages 확인)
       const firstPageResponse: AxiosResponse = await axios.get(
-        `http://https://saving-finer-fly.ngrok-free.app/product?page=1&orderBy=desc`
+        `https://saving-finer-fly.ngrok-free.app/product?page=1&orderBy=desc`
       );
 
       const totalPages = firstPageResponse.data.data.totalCount;

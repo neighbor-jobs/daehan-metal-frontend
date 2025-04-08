@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.ts';
 import {
   Autocomplete,
@@ -30,6 +30,7 @@ import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {cacheManager} from '../../utils/cacheManager.ts';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
+import ProductForm from '../../components/ProductForm.tsx';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -113,6 +114,9 @@ const TransactionRegister = ({
   const [amount, setAmount] = useState<Amount[]>(
     Array.from({length: 1}, () => ({...defaultAmount}))
   );
+  const [newProductFormOpen, setNewProductFormOpen] = useState(false);
+
+  const [productListState, setProductListState] = useState([]);
 
   const locationOptions = useMemo(() => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === formData.companyName);
@@ -148,7 +152,7 @@ const TransactionRegister = ({
   }, []);
 
   const handleProductChange = (index: number, newValue: string | null) => {
-    const selectedProduct = productList.find((item) => item.productName === newValue);
+    const selectedProduct = productListState.find((item) => item.productName === newValue);
     setChoices((prevChoices) =>
       prevChoices.map((choice, i) =>
         i === index
@@ -163,7 +167,7 @@ const TransactionRegister = ({
   };
 
   const handleScaleChange = (index: number, newValue: string | null, prodName: string | null) => {
-    for (const product of productList) {
+    for (const product of productListState) {
       if (product.productName === prodName) {
         const matchedScale = product.info.scales.find(s => s.scale === newValue);
         if (matchedScale) {
@@ -221,6 +225,10 @@ const TransactionRegister = ({
   }
 
   const register = async () => {
+    if (formData.companyName) {
+      alert('거래처명은 필수 입력값입니다.');
+      return;
+    }
     const endSeq = await getEndSeq(formData.companyName, formData.createdAt);
 
     const updatedFormData = {
@@ -235,12 +243,12 @@ const TransactionRegister = ({
     }));
 
     for (let index = 0; index < amount.length; index++) {
-      console.log('업데이트 전 seq ', index, ' :', updatedChoices[index]);
+      // console.log('업데이트 전 seq ', index, ' :', updatedChoices[index]);
       const a = amount[index];
       const choice = updatedChoices[index];
 
       if (a.cachedRawMatAmount !== a.newRawMatAmount || a.cachedManufactureAmount !== a.newManufactureAmount) {
-        const product = productList.find((item) => item.productName === choice.productName);
+        const product = productListState.find((item) => item.productName === choice.productName);
         const scale = product.info.scales.find(s => s.scale === choice.productScale);
 
         if (product && scale) {
@@ -260,7 +268,7 @@ const TransactionRegister = ({
               ...updatedChoices[index],
               productScaleSequence: choice.productScaleSequence + 1,
             };
-            console.log('업데이트 후 seq ', index, ' :', updatedChoices[index]);
+            // console.log('업데이트 후 seq ', index, ' :', updatedChoices[index]);
           } catch (error) {
             console.error(`가격 업데이트 실패 - row ${index}`, error);
           }
@@ -274,7 +282,7 @@ const TransactionRegister = ({
     };
 
     try {
-      const res = await axiosInstance.post('/receipt', data);
+      const res: AxiosResponse = await axiosInstance.post('/receipt', data);
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData({
         companyId: '',
@@ -307,294 +315,318 @@ const TransactionRegister = ({
     }
   }
 
+
+  useEffect(() => {
+    if (productList.length > 0) {
+      setProductListState(productList);
+    }
+  }, [productList]);
+
   // debug
-
+  // console.log(productListState);
   return (
-    <Dialog open={isOpen} fullWidth maxWidth="lg">
-      <IconButton onClick={onClose} size='small'
-                  sx={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                  }}
-      >
-        <CloseIcon/>
-      </IconButton>
-      <DialogTitle>거래등록</DialogTitle>
-      <DialogContent>
-        <Box display="flex" flexDirection="column" gap={2} p={2} component={Paper}>
-          {/* 매출일 & 거래처 & 현장명 등록 */}
-          <Box>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}>
-                <Box>
-                  <InputLabel sx={{fontSize: 'small',}}>매출일</InputLabel>
-                  <DesktopDatePicker
-                    views={['day']}
-                    format="YYYY/MM/DD"
-                    defaultValue={dayjs()}
-                    onChange={(value) => setFormData(prev => ({...prev, createdAt: value.format('YYYY-MM-DD')}))}
-                    slotProps={{
-                      textField: {size: 'small'},
-                      calendarHeader: {format: 'YYYY/MM'},
+    <>
+      <Dialog open={isOpen} fullWidth maxWidth="lg">
+        <IconButton onClick={onClose} size='small'
+                    sx={{
+                      position: "absolute",
+                      right: 8,
+                      top: 8,
                     }}
-                  />
-                </Box>
-                <Box display="flex" flexDirection="column">
-                  <InputLabel sx={{fontSize: 'small',}}>거래처명</InputLabel>
-                  <Autocomplete
-                    freeSolo
-                    options={salesCompanyList.map((option) => option.companyName)}
-                    onChange={handleCompanyChange}
-                    value={formData.companyName}
-                    renderInput={(params) =>
-                      <TextField {...params}
-                                 size='small'
-                                 sx={{minWidth: 150}}
+        >
+          <CloseIcon/>
+        </IconButton>
+        <DialogTitle>거래등록</DialogTitle>
+        <DialogContent>
+          <Box display="flex" flexDirection="column" gap={2} p={2} component={Paper}>
+            {/* 매출일 & 거래처 & 현장명 & 새 품목, 규격 등록 */}
+            <Box>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}>
+                  <Box sx={{display: 'flex', gap: 3}}>
+                    {/* 매출일 */}
+                    <Box>
+                      <InputLabel sx={{fontSize: 'small',}}>매출일</InputLabel>
+                      <DesktopDatePicker
+                        views={['day']}
+                        format="YYYY/MM/DD"
+                        defaultValue={dayjs()}
+                        onChange={(value) => setFormData(prev => ({...prev, createdAt: value.format('YYYY-MM-DD')}))}
+                        slotProps={{
+                          textField: {size: 'small'},
+                          calendarHeader: {format: 'YYYY/MM'},
+                        }}
                       />
-                    }
-                  />
-                </Box>
-                <Box>
-                  <InputLabel sx={{fontSize: 'small',}}>현장명</InputLabel>
-                  <Autocomplete
-                    freeSolo
-                    multiple
-                    options={locationOptions}
-                    value={formData.locationName}
-                    onChange={handleLocationChange}
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, index) => {
-                        const {key, ...chipProps} = getTagProps({index});
-                        return (
-                          <Chip
-                            key={key}
-                            {...chipProps}
-                            label={option}
-                            size="small"
-                            sx={{height: 20, fontSize: 12}}
+                    </Box>
+                    {/* 거래처명 */}
+                    <Box display="flex" flexDirection="column">
+                      <InputLabel sx={{fontSize: 'small',}}>거래처명</InputLabel>
+                      <Autocomplete
+                        options={salesCompanyList.map((option) => option.companyName)}
+                        onChange={handleCompanyChange}
+                        value={formData.companyName}
+                        renderInput={(params) =>
+                          <TextField {...params}
+                                     size='small'
+                                     sx={{minWidth: 150}}
                           />
-                        );
-                      })
-                    }
-                    renderInput={(params) =>
-                      <TextField {...params}
-                                 value={formData.locationName}
-                                 size='small'
-                                 sx={{minWidth: 150}}
+                        }
                       />
-                    }
-                  />
+                    </Box>
+                    {/* 현장명 */}
+                    <Box>
+                      <InputLabel sx={{fontSize: 'small',}}>현장명</InputLabel>
+                      <Autocomplete
+                        freeSolo
+                        multiple
+                        options={locationOptions}
+                        value={formData.locationName}
+                        onChange={handleLocationChange}
+                        renderTags={(value, getTagProps) =>
+                          value.map((option, index) => {
+                            const {key, ...chipProps} = getTagProps({index});
+                            return (
+                              <Chip
+                                key={key}
+                                {...chipProps}
+                                label={option}
+                                size="small"
+                                sx={{height: 20, fontSize: 12}}
+                              />
+                            );
+                          })
+                        }
+                        renderInput={(params) =>
+                          <TextField {...params}
+                                     value={formData.locationName}
+                                     size='small'
+                                     sx={{minWidth: 150}}
+                          />
+                        }
+                      />
+                    </Box>
+                  </Box>
+                  <Button variant='outlined' onClick={() => setNewProductFormOpen(true)}>
+                    품목&규격 추가
+                  </Button>
                 </Box>
-              </Box>
-            </LocalizationProvider>
-          </Box>
+              </LocalizationProvider>
+            </Box>
 
-          <TableContainer component={Paper}>
-            <Table size='small'
-                   sx={{
-                     '& .MuiTableCell-root': {
-                       paddingY: '2px',
-                       paddingX: '4px'
-                     },
-                   }}
-            >
-              <TableHead>
-                <TableRow>
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.id}
-                      align={column.align}
-                      style={{minWidth: column.minWidth}}
-                    >
-                      {column.label}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {choices.map((choice, rowIndex) => (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                    {/* 품명 */}
-                    <TableCell>
-                      <Autocomplete
-                        size='small'
-                        options={productList.map((option) => option.productName)}
-                        onChange={(_, newValue) => handleProductChange(rowIndex, newValue)}
-                        value={choice.productName}
-                        renderInput={(params) =>
-                          <TextField {...params}
-                                     size='small'
-                                     data-table-input
-                          />
-                        }
-                      />
-                    </TableCell>
-                    {/* 규격 */}
-                    <TableCell>
-                      <Autocomplete
-                        options={productList.find((p) => p.productName === choice.productName)?.info.scales.map((s) => s.scale) || []}
-                        value={choice.productScale}
-                        onChange={(_, newValue: string | null) => handleScaleChange(rowIndex, newValue, choice.productName)}
-                        renderInput={(params) =>
-                          <TextField {...params}
-                                     size='small'
-                                     data-table-input
-                          />
-                        }
-                      />
-                    </TableCell>
-                    {/* 수량 */}
-                    <TableCell>
-                      <Input size='small'
-                             disableUnderline
-                             fullWidth
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                               'data-input-id': `quantity-${rowIndex}`,
-                               onKeyDown: (e) => {
-                                 if (e.key === 'Enter') moveFocusToNextInput(`quantity-${rowIndex}`);
-                               }
-                             }}
-                             value={choice.quantity}
-                             onChange={(e) => handleQuantityChange(e, rowIndex)}
-                             data-table-input/>
-                    </TableCell>
-                    {/* 재료단가/재료비 */}
-                    <TableCell>
-                      <Input size='small'
-                             disableUnderline
-                             fullWidth
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                               'data-input-id': `newRawMatAmount-${rowIndex}`,
-                               onKeyDown: (e) => {
-                                 if (e.key === 'Enter') moveFocusToNextInput(`newRawMatAmount-${rowIndex}`);
-                               }
-                             }}
-                             name='newRawMatAmount'
-                             value={amount[rowIndex].newRawMatAmount}
-                             onChange={(event) => handleAmountChange(event, rowIndex)}
-                             data-table-input/>
-                    </TableCell>
-                    <TableCell>
-                      <Input size='small'
-                             disabled
-                             disableUnderline
-                             fullWidth
-                             value={`${Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                             }}
-                             data-table-input/>
-                    </TableCell>
-                    {/* 가공단가/가공비 */}
-                    <TableCell>
-                      <Input size='small'
-                             disableUnderline
-                             fullWidth
-                             data-table-input
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                               'data-input-id': `newManufactureAmount-${rowIndex}`,
-                               onKeyDown: (e) => {
-                                 if (e.key === 'Enter') {
-                                   moveFocusToNextInput(`newManufactureAmount-${rowIndex}`);
-                                   addRow();
+            <TableContainer component={Paper}>
+              <Table size='small'
+                     sx={{
+                       '& .MuiTableCell-root': {
+                         paddingY: '2px',
+                         paddingX: '4px'
+                       },
+                     }}
+              >
+                <TableHead>
+                  <TableRow>
+                    {columns.map((column) => (
+                      <TableCell
+                        key={column.id}
+                        align={column.align}
+                        style={{minWidth: column.minWidth}}
+                      >
+                        {column.label}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {choices.map((choice, rowIndex) => (
+                    <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
+                      {/* 품명 */}
+                      <TableCell>
+                        <Autocomplete
+                          size='small'
+                          options={productListState.map((option) => option.productName)}
+                          onChange={(_, newValue) => handleProductChange(rowIndex, newValue)}
+                          value={choice.productName}
+                          renderInput={(params) =>
+                            <TextField {...params}
+                                       size='small'
+                                       data-table-input
+                            />
+                          }
+                        />
+                      </TableCell>
+                      {/* 규격 */}
+                      <TableCell>
+                        <Autocomplete
+                          options={productListState.find((p) => p.productName === choice.productName)?.info.scales.map((s) => s.scale) || []}
+                          value={choice.productScale}
+                          onChange={(_, newValue: string | null) => handleScaleChange(rowIndex, newValue, choice.productName)}
+                          renderInput={(params) =>
+                            <TextField {...params}
+                                       size='small'
+                                       data-table-input
+                            />
+                          }
+                        />
+                      </TableCell>
+                      {/* 수량 */}
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               fullWidth
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                                 'data-input-id': `quantity-${rowIndex}`,
+                                 onKeyDown: (e) => {
+                                   if (e.key === 'Enter') moveFocusToNextInput(`quantity-${rowIndex}`);
                                  }
-                               }
-                             }}
-                             value={`${amount[rowIndex].newManufactureAmount}`}
-                             onChange={(event) => handleAmountChange(event, rowIndex)}
-                             name='newManufactureAmount'/>
-                    </TableCell>
-                    <TableCell>
-                      <Input size='small'
-                             disableUnderline
-                             disabled
-                             fullWidth
-                             data-table-input
-                             value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)}`}
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                             }}/>
-                    </TableCell>
-                    {/* 계 */}
-                    <TableCell>
-                      <Input size='small'
-                             name='sum'
-                             disableUnderline
-                             fullWidth
-                             data-table-input
-                             disabled
-                             value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
-                             inputProps={{
-                               sx: {textAlign: 'right'},
-                             }}/>
+                               }}
+                               value={choice.quantity}
+                               onChange={(e) => handleQuantityChange(e, rowIndex)}
+                               data-table-input/>
+                      </TableCell>
+                      {/* 재료단가/재료비 */}
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               fullWidth
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                                 'data-input-id': `newRawMatAmount-${rowIndex}`,
+                                 onKeyDown: (e) => {
+                                   if (e.key === 'Enter') moveFocusToNextInput(`newRawMatAmount-${rowIndex}`);
+                                 }
+                               }}
+                               name='newRawMatAmount'
+                               value={amount[rowIndex].newRawMatAmount}
+                               onChange={(event) => handleAmountChange(event, rowIndex)}
+                               data-table-input/>
+                      </TableCell>
+                      <TableCell>
+                        <Input size='small'
+                               disabled
+                               disableUnderline
+                               fullWidth
+                               value={`${Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                               }}
+                               data-table-input/>
+                      </TableCell>
+                      {/* 가공단가/가공비 */}
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               fullWidth
+                               data-table-input
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                                 'data-input-id': `newManufactureAmount-${rowIndex}`,
+                                 onKeyDown: (e) => {
+                                   if (e.key === 'Enter') {
+                                     moveFocusToNextInput(`newManufactureAmount-${rowIndex}`);
+                                     addRow();
+                                   }
+                                 }
+                               }}
+                               value={`${amount[rowIndex].newManufactureAmount}`}
+                               onChange={(event) => handleAmountChange(event, rowIndex)}
+                               name='newManufactureAmount'/>
+                      </TableCell>
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               disabled
+                               fullWidth
+                               data-table-input
+                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)}`}
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                               }}/>
+                      </TableCell>
+                      {/* 계 */}
+                      <TableCell>
+                        <Input size='small'
+                               name='sum'
+                               disableUnderline
+                               fullWidth
+                               data-table-input
+                               disabled
+                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                               }}/>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Button
+                        fullWidth
+                        size="small"
+                        startIcon={<AddCircleOutlineIcon/>}
+                        onClick={addRow}
+                        sx={{textTransform: 'none'}}
+                      >
+                        행 추가
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={8} align="center">
-                    <Button
-                      fullWidth
-                      size="small"
-                      startIcon={<AddCircleOutlineIcon/>}
-                      onClick={addRow}
-                      sx={{textTransform: 'none'}}
-                    >
-                      행 추가
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-          <Box display="flex" justifyContent="space-between" mt={2}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <InputLabel sx={{fontSize: 'small',}}>미수금</InputLabel>
-              <TextField size='small' variant="outlined" disabled/>
+            <Box display="flex" justifyContent="space-between" mt={2}>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <InputLabel sx={{fontSize: 'small',}}>미수금</InputLabel>
+                <TextField size='small' variant="outlined" disabled/>
+              </Box>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <InputLabel sx={{fontSize: 'small',}}>매출계</InputLabel>
+                <TextField size='small'
+                           variant="outlined"
+                           value={totalSales}
+                           disabled/>
+              </Box>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <InputLabel sx={{fontSize: 'small',}}>입금액</InputLabel>
+                <TextField size='small' variant="outlined"
+                           value={formData.payingAmount}
+                           onChange={(e) => setFormData((prev) => ({...prev, payingAmount: e.target.value}))}
+                />
+              </Box>
+              <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <InputLabel sx={{fontSize: 'small',}}>미수계</InputLabel>
+                <TextField size='small' variant="outlined" disabled/>
+              </Box>
             </Box>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <InputLabel sx={{fontSize: 'small',}}>매출계</InputLabel>
-              <TextField size='small'
-                         variant="outlined"
-                         value={totalSales}
-                         disabled/>
-            </Box>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <InputLabel sx={{fontSize: 'small',}}>입금액</InputLabel>
-              <TextField size='small' variant="outlined"
-                         value={formData.payingAmount}
-                         onChange={(e) => setFormData((prev) => ({...prev, payingAmount: e.target.value}))}
-              />
-            </Box>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <InputLabel sx={{fontSize: 'small',}}>미수계</InputLabel>
-              <TextField size='small' variant="outlined" disabled/>
+
+            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+              <Button variant="contained"
+                      onClick={register}
+              >
+                저장
+              </Button>
+              <Button variant="contained"
+                      onClick={handlePrint}
+              >
+                저장/인쇄
+              </Button>
             </Box>
           </Box>
-
-          <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
-            <Button variant="contained"
-                    onClick={register}
-            >
-              저장
-            </Button>
-            <Button variant="contained"
-                    onClick={handlePrint}
-            >
-              저장/인쇄
-            </Button>
-          </Box>
-        </Box>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <ProductForm isOpened={newProductFormOpen}
+                   onClose={() => setNewProductFormOpen(false)}
+                   onSuccess={async () => {
+                     const newProdList = await cacheManager.getProducts();
+                     setProductListState(newProdList || []);
+                   }}
+      />
+    </>
   )
 }
 

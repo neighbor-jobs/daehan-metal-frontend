@@ -109,7 +109,7 @@ const RevenueMain = (): React.JSX.Element => {
     }));
   }, [salesCompanyList]);
 
-  const handlePageChange = (_event, value:number) => {
+  const handlePageChange = (_event, value: number) => {
     setFormData(prev => ({
       ...prev,
       sequence: value,
@@ -142,7 +142,6 @@ const RevenueMain = (): React.JSX.Element => {
         "carryoverAmount": "NaN",
         "endSequence": 13
     },*/
-
 
   // api
   const getReceipt = async (sequence = 1) => {
@@ -214,7 +213,7 @@ const RevenueMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
-              onChange={(value) => setFormData(prev=>({...prev, startAt: value.format('YYYY-MM-DD')}))}
+              onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
                 calendarHeader: {format: 'YYYY/MM'},
@@ -285,7 +284,8 @@ const RevenueMain = (): React.JSX.Element => {
                 <TableCell align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
-                <TableCell colSpan={2} align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
+                <TableCell colSpan={2}
+                           align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
@@ -297,16 +297,16 @@ const RevenueMain = (): React.JSX.Element => {
         justifyContent: 'center',
         marginTop: 4,
       }}>
-        <Pagination count={endSeq} shape="rounded" onChange={handlePageChange} />
+        <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
       </Box>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'
                 onClick={() => setOpenDialog(true)}
-                sx={{ marginY: 1 }}
+                sx={{marginY: 1}}
         >
           등록
         </Button>
-        <PrintButton printData={printData} value='인쇄' />
+        <PrintButton printData={printData} value='인쇄'/>
       </Box>
       <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
                            salesCompanyList={salesCompanyList}
