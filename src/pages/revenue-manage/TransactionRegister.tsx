@@ -306,7 +306,7 @@ const TransactionRegister = ({
         createdAt: prev.createdAt,
       }))
       setAmount(Array.from({length: 1}, () => ({...defaultAmount})));
-      console.log(res.data.data);
+      // console.log(res.data.data);
     } catch (err) {
       alert(err);
     }

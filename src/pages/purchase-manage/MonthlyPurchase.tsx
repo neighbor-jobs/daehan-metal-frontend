@@ -154,8 +154,8 @@ const MonthlyPurchase = (): React.JSX.Element => {
   }, [])
 
   // debug
-  console.log('formData: ', formData);
-  console.log('selected: ', {...selectedCompanyData, records: records});
+  // console.log('formData: ', formData);
+  // console.log('selected: ', {...selectedCompanyData, records: records});
   return (
     <Box>
       <Box sx={{

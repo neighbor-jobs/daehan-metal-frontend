@@ -11,15 +11,12 @@ const getAllProducts = async () => {
     const { products, totalCount } = firstRes.data.data;
     allProducts.push(...products);
 
-    console.log(`✅ 1번 페이지 완료 (총 ${totalCount} 페이지)`);
-
     for (let page = 2; page <= totalCount; page++) {
       try {
         const res: AxiosResponse = await axiosInstance.get(
           `product?page=${page}&orderBy=desc`
         );
         allProducts.push(...res.data.data.products);
-        console.log(`✅ ${page}번 페이지 완료`);
       } catch (err) {
         console.error(`❌ ${page}번 페이지 실패`, err);
       }

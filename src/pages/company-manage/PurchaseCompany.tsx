@@ -183,7 +183,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   }, []);
 
   // debug
-  console.log(formData);
+  // console.log(formData);
 
   return (
     <Box>

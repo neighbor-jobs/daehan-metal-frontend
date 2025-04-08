@@ -132,7 +132,7 @@ const ItemSalesSummary = (): React.JSX.Element => {
     getItemSalesSumList();
   }, []);
 
-  console.log(itemSalesSumList);
+  // console.log(itemSalesSumList);
 
   return (
     <Box>
