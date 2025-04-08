@@ -19,4 +19,14 @@ const axiosInstance = axios.create({
   }
 });
 
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 400) {
+      alert('잘못된 요청입니다.');
+    }
+    return Promise.reject(error); // 에러는 그대로 throw 하되, 공통 처리만 추가
+  }
+);
+
 export default axiosInstance;

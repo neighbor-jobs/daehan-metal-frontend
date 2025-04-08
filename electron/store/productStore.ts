@@ -54,7 +54,7 @@ class ProductStore {
     try {
       // 1번 페이지를 가져오기 (totalPages 확인)
       const firstPageResponse: AxiosResponse = await axios.get(
-        `https://saving-finer-fly.ngrok-free.app/product?page=1&orderBy=desc`
+        `http://localhost:3000/product?page=1&orderBy=desc`
       );
 
       const totalPages = firstPageResponse.data.data.totalCount;
@@ -76,7 +76,7 @@ class ProductStore {
   private async fetchAdditionalPage(page: number) {
     try {
       const response: AxiosResponse = await axios.get(
-        `https://saving-finer-fly.ngrok-free.app/product?page=${page}&orderBy=desc`
+        `http://localhost:3000/product?page=${page}&orderBy=desc`
       );
       response.data.data.products.forEach((product) => this.cache.set(product.id, product));
       // console.log(`✅ ${page}번 페이지 품목 추가 완료`);

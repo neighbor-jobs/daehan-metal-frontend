@@ -209,24 +209,33 @@ const ProductMain = (): React.JSX.Element => {
       stocks: Number(formData.stocks) || 0,
     }
 
-    if (dialogType === ProductDialogType.EDIT) {
-      await axiosInstance.patch('/product/scale/info', data);
-      alert("수정 완료");
-    } else if (dialogType === ProductDialogType.CREATE) {
-      await axiosInstance.post('/product', data);
-      alert("등록 완료");
+
+    try {
+      if (dialogType === ProductDialogType.EDIT) {
+        await axiosInstance.patch('/product/scale/info', data);
+        alert("수정 완료");
+      } else if (dialogType === ProductDialogType.CREATE) {
+        await axiosInstance.post('/product', data);
+        alert("등록 완료");
+      }
+      await getProductList();
+    } catch {
+      alert('요청이 실패했습니다. 재시도 해주세요.');
     }
-    await getProductList();
   }
 
   const delProduct = async (prodId: string, scale: string, scaleId: string) => {
-    await axiosInstance.patch(`/product/scale/remove`, {
-      id: prodId,
-      scale: scale,
-      scaleId: scaleId,
-    })
-    alert('삭제완료');
-    await getProductList();
+    try {
+      await axiosInstance.patch(`/product/scale/remove`, {
+        id: prodId,
+        scale: scale,
+        scaleId: scaleId,
+      })
+      alert('삭제완료');
+      await getProductList();
+    } catch {
+      alert('요청이 실패했습니다. 재시도 해주세요.');
+    }
   }
 
   return (
@@ -278,10 +287,10 @@ const ProductMain = (): React.JSX.Element => {
           <DialogContent
             sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
           >
-            <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange}
+            <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                             value={formData.name}
                             disabled={dialogType === ProductDialogType.EDIT}/>
-            <InputWithLabel name='scale' label='규격' labelPosition='left' onChange={handleInputChange}
+            <InputWithLabel name='scale' label='규격' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                             value={formData.scale}/>
             <InputWithLabel name='unitWeight' label='단중' labelPosition='left' onChange={handleInputChange}
                             value={formData.unitWeight}/>

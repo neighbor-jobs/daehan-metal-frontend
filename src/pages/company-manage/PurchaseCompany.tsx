@@ -279,21 +279,11 @@ const PurchaseCompany = (): React.JSX.Element => {
               {purchaseCompanyList && purchaseCompanyList.map((row, rowIndex) => {
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                    <TableCell>
-                      {row.name}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.phoneNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.telNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.subTelNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.businessNumber}
-                    </TableCell>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>{row.info.phoneNumber}</TableCell>
+                    <TableCell>{row.info.telNumber}</TableCell>
+                    <TableCell>{row.info.subTelNumber}</TableCell>
+                    <TableCell>{row.info.businessNumber}</TableCell>
                     {row.bank &&
                       <>
                         <TableCell>

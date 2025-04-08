@@ -22,6 +22,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import {AxiosResponse} from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
+import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -96,26 +97,19 @@ const SalesCompany = (): React.JSX.Element => {
     });
   };
   const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let value = event.target.value.replace(/\D/g, ''); // 숫자 이외 제거
-
-    if (value.length > 10) {
-      value = value.slice(0, 11); // 최대 11자리
-    }
-    let formattedValue = '';
-    if (value.length <= 3) {
-      formattedValue = value;
-    } else if (value.length <= 7) {
-      formattedValue = `${value.slice(0, 3)}-${value.slice(3)}`;
-    } else {
-      formattedValue = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
-    }
-
     setFormData({
       ...formData,
-      'phoneNumber': formattedValue,
+      'phoneNumber': formatPhoneNumber(event.target.value),
     });
   };
-  // console.log(formData);
+  const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const val = formatBusinessNumber(event.target.value);
+    setFormData({
+      ...formData,
+      'businessNumber': val,
+    })
+  }
+
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
@@ -148,12 +142,25 @@ const SalesCompany = (): React.JSX.Element => {
   // api
   const fetchSalesCompanies = async () => {
     const companies = await axiosInstance.get('/company?orderBy=desc');
-    setSalesCompanyList(companies.data.data);
+    setSalesCompanyList(companies.data.data || []);
     /*const companies = await axiosInstance.get('/company?orderBy=desc');
     setSalesCompanyList(companies.data.data || []);*/
   };
 
   const handleSubmit = async () => {
+    const requiredFields = [
+      { name: '거래처명', value: formData.companyName },
+      { name: '대표이름', value: formData.ownerName },
+      { name: '전화번호', value: formData.phoneNumber },
+      { name: '주소', value: formData.address },
+    ];
+
+    const missingField = requiredFields.find(field => !field.value || field.value.trim() === '');
+    if (missingField) {
+      alert(`'${missingField.name}'은(는) 필수 입력 값입니다.`);
+      return;
+    }
+
     const data = {
       "companyName": formData.companyName,
       "infoArgs": {
@@ -166,14 +173,20 @@ const SalesCompany = (): React.JSX.Element => {
         "businessCategory": formData.businessCategory,
       },
     }
-    if (isEditing) {
-      const res: AxiosResponse = await axiosInstance.patch('/company', data);
-      // console.log('add update company data.data', res.data.data);
-    } else {
-      const res: AxiosResponse = await axiosInstance.post('/company', data);
-      setSalesCompanyList((prev) => ([res.data.data, ...prev]));
+    try {
+      if (isEditing) {
+        const res: AxiosResponse = await axiosInstance.patch('/company', data);
+        // console.log('add update company data.data', res.data.data);
+        alert('거래처가 수정되었습니다.');
+      } else {
+        const res: AxiosResponse = await axiosInstance.post('/company', data);
+        setSalesCompanyList((prev) => ([res.data.data, ...prev]));
+        alert('거래처가 등록되었습니다.')
+      }
+      setOpen(false);
+    } catch {
+      alert('요청이 실패했습니다. 재시도 해주세요.');
     }
-    setOpen(false);
   }
   // console.log('캐시값 확인: ', cacheManager.getCompanies());
   // console.log('res.data.data: ', salesCompanyList);
@@ -221,21 +234,21 @@ const SalesCompany = (): React.JSX.Element => {
         <DialogContent
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
-          <InputWithLabel name='companyName' label='거래처명' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='companyName' label='거래처명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={formData.companyName}/>
-          <InputWithLabel name='ownerName' label='대표자' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='ownerName' label='대표자' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={formData.ownerName}/>
           <InputWithLabel name='phoneNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
-                          placeholder='000-0000-0000' value={formData.phoneNumber}/>
+                          placeholder='필수 입력 값입니다.' value={formData.phoneNumber}/>
           <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
                           value={formData.fax}/>
-          <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={formData.address}/>
           <InputWithLabel name='businessType' label='업태' labelPosition='left' onChange={handleInputChange}
                           value={formData.businessType}/>
           <InputWithLabel name='businessCategory' label='종목' labelPosition='left' onChange={handleInputChange}
                           value={formData.businessCategory}/>
-          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleBusinessNumberChange}
                           placeholder='000-00-00000' value={formData.businessNumber}/>
         </DialogContent>
         <DialogActions>

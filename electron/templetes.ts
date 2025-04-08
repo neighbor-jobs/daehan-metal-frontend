@@ -529,7 +529,6 @@ const basicInvoiceTable = (data, index) => {
 }
 
 export const invoiceDocDef = (data: any) => {
-  // console.log(data);
   /*
   *   /*{
   companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',
