@@ -116,33 +116,6 @@ const RevenueMain = (): React.JSX.Element => {
     }))
     getReceipt(value);
   }
-
-  /*    "data": {
-        "reports": [
-            {
-                "choiceId": "eba765c5-a8cd-44c3-8ba6-1aac656bd5c4",
-                "receiptId": "ace4cd23-5323-4beb-a09d-68202fa5a34a",
-                "companyName": "하나금속",
-                "productName": "하장바",
-                "vCutAmount": "0",
-                "rawMatAmount": "58000",
-                "manufactureAmount": "20800",
-                "quantity": 1,
-                "productLength": "0.000",
-                "scale": "H/L1.2TX4X4000",
-                "vCut": "0",
-                "createdAt": "2025-03-28T00:00:00.000Z",
-                "locationNames": [
-                    "dd"
-                ]
-            }
-        ],
-        "totalSalesAmount": "78800",
-        "totalPayingAmount": "0",
-        "carryoverAmount": "NaN",
-        "endSequence": 13
-    },*/
-
   // api
   const getReceipt = async (sequence = 1) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${formData.companyName}&orderBy=desc&startAt=${formData.startAt}&sequence=${sequence}`);
@@ -179,6 +152,20 @@ const RevenueMain = (): React.JSX.Element => {
         newManufactureAmount: item.manufactureAmount,
       }))
     })
+  }
+
+  const deleteReceipt = async () => {
+    try {
+      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}&sequence=${formData.sequence}&createdAt=${formData.startAt}`);
+      alert('삭제되었습니다');
+      await getReceipt();
+      setFormData((prev) => ({
+        ...prev,
+        sequence: 1,
+      }))
+    } catch {
+      alert('삭제 실패');
+    }
   }
 
   // 캐시 데이터 불러오기
@@ -294,10 +281,19 @@ const RevenueMain = (): React.JSX.Element => {
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         marginTop: 4,
+        marginX: 3,
       }}>
-        <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
+        <Box sx={{ width: '33%' }} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
+          <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '33%' }}>
+          <Button variant="outlined" color="error" onClick={deleteReceipt}>
+            삭제
+          </Button>
+        </Box>
       </Box>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'

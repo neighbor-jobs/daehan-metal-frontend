@@ -218,6 +218,11 @@ const TransactionRegister = ({
     setAmount((prev) => [...prev, {...defaultAmount}]);
   };
 
+  const deleteRow = (index: number) => {
+    setChoices((prev) => prev.filter((_, i) => i !== index));
+    setAmount((prev) => prev.filter((_, i) => i !== index));
+  }
+
   // api
   const getEndSeq = async (companyName: string, startAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=1`);
@@ -225,7 +230,7 @@ const TransactionRegister = ({
   }
 
   const register = async () => {
-    if (formData.companyName) {
+    if (formData.companyName.length === 0) {
       alert('거래처명은 필수 입력값입니다.');
       return;
     }
@@ -233,6 +238,7 @@ const TransactionRegister = ({
 
     const updatedFormData = {
       ...formData,
+      payingAmount: formData.payingAmount === "" ? "0" : formData.payingAmount,
       sequence: endSeq && endSeq + 1 || 1,
     };
 
@@ -283,15 +289,22 @@ const TransactionRegister = ({
 
     try {
       const res: AxiosResponse = await axiosInstance.post('/receipt', data);
+
+      if (res.data.statusCode === 204) {
+        alert('입력 필드를 재확인해주세요');
+      } else if (res.data.statusCode === 409) {
+        alert(res.data.message);
+      }
+
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
-      setFormData({
+      setFormData((prev) => ({
         companyId: '',
         locationName: [] as string[],
         companyName: "",
-        payingAmount: "",
+        payingAmount: "0",
         sequence: 1,
-        createdAt: dayjs().format('YYYY-MM-DD'),
-      })
+        createdAt: prev.createdAt,
+      }))
       setAmount(Array.from({length: 1}, () => ({...defaultAmount})));
       console.log(res.data.data);
     } catch (err) {
@@ -324,6 +337,7 @@ const TransactionRegister = ({
 
   // debug
   // console.log(productListState);
+  // console.log('날짜설정: ', formData.createdAt);
   return (
     <>
       <Dialog open={isOpen} fullWidth maxWidth="lg">
@@ -356,7 +370,14 @@ const TransactionRegister = ({
                         views={['day']}
                         format="YYYY/MM/DD"
                         defaultValue={dayjs()}
-                        onChange={(value) => setFormData(prev => ({...prev, createdAt: value.format('YYYY-MM-DD')}))}
+                        onChange={(value) => {
+                          if (value && dayjs(value).isValid()) {
+                            setFormData(prev => ({
+                              ...prev,
+                              createdAt: dayjs(value).format('YYYY-MM-DD'),
+                            }));
+                          }
+                        }}
                         slotProps={{
                           textField: {size: 'small'},
                           calendarHeader: {format: 'YYYY/MM'},
@@ -438,6 +459,7 @@ const TransactionRegister = ({
                         {column.label}
                       </TableCell>
                     ))}
+                    <TableCell>삭제</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -559,6 +581,13 @@ const TransactionRegister = ({
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
+                      </TableCell>
+                      <TableCell>
+                        <IconButton size='small' onClick={() => {
+                          deleteRow(rowIndex)
+                        }}>
+                          <CloseIcon fontSize='small'/>
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}

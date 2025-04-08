@@ -156,7 +156,10 @@ const ItemSales = (): React.JSX.Element => {
           options={productList.map((option) => option.productName)}
           value={formData.productName}
           onInputChange={(_, newInputValue) => {
-            setFormData((prev) => ({...prev, productName: newInputValue}));
+            setFormData(() => ({
+              productName: newInputValue,
+              scale: '',
+            }));
           }}
           renderInput={(params) =>
             <TextField {...params}
