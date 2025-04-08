@@ -322,6 +322,7 @@ const PurchaseMain = (): React.JSX.Element => {
                     {/* 재료단가 */}
                     <Input size='small'
                            disableUnderline={row.isPaying}
+                           disabled={row.isPaying}
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
@@ -331,7 +332,7 @@ const PurchaseMain = (): React.JSX.Element => {
                              }
                            }}
                            name='rawMatAmount'
-                           value={formatCurrency(row.rawMatAmount)}
+                           value={row.rawMatAmount}
                            onChange={(event) => handleInputChange(event, rowIndex)}
                            data-table-input/>
                   </TableCell>
@@ -346,13 +347,14 @@ const PurchaseMain = (): React.JSX.Element => {
                              'data-input-id': `totalRawMatAmount-${rowIndex}`,
                            }}
                            name='totalRawMatAmount'
-                           value={(Number(row.rawMatAmount) * Number(row.quantity)).toLocaleString()}
+                           value={((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0)).toLocaleString()}
                            data-table-input/>
                   </TableCell>
                   <TableCell>
                     {/* 가공단가 */}
                     <Input size='small'
                            disableUnderline={row.isPaying}
+                           disabled={row.isPaying}
                            inputProps={{
                              sx: {textAlign: 'right'},
                              'data-input-id': `manufactureAmount-${rowIndex}`,
@@ -364,7 +366,7 @@ const PurchaseMain = (): React.JSX.Element => {
                              }
                            }}
                            name='manufactureAmount'
-                           value={formatCurrency(row.manufactureAmount)}
+                           value={row.manufactureAmount}
                            onChange={(e) => handleInputChange(e, rowIndex)}
                            data-table-input/>
                   </TableCell>
@@ -377,7 +379,7 @@ const PurchaseMain = (): React.JSX.Element => {
                              sx: {textAlign: 'right'},
                            }}
                            name='totalManufactureAmount'
-                           value={(Number(row.manufactureAmount) * Number(row.quantity)).toLocaleString()}
+                           value={((parseFloat(row.manufactureAmount || '0') || 0) * (row.quantity || 0)).toLocaleString()}
                            data-table-input/>
                   </TableCell>
                   {/* 입금액 */}
@@ -390,7 +392,7 @@ const PurchaseMain = (): React.JSX.Element => {
                            }}
                            name='productPrice'
                            onChange={(e) => handleInputChange(e, rowIndex)}
-                           value={formatCurrency(row.productPrice)}
+                           value={row.productPrice}
                            data-table-input/>
                   </TableCell>
                   {/* 세금 */}

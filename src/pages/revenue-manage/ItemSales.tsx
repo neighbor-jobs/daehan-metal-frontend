@@ -21,8 +21,8 @@ import {useEffect, useState} from 'react';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import dayjs from 'dayjs';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
+import getAllProducts from '../../api/getAllProducts.ts';
 
 const columns: readonly TableColumns<ItemSalesColumn>[] = [
   {
@@ -132,7 +132,7 @@ const ItemSales = (): React.JSX.Element => {
 
   useEffect(() => {
     const getProducts = async () => {
-      const products = await cacheManager.getProducts();
+      const products = await getAllProducts();
       setProductList(products);
     }
     getProducts();
@@ -156,7 +156,10 @@ const ItemSales = (): React.JSX.Element => {
           options={productList.map((option) => option.productName)}
           value={formData.productName}
           onInputChange={(_, newInputValue) => {
-            setFormData((prev) => ({...prev, productName: newInputValue}));
+            setFormData(() => ({
+              productName: newInputValue,
+              scale: '',
+            }));
           }}
           renderInput={(params) =>
             <TextField {...params}

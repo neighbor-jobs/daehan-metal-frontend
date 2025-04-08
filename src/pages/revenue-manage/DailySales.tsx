@@ -76,6 +76,10 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
 
 const DailySales = () => {
   const [dailySalesList, setDailySalesList] = useState([]);
+  const [amount, setAmount] = useState({
+    totalManufactureAmount: "0",
+    totalRawMatAmount: "0"
+  });
   const [date, setDate] = useState({
     startAt: dayjs(),
     endAt: dayjs(),
@@ -89,6 +93,10 @@ const DailySales = () => {
   const getDailySalesList = async (startAt: string, endAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/daily/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`);
     setDailySalesList(res.data.data.reports);
+    setAmount({
+      totalManufactureAmount: res.data.data.totalManufactureAmount,
+      totalRawMatAmount: res.data.data.totalRawMatAmount,
+    })
   }
 
   const handleSearch = async () => {
@@ -165,12 +173,11 @@ const DailySales = () => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2}>합계</TableCell>
-                <TableCell align='right'>재료비</TableCell>
-                <TableCell align='right'>가공비</TableCell>
-                <TableCell colSpan={2} align='right' />
+                <TableCell colSpan={5}>합계</TableCell>
+                <TableCell align='right'>{formatCurrency(amount.totalRawMatAmount)}</TableCell>
+                <TableCell align='right'>{formatCurrency(amount.totalManufactureAmount)}</TableCell>
                 <TableCell align='right'>총합</TableCell>
-                <TableCell colSpan={2} align='right'></TableCell>
+                <TableCell align='right'>{(Number(amount.totalManufactureAmount) + Number(amount.totalRawMatAmount)).toLocaleString()}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>

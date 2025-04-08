@@ -1,9 +1,9 @@
 export interface PostVendorReqBody {
   name: string,
-  telNumber: string | null,
-  subTelNumber: string | null,
-  phoneNumber: string | null,
-  businessNumber: string | null
+  telNumber?: string | undefined,
+  subTelNumber?: string | undefined,
+  phoneNumber?: string | undefined,
+  businessNumber?: string | undefined
 }
 
 export interface PostVendorBankReqBody {

@@ -19,16 +19,16 @@ import DateRangePicker from '../../components/DateRangePicker.tsx';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {useCallback, useEffect, useState} from 'react';
 import dayjs from 'dayjs';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
+import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 
 const columns: readonly TableColumns<ClientSalesColumn>[] = [
   {
     id: ClientSalesColumn.DATE,
     label: '날짜',
     minWidth: 100,
-    format: (date) => date.split('T')[0],
+    format: (date: string) => date.split('T')[0],
   },
   {
     id: ClientSalesColumn.PRODUCT_NAME,
@@ -45,6 +45,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '수량',
     minWidth: 100,
     align: 'right',
+    format: formatDecimal
   },
   {
     id: ClientSalesColumn.TOTAL_RAW_MAT_AMOUNT,
@@ -122,10 +123,10 @@ const ClientSales = (): React.JSX.Element => {
   // api
   const getClientSales = async () => {
     const res: AxiosResponse = await axiosInstance.get(`receipt/company/sales/report?companyName=${companyName}&orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
-    setReports(res.data.data.reports);
+    setReports(res.data.data?.reports);
     setAmount({
-      totalPayingAmount: res.data.data.totalPayingAmount,
-      totalSalesAmount: res.data.data.totalSalesAmount,
+      totalPayingAmount: res.data.data?.totalPayingAmount,
+      totalSalesAmount: res.data.data?.totalSalesAmount,
     })
 
     const getOutstanding = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}`)
@@ -163,8 +164,12 @@ const ClientSales = (): React.JSX.Element => {
 
   useEffect(() => {
     const getCompanies = async () => {
-      const companies = await cacheManager.getCompanies();
-      setSalesCompanyList(companies);
+      try {
+        const res = await axiosInstance.get('/company?orderBy=desc');
+        setSalesCompanyList(res.data.data);
+      } catch {
+        alert('새로고침 요망');
+      }
     }
     getCompanies();
   }, []);
@@ -231,19 +236,19 @@ const ClientSales = (): React.JSX.Element => {
                         </TableCell>
                       );
                     })}
-                    <TableCell>금액</TableCell>
-                    <TableCell>잔액</TableCell>
+                    <TableCell align='right'>{printData?.data[rowIdx]?.amount.toLocaleString() || '-'}</TableCell>
+                    <TableCell align='right'>{printData?.data[rowIdx]['remaining-amount']?.toLocaleString() || '-'}</TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell align='right'>합계 :</TableCell>
+                <TableCell>합계 :</TableCell>
                 <TableCell align='right'>매출액계 : </TableCell>
-                <TableCell align='right'>{amount.totalSalesAmount}</TableCell>
+                <TableCell align='right'>{formatCurrency(amount.totalSalesAmount)}</TableCell>
                 <TableCell align='right'>수금액계 : </TableCell>
-                <TableCell align='right'>{amount.totalPayingAmount}</TableCell>
+                <TableCell align='right'>{formatCurrency(amount.totalPayingAmount)}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>

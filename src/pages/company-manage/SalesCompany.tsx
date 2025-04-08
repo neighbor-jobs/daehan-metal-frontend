@@ -22,7 +22,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import {AxiosResponse} from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
-import {cacheManager} from '../../utils/cacheManager.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -148,8 +147,8 @@ const SalesCompany = (): React.JSX.Element => {
 
   // api
   const fetchSalesCompanies = async () => {
-    const companies = await cacheManager.getCompanies();
-    setSalesCompanyList(companies);
+    const companies = await axiosInstance.get('/company?orderBy=desc');
+    setSalesCompanyList(companies.data.data);
     /*const companies = await axiosInstance.get('/company?orderBy=desc');
     setSalesCompanyList(companies.data.data || []);*/
   };
@@ -172,8 +171,7 @@ const SalesCompany = (): React.JSX.Element => {
       console.log('add update company data.data', res.data.data);
     } else {
       const res: AxiosResponse = await axiosInstance.post('/company', data);
-      await cacheManager.addCompany(res.data.data);
-      setSalesCompanyList(await cacheManager.getCompanies());
+      setSalesCompanyList((prev) => ([res.data.data, ...prev]));
     }
     setOpen(false);
   }

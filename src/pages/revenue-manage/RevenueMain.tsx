@@ -22,10 +22,10 @@ import {formatCurrency, formatDecimal} from '../../utils/format';
 import {useCallback, useEffect, useState} from 'react';
 import TransactionRegister from './TransactionRegister.tsx';
 import dayjs from 'dayjs';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
+import getAllProducts from '../../api/getAllProducts.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -109,41 +109,13 @@ const RevenueMain = (): React.JSX.Element => {
     }));
   }, [salesCompanyList]);
 
-  const handlePageChange = (_event, value:number) => {
+  const handlePageChange = (_event, value: number) => {
     setFormData(prev => ({
       ...prev,
       sequence: value,
     }))
     getReceipt(value);
   }
-
-  /*    "data": {
-        "reports": [
-            {
-                "choiceId": "eba765c5-a8cd-44c3-8ba6-1aac656bd5c4",
-                "receiptId": "ace4cd23-5323-4beb-a09d-68202fa5a34a",
-                "companyName": "하나금속",
-                "productName": "하장바",
-                "vCutAmount": "0",
-                "rawMatAmount": "58000",
-                "manufactureAmount": "20800",
-                "quantity": 1,
-                "productLength": "0.000",
-                "scale": "H/L1.2TX4X4000",
-                "vCut": "0",
-                "createdAt": "2025-03-28T00:00:00.000Z",
-                "locationNames": [
-                    "dd"
-                ]
-            }
-        ],
-        "totalSalesAmount": "78800",
-        "totalPayingAmount": "0",
-        "carryoverAmount": "NaN",
-        "endSequence": 13
-    },*/
-
-
   // api
   const getReceipt = async (sequence = 1) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${formData.companyName}&orderBy=desc&startAt=${formData.startAt}&sequence=${sequence}`);
@@ -182,13 +154,30 @@ const RevenueMain = (): React.JSX.Element => {
     })
   }
 
-  // 캐시 데이터 불러오기
+  const deleteReceipt = async () => {
+    try {
+      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}&sequence=${formData.sequence}&createdAt=${formData.startAt}`);
+      alert('삭제되었습니다');
+      await getReceipt();
+      setFormData((prev) => ({
+        ...prev,
+        sequence: 1,
+      }))
+    } catch {
+      alert('삭제 실패');
+    }
+  }
+
   useEffect(() => {
     const fetchSalesCompanies = async () => {
-      const companies = await cacheManager.getCompanies();
-      const products = await cacheManager.getProducts();
-      setSalesCompanyList(companies);
-      setProductList(products);
+      try {
+        const companies = await axiosInstance.get('/company?orderBy=desc');
+        const products = await getAllProducts();
+        setSalesCompanyList(companies.data.data);
+        setProductList(products);
+      } catch {
+        alert('새로고침 요망')
+      }
     }
     fetchSalesCompanies();
   }, []);
@@ -214,7 +203,7 @@ const RevenueMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
-              onChange={(value) => setFormData(prev=>({...prev, startAt: value.format('YYYY-MM-DD')}))}
+              onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
                 calendarHeader: {format: 'YYYY/MM'},
@@ -285,7 +274,8 @@ const RevenueMain = (): React.JSX.Element => {
                 <TableCell align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
-                <TableCell colSpan={2} align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
+                <TableCell colSpan={2}
+                           align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
@@ -294,19 +284,28 @@ const RevenueMain = (): React.JSX.Element => {
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         marginTop: 4,
+        marginX: 3,
       }}>
-        <Pagination count={endSeq} shape="rounded" onChange={handlePageChange} />
+        <Box sx={{ width: '33%' }} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
+          <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '33%' }}>
+          <Button variant="outlined" color="error" onClick={deleteReceipt}>
+            삭제
+          </Button>
+        </Box>
       </Box>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'
                 onClick={() => setOpenDialog(true)}
-                sx={{ marginY: 1 }}
+                sx={{marginY: 1}}
         >
           등록
         </Button>
-        <PrintButton printData={printData} value='인쇄' />
+        <PrintButton printData={printData} value='인쇄'/>
       </Box>
       <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
                            salesCompanyList={salesCompanyList}

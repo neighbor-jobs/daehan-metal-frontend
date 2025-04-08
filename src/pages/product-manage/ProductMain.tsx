@@ -22,7 +22,7 @@ import axiosInstance from '../../api/axios.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
-import {cacheManager} from '../../utils/cacheManager.ts';
+import getAllProducts from '../../api/getAllProducts.ts';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -161,7 +161,7 @@ const ProductMain = (): React.JSX.Element => {
   };
   // api
   const getProductList = async () => {
-    const products = await cacheManager.getProducts();
+    const products = await getAllProducts();
     setProductList(products);
   }
 
@@ -182,7 +182,6 @@ const ProductMain = (): React.JSX.Element => {
         infoId: targetProducts[0].info.id,
         productName: updateAllProdName.newName
       });
-      await cacheManager.fetchAndUpdateProducts()
       return await getProductList();
     }
 
@@ -203,7 +202,6 @@ const ProductMain = (): React.JSX.Element => {
       await axiosInstance.post('/product', data);
       alert("등록 완료");
     }
-    await cacheManager.fetchAndUpdateProducts();
     await getProductList();
   }
 
@@ -214,7 +212,6 @@ const ProductMain = (): React.JSX.Element => {
       scaleId: scaleId,
     })
     alert('삭제완료');
-    await cacheManager.fetchAndUpdateProducts();
     await getProductList();
   }
 

@@ -154,7 +154,7 @@ pdfMake.fonts = {
   },
 };
 
-ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType, data) => {
+ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType , data) => {
   return new Promise((resolve, reject) => {
     let docDefinition: TDocumentDefinitions;
     switch (printType) {

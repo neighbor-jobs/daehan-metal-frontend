@@ -150,10 +150,10 @@ const PurchaseCompany = (): React.JSX.Element => {
     if (isEditing) {
       await axiosInstance.patch('/vendor', {
         vendorName: formData.name,
-        telNumber: formData.telNumber,
-        phoneNumber: formData.phoneNumber,
-        subTelNumber: formData.subTelNumber,
-        businessNumber: formData.businessNumber,
+        telNumber: formData?.telNumber || undefined,
+        phoneNumber: formData?.phoneNumber || undefined,
+        subTelNumber: formData?.subTelNumber || undefined,
+        businessNumber: formData?.businessNumber || undefined,
       });
     } else {
       await axiosInstance.post('/vendor', formData);
@@ -222,13 +222,13 @@ const PurchaseCompany = (): React.JSX.Element => {
           <InputWithLabel name='name' label='거래처명' labelPosition='left' onChange={handleInputChange}
                           value={formData.name}/>
           <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handlePhoneNumberChange}
-                          value={formData.phoneNumber}/>
+                          value={formData?.phoneNumber}/>
           <InputWithLabel name='telNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
-                          value={formData.telNumber}/>
+                          value={formData?.telNumber}/>
           <InputWithLabel name='subTelNumber' label='전화번호(2)' labelPosition='left' onChange={handlePhoneNumberChange}
-                          value={formData.subTelNumber}/>
+                          value={formData?.subTelNumber}/>
           <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleBusinessNumberChange}
-                          value={formData.businessNumber}/>
+                          value={formData?.businessNumber}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>취소</Button>
