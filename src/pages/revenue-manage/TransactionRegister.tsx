@@ -28,9 +28,9 @@ import {Amount, Choice, defaultAmount, defaultChoice} from '../../types/transact
 import {moveFocusToNextInput} from '../../utils/focus.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
 import ProductForm from '../../components/ProductForm.tsx';
+import getAllProducts from '../../api/getAllProducts.ts';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -309,10 +309,6 @@ const TransactionRegister = ({
       console.log(res.data.data);
     } catch (err) {
       alert(err);
-    } finally {
-      await cacheManager.fetchAndUpdateCompanies();
-      await cacheManager.fetchAndUpdateProducts();
-      console.log('캐시 업데이트 완료')
     }
     return data;
   }
@@ -651,7 +647,7 @@ const TransactionRegister = ({
       <ProductForm isOpened={newProductFormOpen}
                    onClose={() => setNewProductFormOpen(false)}
                    onSuccess={async () => {
-                     const newProdList = await cacheManager.getProducts();
+                     const newProdList = await getAllProducts();
                      setProductListState(newProdList || []);
                    }}
       />

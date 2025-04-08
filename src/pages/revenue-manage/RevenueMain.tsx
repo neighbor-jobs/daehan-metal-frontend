@@ -22,10 +22,10 @@ import {formatCurrency, formatDecimal} from '../../utils/format';
 import {useCallback, useEffect, useState} from 'react';
 import TransactionRegister from './TransactionRegister.tsx';
 import dayjs from 'dayjs';
-import {cacheManager} from '../../utils/cacheManager.ts';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
+import getAllProducts from '../../api/getAllProducts.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -168,13 +168,16 @@ const RevenueMain = (): React.JSX.Element => {
     }
   }
 
-  // 캐시 데이터 불러오기
   useEffect(() => {
     const fetchSalesCompanies = async () => {
-      const companies = await cacheManager.getCompanies();
-      const products = await cacheManager.getProducts();
-      setSalesCompanyList(companies);
-      setProductList(products);
+      try {
+        const companies = await axiosInstance.get('/company?orderBy=desc');
+        const products = await getAllProducts();
+        setSalesCompanyList(companies.data.data);
+        setProductList(products);
+      } catch {
+        alert('새로고침 요망')
+      }
     }
     fetchSalesCompanies();
   }, []);

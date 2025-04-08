@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle} from '@mui/material';
 import InputWithLabel from './InputWithLabel.tsx';
 import axiosInstance from '../api/axios.ts';
-import {cacheManager} from '../utils/cacheManager.ts';
 
 interface ProductFormProps {
   isOpened: boolean;
@@ -57,7 +56,6 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
     } catch {
       alert('등록에 실패했습니다.');
     }
-    await cacheManager.fetchAndUpdateProducts();
     if (onSuccess) onSuccess();
   }
 
