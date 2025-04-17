@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.ts';
 import {
+  Alert,
   Autocomplete,
   Box,
   Button, Chip,
@@ -231,8 +232,9 @@ const TransactionRegister = ({
 
   const register = async () => {
     if (formData.companyName.length === 0) {
-      alert('거래처명은 필수 입력값입니다.');
-      return;
+      return (
+        <Alert severity='info'>거래처명은 필수 입력 값입니다.</Alert>
+      );
     }
     const endSeq = await getEndSeq(formData.companyName, formData.createdAt);
 
@@ -290,10 +292,15 @@ const TransactionRegister = ({
     try {
       const res: AxiosResponse = await axiosInstance.post('/receipt', data);
 
+      // TODO: 요청 실패 시 formData 리셋 안되도록
       if (res.data.statusCode === 204) {
-        alert('입력 필드를 재확인해주세요');
+        return (
+          <Alert severity='info'>입력 필드를 재확인 해주세요.</Alert>
+        )
       } else if (res.data.statusCode === 409) {
-        alert(res.data.message);
+        return (
+          <Alert severity='warning'>{res.data.message}</Alert>
+        )
       }
 
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
@@ -306,9 +313,11 @@ const TransactionRegister = ({
         createdAt: prev.createdAt,
       }))
       setAmount(Array.from({length: 1}, () => ({...defaultAmount})));
-      // console.log(res.data.data);
     } catch (err) {
-      alert(err);
+      return (
+        <Alert severity='warning'>{err}</Alert>
+      )
+
     }
     return data;
   }
@@ -319,7 +328,9 @@ const TransactionRegister = ({
       try {
         await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data, amount});
       } catch (error) {
-        console.error(error);
+        return (
+          <Alert severity='warning'>{error}</Alert>
+        )
       }
     }
   }
