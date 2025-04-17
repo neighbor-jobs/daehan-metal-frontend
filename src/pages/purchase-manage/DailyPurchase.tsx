@@ -13,7 +13,6 @@ import {
 import DateRangePicker from '../../components/DateRangePicker.tsx';
 import {DailyPurchaseColumn} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
-import dailyPurchaseMock from '../../mock/purchase-manage/dailyPurchaseMock.ts';
 
 const columns: readonly DailyPurchaseColumn[] = [
   {
@@ -129,6 +128,7 @@ const DailyPurchase = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
+{/*
               {dailyPurchaseMock
                 .map((row, rowIndex) => {
                   return (
@@ -146,6 +146,7 @@ const DailyPurchase = (): React.JSX.Element => {
                     </TableRow>
                   );
                 })}
+*/}
             </TableBody>
             <TableFooter>
               <TableRow>

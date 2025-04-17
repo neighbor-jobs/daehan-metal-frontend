@@ -1,7 +1,6 @@
 import {ClientPurchasesColumn, TableColumns} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import {
-  Autocomplete,
   Box,
   Button,
   Paper,
@@ -11,11 +10,9 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow, TextField
+  TableRow
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
-import clientPurchasesMock from '../../mock/purchase-manage/clientPurchasesMock.ts';
-import {clientList} from '../../mock/revenue-manage/clientList.ts';
 
 const columns: readonly TableColumns<ClientPurchasesColumn>[] = [
   {
@@ -102,6 +99,7 @@ const ClientPurchases = (): React.JSX.Element => {
       }}>
         {/* date picker */}
         <DateRangePicker onChange={() => console.log('render')}/>
+{/*
         <Autocomplete
           freeSolo
           options={clientList.map((option) => option)}
@@ -112,6 +110,7 @@ const ClientPurchases = (): React.JSX.Element => {
             />
           }
         />
+*/}
         <Button
           variant="outlined"
           onClick={() => console.log('search')}
@@ -136,6 +135,7 @@ const ClientPurchases = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
+{/*
               {clientPurchasesMock
                 .map((row, rowIndex) => {
                   return (
@@ -153,6 +153,7 @@ const ClientPurchases = (): React.JSX.Element => {
                     </TableRow>
                   );
                 })}
+*/}
             </TableBody>
             <TableFooter>
               <TableRow>
