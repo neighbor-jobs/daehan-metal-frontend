@@ -14,7 +14,7 @@ import {
   TableHead,
   TableRow
 } from '@mui/material';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import InputWithLabel from '../../components/InputWithLabel.tsx';
 import {ProductMainColumn} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
@@ -74,7 +74,7 @@ const ProductMain = (): React.JSX.Element => {
   const [dialogType, setDialogType] = useState<ProductDialogType>(ProductDialogType.CREATE);
   const [formData, setFormData] = useState({
     'name': "",
-    'scale': "",
+    'scale': ['', '', ''],
     'unitWeight': "",
     'stocks': 0,
     'rawMatAmount': '',
@@ -93,19 +93,21 @@ const ProductMain = (): React.JSX.Element => {
     totalPages: 1,
   });
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const formatProdList = productList.flatMap((item) =>
-    item.info.scales.map(({id, scale, snapshot}) => ({
-      id: item.id,
-      infoId: item.info.id,
-      scaleId: id,
-      productName: item.productName,
-      scale,
-      unitWeight: snapshot.unitWeight,
-      stocks: snapshot.stocks,
-      vCut: snapshot.vCut,
-      vCutAmount: snapshot.vCutAmount,
-      productLength: snapshot.productLength,
-    }))
+  const formatProdList = useMemo(() =>
+    productList.flatMap((item) =>
+      item.info.scales.map(({id, scale, snapshot}) => ({
+        id: item.id,
+        infoId: item.info.id,
+        scaleId: id,
+        productName: item.productName,
+        scale,
+        unitWeight: snapshot.unitWeight,
+        stocks: snapshot.stocks,
+        vCut: snapshot.vCut,
+        vCutAmount: snapshot.vCutAmount,
+        productLength: snapshot.productLength,
+      }))
+    ), [productList]
   );
 
   // handler
@@ -126,7 +128,7 @@ const ProductMain = (): React.JSX.Element => {
     setDialogType(ProductDialogType.CREATE);
     setFormData({
       name: "",
-      scale: "",
+      scale: ['', '', ''],
       unitWeight: "",
       stocks: 0,
       productLength: "",
@@ -199,8 +201,8 @@ const ProductMain = (): React.JSX.Element => {
       return await getProductList();
     }
 
-    if (!formData.name || !formData.scale) {
-      alert('품목과 규격은 필수 입력 값입니다.');
+    if (!formData.name) {
+      alert('품목은 필수 입력 값입니다.');
       return;
     }
 
@@ -208,15 +210,40 @@ const ProductMain = (): React.JSX.Element => {
       ...formData,
       stocks: Number(formData.stocks) || 0,
     }
-
+    const validScales = formData.scale.filter(s => s && s.trim() !== '');
 
     try {
       if (dialogType === ProductDialogType.EDIT) {
         await axiosInstance.patch('/product/scale/info', data);
         alert("수정 완료");
       } else if (dialogType === ProductDialogType.CREATE) {
-        await axiosInstance.post('/product', data);
-        alert("등록 완료");
+        /*await axiosInstance.post('/product', data);
+        alert("등록 완료");*/
+        const failedScales: string[] = [];
+        for (const scale of validScales) {
+          try {
+            await axiosInstance.post('/product', {
+              name: formData.name,
+              scale,
+              unitWeight: formData.unitWeight,
+              stocks: Number(formData.stocks) || 0,
+              rawMatAmount: formData.rawMatAmount,
+              manufactureAmount: formData.manufactureAmount,
+              vCutAmount: formData.vCutAmount,
+              vCut: formData.vCut,
+              productLength: formData.productLength,
+            });
+          } catch (err) {
+            failedScales.push(scale);
+          }
+        }
+        if (failedScales.length === 0) {
+          alert('모든 규격 등록이 완료되었습니다.');
+        } else if (failedScales.length === validScales.length) {
+          alert('등록에 실패했습니다. 다시 시도해 주세요.');
+        } else {
+          alert(`일부 등록에 실패했습니다: ${failedScales.join(', ')}`);
+        }
       }
       await getProductList();
     } catch {
@@ -290,8 +317,12 @@ const ProductMain = (): React.JSX.Element => {
             <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                             value={formData.name}
                             disabled={dialogType === ProductDialogType.EDIT}/>
-            <InputWithLabel name='scale' label='규격' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
-                            value={formData.scale}/>
+            <InputWithLabel name='scale[0]' label='규격1' labelPosition='left' onChange={handleInputChange}
+                            value={formData.scale[0]}/>
+            <InputWithLabel name='scale[1]' label='규격2' labelPosition='left' onChange={handleInputChange}
+                            value={formData.scale[1]} />
+            <InputWithLabel name='scale[2]' label='규격3' labelPosition='left' onChange={handleInputChange}
+                            value={formData.scale[2]} />
             <InputWithLabel name='unitWeight' label='단중' labelPosition='left' onChange={handleInputChange}
                             value={formData.unitWeight}/>
             <InputWithLabel name='vCut' label='V컷' labelPosition='left' onChange={handleInputChange}
