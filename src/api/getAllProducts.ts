@@ -6,7 +6,7 @@ const getAllProducts = async () => {
 
   try {
     const firstRes: AxiosResponse = await axiosInstance.get(
-      `product?page=1&orderBy=desc`
+      `product?page=1&orderBy=asc`
     );
     const { products, totalCount } = firstRes.data.data;
     allProducts.push(...products);
@@ -14,7 +14,7 @@ const getAllProducts = async () => {
     for (let page = 2; page <= totalCount; page++) {
       try {
         const res: AxiosResponse = await axiosInstance.get(
-          `product?page=${page}&orderBy=desc`
+          `product?page=${page}&orderBy=asc`
         );
         allProducts.push(...res.data.data.products);
       } catch (err) {
