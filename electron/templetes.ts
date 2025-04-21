@@ -99,12 +99,36 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
               {text: item.createdAt, style: 'tableText', alignment: 'center'}, // 날짜
               {text: item.productName, style: 'tableText', alignment: 'center'}, // 품명
               {text: item.vat ? '별도' : '포함', style: 'tableText', alignment: 'center'}, // 세액 포함 여부
-              {text: item.quantity ? Number(item.quantity).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 수량
-              {text: item.unitPrice ? Number(item.unitPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 단가
-              {text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '-', style: 'tableText', alignment: 'right'}, // 매입금액
-              {text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '-', style: 'tableText', alignment: 'right'}, // 매입세액
-              {text: item.totalPrice ? Number(item.totalPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 합계
-              {text: item.productPrice ? Number(item.productPrice).toLocaleString() : '', style: 'tableText', alignment: 'right'}, // 입금
+              {
+                text: item.quantity ? Number(item.quantity).toLocaleString() : '',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 수량
+              {
+                text: item.unitPrice ? Number(item.unitPrice).toLocaleString() : '',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 단가
+              {
+                text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '-',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 매입금액
+              {
+                text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '-',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 매입세액
+              {
+                text: item.totalPrice ? Number(item.totalPrice).toLocaleString() : '',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 합계
+              {
+                text: item.productPrice ? Number(item.productPrice).toLocaleString() : '',
+                style: 'tableText',
+                alignment: 'right'
+              }, // 입금
               {text: Number(item.payableBalance).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
           ],
@@ -116,8 +140,8 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       fontSize: 7,
     },
     styles: {
-      header: { fontSize: 14 },
-      subheader: { fontSize: 10, marginBottom: 20 },
+      header: {fontSize: 14},
+      subheader: {fontSize: 10, marginBottom: 20},
     },
   }
 }
@@ -131,7 +155,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
     pageOrientation: 'landscape', // 🔥 페이지를 가로로 설정
     pageSize: 'A4', // A4 크기 유지
     header: (currPage, pageCount) => ({
-      columns: [{ text: `Page ${currPage} / ${pageCount}`, alignment: 'right' }],
+      columns: [{text: `Page ${currPage} / ${pageCount}`, alignment: 'right'}],
       margin: [40, 10, 40, 0],
     }),
     content: [
@@ -159,18 +183,23 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
             })),
             // 데이터 행
             ...data.map((item: any, index: number) => [
-              { text: `${index + 1}`, style: 'tableText', alignment: 'right' }, // 연번
-              { text: item.companyName ?? '', style: 'tableText' }, // 거래처명
-              { text: item.ownerName ?? '', style: 'tableText', alignment: 'right' }, // 대표자
-              { text: item.phoneNumber ?? '', style: 'tableText', alignment: 'right' }, // 전화번호
-              { text: item.fax ?? '', style: 'tableText', alignment: 'right' }, // 팩스
-              { text: item.businessNumber ?? '', style: 'tableText', alignment: 'right' }, // 사업자 번호
-              { text: truncateText(item.businessType ?? '', 10), style: 'tableText', alignment: 'right', noWrap: true }, // 업태
-              { text: truncateText(item.businessCategory ?? '', 10), style: 'tableText', alignment: 'right', noWrap: true }, // 종목
-              { 
-                text: truncateText(item.address ?? '', 35), 
-                style: 'tableText', 
-                alignment: 'right', 
+              {text: `${index + 1}`, style: 'tableText', alignment: 'right'}, // 연번
+              {text: item.companyName ?? '', style: 'tableText'}, // 거래처명
+              {text: item.ownerName ?? '', style: 'tableText', alignment: 'right'}, // 대표자
+              {text: item.phoneNumber ?? '', style: 'tableText', alignment: 'right'}, // 전화번호
+              {text: item.fax ?? '', style: 'tableText', alignment: 'right'}, // 팩스
+              {text: item.businessNumber ?? '', style: 'tableText', alignment: 'right'}, // 사업자 번호
+              {text: truncateText(item.businessType ?? '', 10), style: 'tableText', alignment: 'right', noWrap: true}, // 업태
+              {
+                text: truncateText(item.businessCategory ?? '', 10),
+                style: 'tableText',
+                alignment: 'right',
+                noWrap: true
+              }, // 종목
+              {
+                text: truncateText(item.address ?? '', 35),
+                style: 'tableText',
+                alignment: 'right',
                 noWrap: true, // 주소도 칸을 넘어서지 않게 설정
                 width: 40 // 최대 너비 제한 (예제 값, 조정 가능)
               }, // 주소
@@ -191,8 +220,8 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
       fontSize: 9,
     },
     styles: {
-      header: { fontSize: 14 },
-      subheader: { fontSize: 10, marginBottom: 20 },
+      header: {fontSize: 14},
+      subheader: {fontSize: 10, marginBottom: 20},
     },
   };
 };
@@ -302,7 +331,7 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
               {text: item['productName'], style: 'tableText'}, // 품명
               {text: item['scale'], style: 'tableText'}, // 규격
               {text: formatDecimal(item['quantity']), style: 'tableText'}, // 수량
-              {text: formatCurrency(item['rawMatAmount']), style: 'tableText' , alignment: 'right'}, // 재료 단가
+              {text: formatCurrency(item['rawMatAmount']), style: 'tableText', alignment: 'right'}, // 재료 단가
               {text: formatCurrency(item['totalRawMatAmount']), style: 'tableText', alignment: 'right'}, // 재료비
               {text: formatCurrency(item['manufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공 단가
               {text: formatCurrency(item['totalManufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공비
@@ -327,9 +356,28 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
 /*
 * 미수금 현황
 */
+/*
+{
+  data: [
+    {
+      companyName: '(구,동성)경영산업',
+      salesAmount: '65317',
+      payingAmount: '0',
+      carryoverAmount: '0',
+      outstandingAmount: '65317',
+      phoneNumber: '010-2266-2022'
+    }
+  ],
+  startAt: '2025-04-20',
+  sumSalesAmount: '65,317',
+  sumPayingAmount: '0',
+  sumCarryoverAmount: '0',
+  sumOutstandingAmount: '65,317'
+}
+*/
 export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
-  // console.log(outstandingAmount);
+  console.log(outstandingAmount);
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
       columns: [
@@ -374,10 +422,10 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
             ]),
             [
               {text: '합   계', colSpan: 2}, '',
-              {text: formatCurrency(outstandingAmount.sumCarryoverAmount), alignment: 'right'},
-              {text: formatCurrency(outstandingAmount.sumSalesAmount), alignment: 'right'},
-              {text: formatCurrency(outstandingAmount.sumPayingAmount), alignment: 'right'},
-              {text: formatCurrency(outstandingAmount.sumOutstandingAmount), alignment: 'right'},
+              {text: outstandingAmount.sumCarryoverAmount, alignment: 'right'},
+              {text: outstandingAmount.sumSalesAmount, alignment: 'right'},
+              {text: outstandingAmount.sumPayingAmount, alignment: 'right'},
+              {text: outstandingAmount.sumOutstandingAmount, alignment: 'right'},
               ''
             ]
           ],
@@ -402,33 +450,37 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
 
 const basicInvoiceTable = (data, index) => {
   /* data 형식 */
-  /*{
-    companyId: '530bf5a3-21c4-4241-9b91-e378b05966ed',
-      locationName: [],
-    companyName: '하림창호',
-    payingAmount: '0',
-    sequence: 1,
-    createdAt: '2025-03-28',
-    choices: [
+  /*
+ {
+  companyId: 'bc93a48e-fd33-42bc-ba63-bee54f57a9f6',
+  locationName: [ 'dd' ],
+  companyName: '(주) 더아트팩토리리',
+  payingAmount: '0',
+  sequence: 6,
+  createdAt: '2025-04-20',
+  choices: [
     {
-      bridgeId: '7d667736-21e3-4724-8ba2-ae595fe41ec9',
-      productName: 'H/L',
-      quantity: 2,
-      productScale: '0.8TX1X1600',
+      bridgeId: 'b1fcabcf-a129-40c9-9ec4-1e661b5957c9',
+      productName: '티타블H/L',
+      quantity: 1.25,
+      productScale: '1.2TX4X3000',
       productScaleSequence: 2
     }
   ],
-    amount: [
+  amount: [
     {
       cachedRawMatAmount: '0',
       cachedManufactureAmount: '0',
-      newRawMatAmount: '3000',
-      newManufactureAmount: '2000'
+      newRawMatAmount: '10000',
+      newManufactureAmount: '40900'
     }
   ]
-  }
+}
 */
+  console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
+  const totalRowsNum = data.choices.length > 12 ? 25 : 12;
+  const shouldPageBreak = index === 1 && totalRowsNum === 25;
   const sum = data.choices.map((item, index) => (Number(data.amount[index].newRawMatAmount) + Number(data.amount[index].newManufactureAmount)) * item.quantity)
   const [firstRowNames, secondRowNames] =
     data.locationName.length > 3
@@ -483,6 +535,7 @@ const basicInvoiceTable = (data, index) => {
           ],
         ],
       },
+      ...(shouldPageBreak ? { pageBreak: 'before' } : {}),
     },
     {
       table: {
@@ -504,7 +557,7 @@ const basicInvoiceTable = (data, index) => {
             {text: `${formatCurrency(data.amount[index].newManufactureAmount)}`, alignment: 'right'},
             {text: `${sum[index].toLocaleString('ko-KR')}`, alignment: 'right'},
           ]),
-          ...Array.from({length: 12 - data.choices.length}, () =>
+          ...Array.from({length: totalRowsNum - data.choices.length}, () =>
             Array.from({length: 6}, () => ({
               text: ' ',
             }))
@@ -522,7 +575,7 @@ const basicInvoiceTable = (data, index) => {
             {text: '인수자 : ', border: [false, true, false, true]},
             {text: '(인)', border: [false, true, true, true]},
           ]
-        ]
+        ],
       },
     },
   ];
@@ -530,7 +583,7 @@ const basicInvoiceTable = (data, index) => {
 
 export const invoiceDocDef = (data: any) => {
   /*
-  *   /*{
+  *{
   companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',
   locationName: [],
   companyName: '푸주옥',
@@ -555,25 +608,27 @@ export const invoiceDocDef = (data: any) => {
     }
   ]
 }
-
-  *
   * */
+  const totalRowsNum = data.choices?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
     content: [
       ...basicInvoiceTable(data, 0),
-      {
-        canvas: [
-          {
-            type: 'line',
-            x1: 0, y1: 0,
-            x2: 530, y2: 0, // 너비 조절 (A4 기준이면 약 500~550 추천)
-            lineWidth: 0.5,
-            dash: {length: 2, space: 2}
-          }
-        ],
-        margin: [0, 15, 0, 15]
-      },
+      ...(totalRowsNum !== 25
+          ? [{
+            canvas: [
+              {
+                type: "line",
+                x1: 0, y1: 0,
+                x2: 530, y2: 0,
+                lineWidth: 0.5,
+                dash: {length: 2, space: 2}
+              }
+            ],
+            margin: [0, 15, 0, 15]
+          } as any]
+          : []
+      ),
       ...basicInvoiceTable(data, 1),
     ],
     styles: {
