@@ -1,6 +1,6 @@
 /* 원화 표기 */
 export const formatCurrency = (value: string) =>
-  new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Number(value));
+  new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Math.floor(Number(value)));
 
 export const formatDecimal = (value: string, digits: number = 3) =>
   Number(value).toFixed(digits);

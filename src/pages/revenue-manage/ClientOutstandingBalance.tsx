@@ -189,10 +189,10 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
             <TableFooter>
               <TableRow>
                 <TableCell>합계</TableCell>
-                <TableCell align='right'>{tableFooter.sumCarryoverAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumSalesAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumPayingAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumOutstandingAmount}</TableCell>
+                <TableCell align='right'>{tableFooter.sumCarryoverAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumSalesAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumPayingAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumOutstandingAmount.toLocaleString()}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
