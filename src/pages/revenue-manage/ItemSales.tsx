@@ -72,13 +72,6 @@ const columns: readonly TableColumns<ItemSalesColumn>[] = [
     format: formatCurrency,
   },
   {
-    id: ItemSalesColumn.PRODUCT_LENGTH,
-    label: '길이',
-    minWidth: 100,
-    align: 'right',
-    format: formatDecimal
-  },
-  {
     id: ItemSalesColumn.TOTAL_SALES_AMOUNT,
     label: '매출액',
     minWidth: 100,
@@ -225,7 +218,7 @@ const ItemSales = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={3}></TableCell>
+                <TableCell colSpan={2}></TableCell>
                 <TableCell align='right'>재료비합계</TableCell>
                 <TableCell align='right'>{sum.rawSum.toLocaleString()}</TableCell>
                 <TableCell align='right'>가공비합계</TableCell>

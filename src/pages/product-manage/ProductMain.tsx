@@ -22,6 +22,7 @@ import axiosInstance from '../../api/axios.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -60,13 +61,6 @@ const columns: readonly ProductMainColumn[] = [
     minWidth: 80,
     format: formatCurrency,
   },
-  {
-    id: 'productLength',
-    label: '길이',
-    align: 'right',
-    minWidth: 80,
-    format: formatDecimal,
-  }
 ]
 
 const ProductMain = (): React.JSX.Element => {
@@ -92,6 +86,8 @@ const ProductMain = (): React.JSX.Element => {
     page: 1,
     totalPages: 1,
   });
+  const { showAlert } = useAlertStore();
+
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const formatProdList = useMemo(() =>
     productList.flatMap((item) =>
@@ -116,6 +112,14 @@ const ProductMain = (): React.JSX.Element => {
       ...formData,
       [event.target.name]: event.target.value
     });
+  };
+  const handleScaleChange = (index: number, value: string) => {
+    const newScales = [...formData.scale];
+    newScales[index] = value;
+    setFormData((prev) => ({
+      ...prev,
+      scale: newScales,
+    }));
   };
   const handleUpdateProdName = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUpdateAllProdName({
@@ -188,21 +192,26 @@ const ProductMain = (): React.JSX.Element => {
 
   const handleSubmit = async () => {
     if (dialogType === ProductDialogType.EDIT_ONLY_PRODUCT_NAME) {
-      const targetProducts = productList.filter(product => product.productName === updateAllProdName.name);
-      if (targetProducts.length === 0) {
-        alert('해당 품목명을 가진 제품이 없습니다.');
-        return;
+      try {
+        const targetProducts = productList.filter(product => product.productName === updateAllProdName.name);
+        if (targetProducts.length === 0) {
+          showAlert('해당 품목명을 가진 제품이 없습니다.', 'error');
+          return;
+        }
+        await axiosInstance.patch('/product', {
+          id: targetProducts[0].id,
+          infoId: targetProducts[0].info.id,
+          productName: updateAllProdName.newName
+        });
+        setOpen(false);
+        return await getProductList();
+      } catch {
+        showAlert('품목명 수정 실패. 재시도 해주세요', 'error');
       }
-      await axiosInstance.patch('/product', {
-        id: targetProducts[0].id,
-        infoId: targetProducts[0].info.id,
-        productName: updateAllProdName.newName
-      });
-      return await getProductList();
     }
 
     if (!formData.name) {
-      alert('품목은 필수 입력 값입니다.');
+      showAlert('품목은 필수 입력 값입니다.', 'info');
       return;
     }
 
@@ -215,10 +224,15 @@ const ProductMain = (): React.JSX.Element => {
     try {
       if (dialogType === ProductDialogType.EDIT) {
         await axiosInstance.patch('/product/scale/info', data);
-        alert("수정 완료");
+        showAlert("수정 완료", 'success');
       } else if (dialogType === ProductDialogType.CREATE) {
-        /*await axiosInstance.post('/product', data);
-        alert("등록 완료");*/
+        if (validScales.length === 0) {
+          await axiosInstance.post('/product', {
+            name: formData.name
+          })
+          showAlert('등록이 완료되었습니다.', 'success');
+          return;
+        }
         const failedScales: string[] = [];
         for (const scale of validScales) {
           try {
@@ -238,16 +252,17 @@ const ProductMain = (): React.JSX.Element => {
           }
         }
         if (failedScales.length === 0) {
-          alert('모든 규격 등록이 완료되었습니다.');
+          showAlert('등록이 완료되었습니다.', 'success');
+          setOpen(false);
         } else if (failedScales.length === validScales.length) {
-          alert('등록에 실패했습니다. 다시 시도해 주세요.');
+          showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'warning');
         } else {
-          alert(`일부 등록에 실패했습니다: ${failedScales.join(', ')}`);
+          showAlert(`일부 등록에 실패했습니다: ${failedScales.join(', ')}`, 'error');
         }
       }
       await getProductList();
     } catch {
-      alert('요청이 실패했습니다. 재시도 해주세요.');
+      showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
 
@@ -258,10 +273,10 @@ const ProductMain = (): React.JSX.Element => {
         scale: scale,
         scaleId: scaleId,
       })
-      alert('삭제완료');
+      showAlert('삭제 완료', 'success');
       await getProductList();
     } catch {
-      alert('요청이 실패했습니다. 재시도 해주세요.');
+      showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
 
@@ -298,7 +313,6 @@ const ProductMain = (): React.JSX.Element => {
             onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
               event.preventDefault();
               handleSubmit();
-              setOpen(false);
             },
           },
         }}
@@ -317,12 +331,15 @@ const ProductMain = (): React.JSX.Element => {
             <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                             value={formData.name}
                             disabled={dialogType === ProductDialogType.EDIT}/>
-            <InputWithLabel name='scale[0]' label='규격1' labelPosition='left' onChange={handleInputChange}
-                            value={formData.scale[0]}/>
-            <InputWithLabel name='scale[1]' label='규격2' labelPosition='left' onChange={handleInputChange}
-                            value={formData.scale[1]} />
-            <InputWithLabel name='scale[2]' label='규격3' labelPosition='left' onChange={handleInputChange}
-                            value={formData.scale[2]} />
+            <InputWithLabel label='규격1' labelPosition='left'
+                            value={formData.scale[0]} placeholder='필수 입력 값입니다.'
+                            onChange={(e) => handleScaleChange(0, e.target.value)}/>
+            <InputWithLabel name='scale[1]' label='규격2' labelPosition='left'
+                            value={formData.scale[1]}
+                            onChange={(e) => handleScaleChange(1, e.target.value)}/>
+            <InputWithLabel name='scale[2]' label='규격3' labelPosition='left'
+                            value={formData.scale[2]}
+                            onChange={(e) => handleScaleChange(2, e.target.value)}/>
             <InputWithLabel name='unitWeight' label='단중' labelPosition='left' onChange={handleInputChange}
                             value={formData.unitWeight}/>
             <InputWithLabel name='vCut' label='V컷' labelPosition='left' onChange={handleInputChange}
