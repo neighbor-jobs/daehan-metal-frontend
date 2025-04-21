@@ -1,7 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.ts';
 import {
-  Alert,
   Autocomplete,
   Box,
   Button, Chip,
@@ -32,6 +31,7 @@ import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
 import ProductForm from '../../components/ProductForm.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -116,8 +116,8 @@ const TransactionRegister = ({
     Array.from({length: 1}, () => ({...defaultAmount}))
   );
   const [newProductFormOpen, setNewProductFormOpen] = useState(false);
-
   const [productListState, setProductListState] = useState([]);
+  const { showAlert } = useAlertStore();
 
   const locationOptions = useMemo(() => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === formData.companyName);
@@ -226,15 +226,14 @@ const TransactionRegister = ({
 
   // api
   const getEndSeq = async (companyName: string, startAt: string) => {
-    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=1`);
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=asc&startAt=${startAt}&sequence=1`);
     return res.data?.data?.endSequence ?? null;
   }
 
   const register = async () => {
     if (formData.companyName.length === 0) {
-      return (
-        <Alert severity='info'>거래처명은 필수 입력 값입니다.</Alert>
-      );
+      showAlert('거래처명은 필수 입력 값입니다.', 'info');
+      return;
     }
     const endSeq = await getEndSeq(formData.companyName, formData.createdAt);
 
@@ -251,9 +250,11 @@ const TransactionRegister = ({
     }));
 
     for (let index = 0; index < amount.length; index++) {
-      // console.log('업데이트 전 seq ', index, ' :', updatedChoices[index]);
       const a = amount[index];
       const choice = updatedChoices[index];
+      if (choice.productName.length === 0) {
+        continue;
+      }
 
       if (a.cachedRawMatAmount !== a.newRawMatAmount || a.cachedManufactureAmount !== a.newManufactureAmount) {
         const product = productListState.find((item) => item.productName === choice.productName);
@@ -278,7 +279,7 @@ const TransactionRegister = ({
             };
             // console.log('업데이트 후 seq ', index, ' :', updatedChoices[index]);
           } catch (error) {
-            console.error(`가격 업데이트 실패 - row ${index}`, error);
+            showAlert('요청 실패. 재시도 해주세요', 'error');
           }
         }
       }
@@ -286,23 +287,73 @@ const TransactionRegister = ({
 
     const data = {
       ...updatedFormData,
-      choices: updatedChoices,
+      choices: updatedChoices.filter((c) => c.productName.length > 0),
     };
-
+    let amountInfo = null;
     try {
       const res: AxiosResponse = await axiosInstance.post('/receipt', data);
+      /*  "data": {
+        "receipt": {
+            "id": "a10567ba-a270-4b5b-861f-09310f3e77b3",
+            "sequence": 2,
+            "choices": [
+                {
+                    "id": "f692c948-8fb6-4ab8-b393-23ad2761e589",
+                    "product": {
+                        "id": "9ba25b92-ffd0-4113-add3-74caadf25b99",
+                        "bridgeId": "9bb6e54b-8bc1-4b73-8dcf-77b5d7dbb38a",
+                        "productName": "하장중ABC",
+                        "info": {
+                            "id": "00bd7fcb-39bb-4865-809c-0331ca6da5af",
+                            "scales": [
+                                {
+                                    "id": "e95675ac-cf4f-4480-975d-af219b2b7301",
+                                    "scale": "EGI1.55TX4X4000",
+                                    "snapshot": {
+                                        "id": "0da79635-86df-40ee-8f81-483070df165a",
+                                        "sequence": 2,
+                                        "manufactureAmount": "30300",
+                                        "vCutAmount": "0",
+                                        "rawMatAmount": "2020",
+                                        "productLength": "0.000",
+                                        "stocks": 0,
+                                        "unitWeight": "0",
+                                        "vCut": "0",
+                                        "createdAt": "2025-04-21T17:02:14.403Z"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "companyName": "(구,동성)경영산업",
+                    "chooseProductName": "하장중ABC",
+                    "chooseProductScale": "EGI1.55TX4X4000",
+                    "chooseProductScaleSequence": 2,
+                    "quantity": 1
+                }
+            ],
+            "companyName": "(구,동성)경영산업",
+            "payingAmount": "0",
+            "totalAmount": "32320",
+            "locationName": [
+                "프린트확인"
+            ],
+            "createdAt": "2025-04-22T00:00:00.000Z"
+        },
+        "outstandingAmount": "71317"
+    },*/
 
-      // TODO: 요청 실패 시 formData 리셋 안되도록
       if (res.data.statusCode === 204) {
-        return (
-          <Alert severity='info'>입력 필드를 재확인 해주세요.</Alert>
-        )
+        showAlert('입력 필드를 재확인 해주세요.', 'info');
+        return;
       } else if (res.data.statusCode === 409) {
-        return (
-          <Alert severity='warning'>{res.data.message}</Alert>
-        )
+        showAlert(`${res.data.message}`, 'error');
+        return;
       }
-
+      amountInfo = {
+        carryoverAmount: res.data.data?.outstandingAmount,
+        totalSalesAmount: res.data.data?.receipt.totalAmount,
+      }
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
         companyId: '',
@@ -314,12 +365,9 @@ const TransactionRegister = ({
       }))
       setAmount(Array.from({length: 1}, () => ({...defaultAmount})));
     } catch (err) {
-      return (
-        <Alert severity='warning'>{err}</Alert>
-      )
-
+      showAlert(`${err}`, 'error');
     }
-    return data;
+    return {...data, ...amountInfo};
   }
 
   const handlePrint = async () => {
@@ -328,13 +376,10 @@ const TransactionRegister = ({
       try {
         await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data, amount});
       } catch (error) {
-        return (
-          <Alert severity='warning'>{error}</Alert>
-        )
+        showAlert(`${error}`, 'error');
       }
     }
   }
-
 
   useEffect(() => {
     if (productList.length > 0) {
@@ -347,7 +392,14 @@ const TransactionRegister = ({
   // console.log('날짜설정: ', formData.createdAt);
   return (
     <>
-      <Dialog open={isOpen} fullWidth maxWidth="lg">
+      {/* 거래 등록 Dialog */}
+      <Dialog open={isOpen}
+              fullWidth maxWidth="lg"
+              onClose={onClose}
+              // disableAutoFocus
+              disableEnforceFocus
+
+      >
         <IconButton onClick={onClose} size='small'
                     sx={{
                       position: "absolute",
@@ -433,7 +485,7 @@ const TransactionRegister = ({
                           <TextField {...params}
                                      value={formData.locationName}
                                      size='small'
-                                     sx={{minWidth: 150}}
+                                     sx={{minWidth: 300}}
                           />
                         }
                       />
@@ -539,7 +591,7 @@ const TransactionRegister = ({
                                disabled
                                disableUnderline
                                fullWidth
-                               value={`${Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}
@@ -571,7 +623,7 @@ const TransactionRegister = ({
                                disabled
                                fullWidth
                                data-table-input
-                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -584,7 +636,7 @@ const TransactionRegister = ({
                                fullWidth
                                data-table-input
                                disabled
-                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -624,7 +676,7 @@ const TransactionRegister = ({
                 <InputLabel sx={{fontSize: 'small',}}>매출계</InputLabel>
                 <TextField size='small'
                            variant="outlined"
-                           value={totalSales}
+                           value={totalSales.toLocaleString()}
                            disabled/>
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -655,6 +707,8 @@ const TransactionRegister = ({
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* 새 품명 & 규격 등록 Dialog */}
       <ProductForm isOpened={newProductFormOpen}
                    onClose={() => setNewProductFormOpen(false)}
                    onSuccess={async () => {

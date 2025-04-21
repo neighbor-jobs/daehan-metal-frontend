@@ -11,7 +11,9 @@ interface FooterProps {
 
 const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
   const {selectedSubType} = useHeaderStore();
-  // console.log(printData);
+
+  // TODO: selectedSubType이 null이면 경로에 따라 변수 재정의하고 넘겨주기
+  // console.log('print type: ', selectedSubType);
 
   // handler
   const handlePrint = async () => {
@@ -23,12 +25,6 @@ const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
   return (
     <Box
       sx={{
-        /*position: 'fixed',
-        width: '100%',
-        bottom: 16,
-        right: 16,
-        display: 'flex',
-        justifyContent: 'flex-end',*/
         position: 'relative', // fixed 제거하여 테이블과 독립적으로 배치
         width: '100%',
         display: 'flex',
