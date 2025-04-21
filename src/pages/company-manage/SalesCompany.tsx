@@ -23,6 +23,7 @@ import {AxiosResponse} from 'axios';
 import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -88,6 +89,7 @@ const SalesCompany = (): React.JSX.Element => {
     'businessCategory': undefined,
     'businessNumber': undefined,
   })
+  const { showAlert } = useAlertStore();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,10 +143,8 @@ const SalesCompany = (): React.JSX.Element => {
 
   // api
   const fetchSalesCompanies = async () => {
-    const companies = await axiosInstance.get('/company?orderBy=desc');
+    const companies = await axiosInstance.get('/company?orderBy=asc');
     setSalesCompanyList(companies.data.data || []);
-    /*const companies = await axiosInstance.get('/company?orderBy=desc');
-    setSalesCompanyList(companies.data.data || []);*/
   };
 
   const handleSubmit = async () => {
@@ -157,7 +157,7 @@ const SalesCompany = (): React.JSX.Element => {
 
     const missingField = requiredFields.find(field => !field.value || field.value.trim() === '');
     if (missingField) {
-      alert(`'${missingField.name}'은(는) 필수 입력 값입니다.`);
+      showAlert(`'${missingField.name}'은(는) 필수 입력 값입니다.`, 'info');
       return;
     }
 
@@ -176,16 +176,16 @@ const SalesCompany = (): React.JSX.Element => {
     try {
       if (isEditing) {
         const res: AxiosResponse = await axiosInstance.patch('/company', data);
-        // console.log('add update company data.data', res.data.data);
-        alert('거래처가 수정되었습니다.');
+        console.log('add update company data.data', res.data.data);
+        showAlert('거래처가 수정되었습니다.', 'success');
       } else {
         const res: AxiosResponse = await axiosInstance.post('/company', data);
         setSalesCompanyList((prev) => ([res.data.data, ...prev]));
-        alert('거래처가 등록되었습니다.')
+        showAlert('거래처가 등록되었습니다.', 'success');
       }
       setOpen(false);
     } catch {
-      alert('요청이 실패했습니다. 재시도 해주세요.');
+      showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
   // console.log('캐시값 확인: ', cacheManager.getCompanies());
@@ -193,7 +193,7 @@ const SalesCompany = (): React.JSX.Element => {
 
   const delSalesCompany = async (companyName: string) => {
     await axiosInstance.delete(`/company?companyName=${companyName}`);
-    alert('거래처 삭제 완료');
+    showAlert('거래처 삭제 완료', 'success');
   }
 
   useEffect(() => {

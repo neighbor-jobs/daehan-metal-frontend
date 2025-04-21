@@ -21,6 +21,7 @@ import 'dayjs/locale/ko';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import PrintButton from '../../layout/PrintButton.tsx';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   {
@@ -95,9 +96,10 @@ const MonthlyPurchase = (): React.JSX.Element => {
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
   const [selectedCompanyData, setSelectedCompanyData] = useState({});
   const [records, setRecords] = useState([]);
+  const { showAlert } = useAlertStore();
 
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
-    const selectedCompany = purchaseCompanyList.find((company) => company.name === newValue);
+    const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
     if (!selectedCompany) {
       setFormData(prev => ({
         ...prev,
@@ -137,7 +139,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
         payableBalance: item.payableBalance,
       })))
     } catch (error) {
-      alert('검색에 실패했습니다.');
+      showAlert('검색에 실패했습니다.', 'error');
     }
   }
 
@@ -147,7 +149,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
         const res = await axiosInstance.get('/vendor/many');
         setPurchaseCompanyList(res.data.data);
       } catch (error) {
-        alert('새로고침 요망');
+        showAlert('새로고침 요망', 'info');
       }
     }
     fetch();

@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle} from '@mui/material';
 import InputWithLabel from './InputWithLabel.tsx';
 import axiosInstance from '../api/axios.ts';
+import {useAlertStore} from '../stores/alertStore.ts';
 
 interface ProductFormProps {
   isOpened: boolean;
@@ -21,7 +22,9 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
     vCut: '',
     productLength: '',
   });
+  const { showAlert } = useAlertStore();
 
+  // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -31,7 +34,7 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.scale) {
-      alert('품목과 규격은 필수 입력 값입니다.');
+      showAlert('품목과 규격은 필수 입력 값입니다.', 'info');
       return;
     }
 
@@ -41,7 +44,7 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
     }
     try {
       await axiosInstance.post('/product', data);
-      alert("등록 완료");
+      showAlert("등록 완료", 'success');
       setFormData({
         name: "",
         scale: "",
@@ -54,7 +57,7 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
         productLength: '',
       })
     } catch {
-      alert('등록에 실패했습니다.');
+      showAlert('등록에 실패했습니다.', 'error');
     }
     if (onSuccess) onSuccess();
   }
@@ -78,9 +81,9 @@ const ProductForm = ({isOpened, onClose, onSuccess}: ProductFormProps): React.JS
       <DialogContent
         sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
       >
-        <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange}
+        <InputWithLabel name='name' label='품명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력란입니다.'
                         value={formData.name}/>
-        <InputWithLabel name='scale' label='규격' labelPosition='left' onChange={handleInputChange}
+        <InputWithLabel name='scale' label='규격' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력란입니다.'
                         value={formData.scale}/>
         <InputWithLabel name='unitWeight' label='단중' labelPosition='left' onChange={handleInputChange}
                         value={formData.unitWeight}/>
