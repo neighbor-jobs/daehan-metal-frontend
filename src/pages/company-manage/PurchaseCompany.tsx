@@ -24,6 +24,7 @@ import {PurchaseCompanyColumn, TableColumns} from '../../types/tableColumns.ts';
 import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
 import {GetVendorResData} from '../../types/vendorRes.ts';
 import {PatchVendorBankReqBody, PostVendorBankReqBody, PostVendorReqBody} from '../../types/vendorReq.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
@@ -72,6 +73,7 @@ const PurchaseCompany = (): React.JSX.Element => {
     accountNumber: undefined,
     accountOwner: undefined,
   });
+  const { showAlert } = useAlertStore();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,20 +148,28 @@ const PurchaseCompany = (): React.JSX.Element => {
   };
 
   const handleSubmit = async () => {
-    // TODO: 에러 핸들링 추가
-    if (isEditing) {
-      await axiosInstance.patch('/vendor', {
-        vendorName: formData.name,
-        telNumber: formData?.telNumber || undefined,
-        phoneNumber: formData?.phoneNumber || undefined,
-        subTelNumber: formData?.subTelNumber || undefined,
-        businessNumber: formData?.businessNumber || undefined,
-      });
-    } else {
-      await axiosInstance.post('/vendor', formData);
+    if (formData.name.length === 0) {
+      showAlert('매입처명은 필수 입력값입니다.', 'info');
+      return;
     }
-    await fetchPurchaseCompanies();
-    setOpen(false);
+
+    try {
+      if (isEditing) {
+        await axiosInstance.patch('/vendor', {
+          vendorName: formData.name,
+          telNumber: formData?.telNumber || undefined,
+          phoneNumber: formData?.phoneNumber || undefined,
+          subTelNumber: formData?.subTelNumber || undefined,
+          businessNumber: formData?.businessNumber || undefined,
+        });
+      } else {
+        await axiosInstance.post('/vendor', formData);
+      }
+      await fetchPurchaseCompanies();
+      setOpen(false);
+    } catch {
+      showAlert('제출 실패. 재시도 해주세요', 'error');
+    }
   }
 
   const handleBankSubmit = async () => {
@@ -175,7 +185,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   const delPurchaseCompany = async (companyName: string) => {
     await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
     await fetchPurchaseCompanies();
-    alert('거래처 삭제 완료');
+    showAlert('거래처 삭제 완료', 'success');
   }
 
   useEffect(() => {
@@ -210,7 +220,6 @@ const PurchaseCompany = (): React.JSX.Element => {
             component: 'form',
             onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
               event.preventDefault();
-              setOpen(false);
             },
           },
         }}
@@ -219,7 +228,7 @@ const PurchaseCompany = (): React.JSX.Element => {
         <DialogContent
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
-          <InputWithLabel name='name' label='거래처명' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='name' label='거래처명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={formData.name}/>
           <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handlePhoneNumberChange}
                           value={formData?.phoneNumber}/>
@@ -244,11 +253,11 @@ const PurchaseCompany = (): React.JSX.Element => {
         <DialogContent
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
-          <InputWithLabel name='accountOwner' label='예금주' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='accountOwner' label='예금주' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={bankData?.accountOwner}/>
-          <InputWithLabel name='bankName' label='은행명' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='bankName' label='은행명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={bankData?.bankName}/>
-          <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
                           value={bankData?.accountNumber}/>
         </DialogContent>
         <DialogActions>

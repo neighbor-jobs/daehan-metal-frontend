@@ -22,6 +22,7 @@ import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts'
 import {formatCurrency, formatDecimal, formatVatRate} from '../../utils/format.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../../api/axios.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
@@ -114,17 +115,26 @@ const PurchaseMain = (): React.JSX.Element => {
     companyName: '',
     vendorId: '',
   });
+  const {showAlert} = useAlertStore();
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
-    const selectedCompany = purchaseCompanyList.find((company) => company.name === newValue);
+    const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
+
+    if (!selectedCompany) {
+      setHeader(prev => ({
+        ...prev,
+        companyName: newValue || '',
+        vendorId: '',
+      }));
+      return;
+    }
     setHeader(prev => ({
       ...prev,
       companyName: selectedCompany.name,
       vendorId: selectedCompany.id,
     }))
   }, [purchaseCompanyList]);
-
 
   const addRow = () => {
     setReceipts(prev => [...prev, {...defaultReceipt}]);
@@ -152,7 +162,36 @@ const PurchaseMain = (): React.JSX.Element => {
   };
 
   const handleSubmit = async () => {
+    if (header.companyName === '') {
+      showAlert('매입처명은 필수 입력값입니다.');
+      return;
+    }
+
     const transformedReceipts = receipts.map((item) => {
+      for (let i = 0; i < receipts.length; i++) {
+        const item = receipts[i];
+
+        // 입금일 때, 입금액 필수
+        if (item.isPaying) {
+          if (!item.productPrice || item.productPrice.trim() === '') {
+            showAlert(`입금 항목의 입금액은 필수입니다. (행 ${i + 1})`, 'info');
+            return;
+          }
+        } else {
+          // 매입일 때, 품명, 재료단가 or 가공단가 중 하나는 필수
+          if (!item.productName || item.productName.trim() === '') {
+            showAlert(`매입 항목의 품명은 필수입니다. (행 ${i + 1})`, 'info');
+            return;
+          }
+          const hasRaw = item.rawMatAmount && item.rawMatAmount.trim() !== '';
+          const hasManufacture = item.manufactureAmount && item.manufactureAmount.trim() !== '';
+          if (!hasRaw && !hasManufacture) {
+            showAlert(`매입 항목에는 재료단가 또는 가공단가가 필요합니다. (행 ${i + 1})`, 'info');
+            return;
+          }
+        }
+      }
+
       if (item.isPaying) {
         return {
           ...item,
@@ -175,11 +214,11 @@ const PurchaseMain = (): React.JSX.Element => {
       }
     });
 
-    for (let i=0; i<receipts.length; i++) {
+    for (let i = 0; i < receipts.length; i++) {
       try {
         await axiosInstance.post('/vendor/receipt', transformedReceipts[i]);
       } catch (error) {
-        alert('거래를 다시 등록해주세요');
+        showAlert('거래를 다시 등록해주세요', 'error');
       }
     }
     setReceipts([{...defaultReceipt}]);
@@ -190,22 +229,19 @@ const PurchaseMain = (): React.JSX.Element => {
     })
   }
 
-
   useEffect(() => {
     const fetch = async () => {
       try {
         const res = await axiosInstance.get('/vendor/many');
         setPurchaseCompanyList(res.data.data);
       } catch (error) {
-        alert('새로고침 요망');
+        showAlert('새로고침 요망', 'info');
       }
     }
     fetch();
   }, [])
 
-  // debug
-  // console.log(receipts);
-  // console.log('매입처 리스트: ', purchaseCompanyList);
+  console.log(receipts);
 
   return (
     <Box sx={{
@@ -230,7 +266,7 @@ const PurchaseMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
-              onChange={(value) => setHeader(prev=>({...prev, createdAt: value.format('YYYY-MM-DD')}))}
+              onChange={(value) => setHeader(prev => ({...prev, createdAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
                 calendarHeader: {format: 'YYYY/MM'},
@@ -247,7 +283,7 @@ const PurchaseMain = (): React.JSX.Element => {
               freeSolo
               options={purchaseCompanyList.map((item) => item.name)}
               onChange={handleCompanyChange}
-              value={receipts[0]?.companyName || ''}
+              value={header?.companyName || ''}
               renderInput={(params) =>
                 <TextField {...params}
                            size='small'
