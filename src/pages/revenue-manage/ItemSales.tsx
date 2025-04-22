@@ -2,7 +2,7 @@
 import {
   Autocomplete,
   Box,
-  Button,
+  Button, createFilterOptions,
   Paper,
   Table,
   TableBody,
@@ -17,12 +17,13 @@ import DateRangePicker from '../../components/DateRangePicker';
 
 // project
 import {ItemSalesColumn, TableColumns} from '../../types/tableColumns';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import dayjs from 'dayjs';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import getAllProducts from '../../api/getAllProducts.ts';
+import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 
 const columns: readonly TableColumns<ItemSalesColumn>[] = [
   {
@@ -96,6 +97,11 @@ const ItemSales = (): React.JSX.Element => {
     rawSum: 0,
     sum: 0,
   })
+  const uniqueScaleOptions = useMemo(() => {
+    return getUniqueScalesByProductName(productList, formData.productName);
+  }, [productList, formData.productName]);
+
+  const filter = createFilterOptions<string>();
 
   // handler
   const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
@@ -162,8 +168,9 @@ const ItemSales = (): React.JSX.Element => {
           }
         />
         <Autocomplete
-          freeSolo
-          options={productList.find((p) => p.productName === formData.productName)?.info.scales.map((s) => s.scale) || []}
+          // freeSolo
+          options={uniqueScaleOptions}
+          filterOptions={(options, state) => filter(options, state)}
           value={formData.scale}
           onInputChange={(_, newInputValue) => {
             setFormData((prev) => ({...prev, scale: newInputValue}));

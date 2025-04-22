@@ -32,6 +32,7 @@ import {RevenueManageMenuType} from '../../types/headerMenu.ts';
 import ProductForm from '../../components/ProductForm.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -133,6 +134,14 @@ const TransactionRegister = ({
       return acc + total;
     }, 0);
   }, [choices, amount]);
+
+  const productScaleMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    productList.forEach((p) => {
+      map[p.productName] = getUniqueScalesByProductName(productList, p.productName);
+    });
+    return map;
+  }, [productList]);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -542,7 +551,7 @@ const TransactionRegister = ({
                       {/* 규격 */}
                       <TableCell>
                         <Autocomplete
-                          options={productListState.find((p) => p.productName === choice.productName)?.info.scales.map((s) => s.scale) || []}
+                          options={productScaleMap[choice.productName] || []}
                           value={choice.productScale}
                           onChange={(_, newValue: string | null) => handleScaleChange(rowIndex, newValue, choice.productName)}
                           renderInput={(params) =>
