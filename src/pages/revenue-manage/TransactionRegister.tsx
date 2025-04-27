@@ -3,11 +3,13 @@ import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.
 import {
   Autocomplete,
   Box,
-  Button, Chip,
+  Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton, Input,
+  IconButton,
+  Input,
   InputLabel,
   Paper,
   Table,
@@ -33,6 +35,7 @@ import ProductForm from '../../components/ProductForm.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
+import {ProductDialogType} from '../../types/dialogTypes.ts';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -719,6 +722,7 @@ const TransactionRegister = ({
 
       {/* 새 품명 & 규격 등록 Dialog */}
       <ProductForm isOpened={newProductFormOpen}
+                   dialogType={ProductDialogType.CREATE}
                    onClose={() => setNewProductFormOpen(false)}
                    onSuccess={async () => {
                      const newProdList = await getAllProducts();

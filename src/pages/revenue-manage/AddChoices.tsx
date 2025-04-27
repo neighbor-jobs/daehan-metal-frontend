@@ -202,7 +202,6 @@ const AddChoices = ({isOpen, onClose, onSuccess, productList, defaultFormData}: 
               ...updatedChoices[index],
               productScaleSequence: choice.productScaleSequence + 1,
             };
-            // console.log('업데이트 후 seq ', index, ' :', updatedChoices[index]);
           } catch (error) {
             showAlert('요청 실패. 재시도 해주세요', 'error');
           }
@@ -236,8 +235,8 @@ const AddChoices = ({isOpen, onClose, onSuccess, productList, defaultFormData}: 
   }, [productList]);
 
   // debug
-  console.log('choices: ', choices, ", amount: ", amount);
-  console.log(defaultFormData);
+  // console.log('choices: ', choices, ", amount: ", amount);
+  // console.log(defaultFormData);
 
   return (
     <>

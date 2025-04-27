@@ -80,14 +80,14 @@ const SalesCompany = (): React.JSX.Element => {
   const [isEditing, setIsEditing] = useState(false);
   const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    'companyName': '',
-    'ownerName': '',
-    'phoneNumber': '',
-    'fax': undefined,
-    'address': '',
-    'businessType': undefined,
-    'businessCategory': undefined,
-    'businessNumber': undefined,
+    companyName: '',
+    ownerName: '',
+    phoneNumber: '',
+    fax: undefined,
+    address: '',
+    businessType: undefined,
+    businessCategory: undefined,
+    businessNumber: undefined,
   })
   const { showAlert } = useAlertStore();
 
@@ -115,28 +115,28 @@ const SalesCompany = (): React.JSX.Element => {
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
-      'companyName': '',
-      'ownerName': '',
-      'phoneNumber': '',
-      'fax': undefined,
-      'address': '',
-      'businessType': undefined,
-      'businessCategory': undefined,
-      'businessNumber': undefined,
+      companyName: '',
+      ownerName: '',
+      phoneNumber: '',
+      fax: undefined,
+      address: '',
+      businessType: undefined,
+      businessCategory: undefined,
+      businessNumber: undefined,
     });
     setOpen(true);
   }
   const handleEdit = (row) => {
     setIsEditing(true);
     setFormData({
-      'companyName': row.companyName,
-      'ownerName': row.ownerName,
-      'phoneNumber': row.phoneNumber,
-      'fax': row.fax,
-      'address': row.address,
-      'businessType': row.businessType,
-      'businessCategory': row.businessCategory,
-      'businessNumber': row.businessNumber,
+      companyName: row.companyName,
+      ownerName: row.ownerName,
+      phoneNumber: row.phoneNumber,
+      fax: row.fax,
+      address: row.address,
+      businessType: row.businessType,
+      businessCategory: row.businessCategory,
+      businessNumber: row.businessNumber,
     })
     setOpen(true);
   }
@@ -162,21 +162,20 @@ const SalesCompany = (): React.JSX.Element => {
     }
 
     const data = {
-      "companyName": formData.companyName,
-      "infoArgs": {
-        "ownerName": formData.ownerName,
-        "address": formData.address,
-        "fax": formData.fax,
-        "phoneNumber": formData.phoneNumber,
-        "businessNumber": formData.businessNumber,
-        "businessType": formData.businessType,
-        "businessCategory": formData.businessCategory,
+      companyName: formData.companyName,
+      infoArgs: {
+        ownerName: formData.ownerName,
+        address: formData.address,
+        fax: formData.fax,
+        phoneNumber: formData.phoneNumber,
+        businessNumber: formData.businessNumber,
+        businessType: formData.businessType,
+        businessCategory: formData.businessCategory,
       },
     }
     try {
       if (isEditing) {
-        const res: AxiosResponse = await axiosInstance.patch('/company', data);
-        console.log('add update company data.data', res.data.data);
+        await axiosInstance.patch('/company', data);
         showAlert('거래처가 수정되었습니다.', 'success');
       } else {
         const res: AxiosResponse = await axiosInstance.post('/company', data);
