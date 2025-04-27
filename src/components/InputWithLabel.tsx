@@ -1,6 +1,6 @@
 import {Box, InputLabel, OutlinedInput, OutlinedInputProps} from '@mui/material';
 
-interface InputWithLabelProps extends OutlinedInputProps{
+interface InputWithLabelProps extends OutlinedInputProps {
   label: string;
   labelPosition: 'left' | 'top';
   textAlign?: 'right' | 'left';
@@ -10,8 +10,9 @@ const InputWithLabel = ({
                           label,
                           labelPosition,
                           textAlign = 'right',
+                          inputProps,
                           ...outlinedInputProps
-}: InputWithLabelProps):React.JSX.Element => {
+                        }: InputWithLabelProps): React.JSX.Element => {
 
   return (
     <Box
@@ -36,8 +37,9 @@ const InputWithLabel = ({
           }
         }}
         inputProps={{
-          sx: { textAlign: `${textAlign}` }
-      }}
+          ...(inputProps || {}),
+          sx: {textAlign: textAlign}, // sx도 덮어쓰기
+        }}
       ></OutlinedInput>
     </Box>
   )
