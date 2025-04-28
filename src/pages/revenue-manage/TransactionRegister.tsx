@@ -27,7 +27,6 @@ import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {decimalRegex, formatCurrency, formatDecimal} from '../../utils/format.ts';
 import dayjs from 'dayjs';
 import {Amount, Choice, defaultAmount, defaultChoice} from '../../types/transactionRegisterTypes.ts';
-import {moveFocusToNextInput} from '../../utils/focus.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
@@ -36,6 +35,7 @@ import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
+import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 interface TransactionRegisterProps {
   isOpen: boolean;
@@ -173,6 +173,7 @@ const TransactionRegister = ({
             ...choice,
             bridgeId: selectedProduct?.bridgeId || '',
             productName: selectedProduct?.productName || '',
+            productScale: '',
           }
           : choice
       )
@@ -546,8 +547,14 @@ const TransactionRegister = ({
                           value={choice.productName}
                           renderInput={(params) =>
                             <TextField {...params}
-                                       size='small'
                                        data-table-input
+                                       slotProps={{
+                                         htmlInput: {
+                                           'data-col-index': 0,
+                                           'data-row-index': rowIndex,
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),                                           ...params.inputProps
+                                         }
+                                       }}
                             />
                           }
                         />
@@ -562,6 +569,13 @@ const TransactionRegister = ({
                             <TextField {...params}
                                        size='small'
                                        data-table-input
+                                       slotProps={{
+                                         htmlInput: {
+                                           'data-col-index': 1,
+                                           'data-row-index': rowIndex,
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),                                           ...params.inputProps
+                                         }
+                                       }}
                             />
                           }
                         />
@@ -573,10 +587,9 @@ const TransactionRegister = ({
                                fullWidth
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `quantity-${rowIndex}`,
-                                 onKeyDown: (e) => {
-                                   if (e.key === 'Enter') moveFocusToNextInput(`quantity-${rowIndex}`);
-                                 }
+                                 'data-col-index': 2,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
                                }}
                                value={choice.quantity}
                                onChange={(e) => handleQuantityChange(e, rowIndex)}
@@ -589,11 +602,9 @@ const TransactionRegister = ({
                                fullWidth
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `newRawMatAmount-${rowIndex}`,
-                                 onKeyDown: (e) => {
-                                   if (e.key === 'Enter') moveFocusToNextInput(`newRawMatAmount-${rowIndex}`);
-                                 }
-                               }}
+                                 'data-col-index': 3,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),                               }}
                                name='newRawMatAmount'
                                value={amount[rowIndex].newRawMatAmount}
                                onChange={(event) => handleAmountChange(event, rowIndex)}
@@ -618,12 +629,13 @@ const TransactionRegister = ({
                                data-table-input
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `newManufactureAmount-${rowIndex}`,
-                                 onKeyDown: (e) => {
+                                 'data-col-index': 4,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                                    if (e.key === 'Enter') {
-                                     moveFocusToNextInput(`newManufactureAmount-${rowIndex}`);
                                      addRow();
                                    }
+                                   arrowNavAtRegister(e, 4);
                                  }
                                }}
                                value={`${amount[rowIndex].newManufactureAmount}`}
@@ -635,7 +647,6 @@ const TransactionRegister = ({
                                disableUnderline
                                disabled
                                fullWidth
-                               data-table-input
                                value={`${(Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
@@ -647,7 +658,6 @@ const TransactionRegister = ({
                                name='sum'
                                disableUnderline
                                fullWidth
-                               data-table-input
                                disabled
                                value={`${(Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
