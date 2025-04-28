@@ -36,7 +36,7 @@ const ProductForm = ({
     prevName: '',
     newName: '',
   });
-  const {showAlert} = useAlertStore();
+  const {showAlert, openAlert} = useAlertStore();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +126,7 @@ const ProductForm = ({
     <Dialog
       open={isOpened}
       onClose={onClose}
+      disableEscapeKeyDown={openAlert}
       slotProps={{
         paper: {
           component: 'form',
@@ -247,7 +248,7 @@ const ProductForm = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>취소</Button>
-        <Button onSubmit={handleSubmit}>확인</Button>
+        <Button onClick={handleSubmit}>확인</Button>
       </DialogActions>
     </Dialog>
   )

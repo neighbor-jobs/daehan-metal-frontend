@@ -24,6 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -89,7 +90,7 @@ const SalesCompany = (): React.JSX.Element => {
     businessCategory: undefined,
     businessNumber: undefined,
   })
-  const { showAlert } = useAlertStore();
+  const { showAlert, openAlert: openAlert } = useAlertStore();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,8 +188,6 @@ const SalesCompany = (): React.JSX.Element => {
       showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
-  // console.log('캐시값 확인: ', cacheManager.getCompanies());
-  // console.log('res.data.data: ', salesCompanyList);
 
   const delSalesCompany = async (companyName: string) => {
     await axiosInstance.delete(`/company?companyName=${companyName}`);
@@ -219,13 +218,14 @@ const SalesCompany = (): React.JSX.Element => {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
+        disableEscapeKeyDown={openAlert}
         slotProps={{
           paper: {
             component: 'form',
-            onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+            /*onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
               event.preventDefault();
               setOpen(false);
-            },
+            },*/
           },
         }}
       >
@@ -234,25 +234,80 @@ const SalesCompany = (): React.JSX.Element => {
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
           <InputWithLabel name='companyName' label='거래처명' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
+                          inputProps={{
+                            'data-input-id': `companyName`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`companyName`);
+                            }
+                          }}
                           value={formData.companyName}/>
           <InputWithLabel name='ownerName' label='대표자' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
+                          inputProps={{
+                            'data-input-id': `ownerName`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`ownerName`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('ownerName');
+                            }
+                          }}
                           value={formData.ownerName}/>
           <InputWithLabel name='phoneNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
+                          inputProps={{
+                            'data-input-id': `phoneNumber`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`phoneNumber`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('phoneNumber');
+                            }
+                          }}
                           placeholder='필수 입력 값입니다.' value={formData.phoneNumber}/>
           <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
+                          inputProps={{
+                            'data-input-id': `fax`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`fax`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('fax');
+                            }
+                          }}
                           value={formData.fax}/>
           <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange} placeholder='필수 입력 값입니다.'
+                          inputProps={{
+                            'data-input-id': `address`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`address`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('address');
+                            }
+                          }}
                           value={formData.address}/>
           <InputWithLabel name='businessType' label='업태' labelPosition='left' onChange={handleInputChange}
+                          inputProps={{
+                            'data-input-id': `businessType`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`businessType`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessType');
+                            }
+                          }}
                           value={formData.businessType}/>
           <InputWithLabel name='businessCategory' label='종목' labelPosition='left' onChange={handleInputChange}
+                          inputProps={{
+                            'data-input-id': `businessCategory`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`businessCategory`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessCategory');
+                            }
+                          }}
                           value={formData.businessCategory}/>
           <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleBusinessNumberChange}
+                          inputProps={{
+                            'data-input-id': `businessNumber`,
+                            onKeyDown: async (e) => {
+                              if (e.key === 'Enter') await handleSubmit();
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessNumber');
+                            }
+                          }}
                           placeholder='000-00-00000' value={formData.businessNumber}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>취소</Button>
-          <Button type="submit" onClick={handleSubmit}>등록</Button>
+          <Button onClick={handleSubmit}>등록</Button>
         </DialogActions>
       </Dialog>
       <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
