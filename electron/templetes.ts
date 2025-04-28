@@ -67,7 +67,7 @@ export const companySalesDocDef = (companySalesData) => {
 }
 
 /**
- * 매입처 관리대장장
+ * 매입처 관리대장
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
   return {
@@ -154,6 +154,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
   return {
     pageOrientation: 'landscape', // 🔥 페이지를 가로로 설정
     pageSize: 'A4', // A4 크기 유지
+    pageMargins: [40, 20, 40, 30],
     header: (currPage, pageCount) => ({
       columns: [{text: `Page ${currPage} / ${pageCount}`, alignment: 'right'}],
       margin: [40, 10, 40, 0],
@@ -174,7 +175,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
       {
         table: {
           headerRows: 1,
-          widths: ['5%', '12%', '6%', '12%', '10%', '10%', '10%', '10%', '30%'], // 칼럼 크기 조정
+          widths: ['5%', '12%', '6%', '12%', '10%', '10%', '10%', '10%', '*'], // 칼럼 크기 조정
           body: [
             // 헤더
             ['연번', '거래처명', '대표자', '전화번호', '팩스번호', '사업자번호', '업태', '종목', '주소'].map(header => ({
@@ -197,11 +198,9 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
                 noWrap: true
               }, // 종목
               {
-                text: truncateText(item.address ?? '', 35),
+                text: item.address ?? '',
                 style: 'tableText',
                 alignment: 'right',
-                noWrap: true, // 주소도 칸을 넘어서지 않게 설정
-                width: 40 // 최대 너비 제한 (예제 값, 조정 가능)
               }, // 주소
             ]),
           ],
