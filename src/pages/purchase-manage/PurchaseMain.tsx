@@ -39,28 +39,14 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   },
   {
     id: PurchaseRegisterColumn.RAW_MAT_AMOUNT,
-    label: '재료단가',
+    label: '단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
   {
     id: PurchaseRegisterColumn.TOTAL_RAW_MAT_AMOUNT,
-    label: '재료비',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  },
-  {
-    id: PurchaseRegisterColumn.MANUFACTURE_AMOUNT,
-    label: '가공단가',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency,
-  },
-  {
-    id: PurchaseRegisterColumn.TOTAL_MANUFACTURE_AMOUNT,
-    label: '가공비',
+    label: '매입금액',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
@@ -384,38 +370,6 @@ const PurchaseMain = (): React.JSX.Element => {
                            }}
                            name='totalRawMatAmount'
                            value={((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0)).toLocaleString()}
-                           data-table-input/>
-                  </TableCell>
-                  <TableCell>
-                    {/* 가공단가 */}
-                    <Input size='small'
-                           disableUnderline={row.isPaying}
-                           disabled={row.isPaying}
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                             'data-input-id': `manufactureAmount-${rowIndex}`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter') {
-                                 moveFocusToNextInput(`manufactureAmount-${rowIndex}`);
-                                 addRow();
-                               }
-                             }
-                           }}
-                           name='manufactureAmount'
-                           value={row.manufactureAmount}
-                           onChange={(e) => handleInputChange(e, rowIndex)}
-                           data-table-input/>
-                  </TableCell>
-                  <TableCell>
-                    {/* 가공비 */}
-                    <Input size='small'
-                           disabled
-                           disableUnderline
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                           }}
-                           name='totalManufactureAmount'
-                           value={((parseFloat(row.manufactureAmount || '0') || 0) * (row.quantity || 0)).toLocaleString()}
                            data-table-input/>
                   </TableCell>
                   {/* 입금액 */}

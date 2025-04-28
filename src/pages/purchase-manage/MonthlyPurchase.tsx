@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow, TextField
 } from '@mui/material';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import dayjs from 'dayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -98,6 +98,19 @@ const MonthlyPurchase = (): React.JSX.Element => {
   const [records, setRecords] = useState([]);
   const { showAlert } = useAlertStore();
 
+  const totals = useMemo(() => {
+    return records.reduce(
+      (acc, r) => {
+        acc.purchase += Number(r.totalSalesAmount ?? 0);
+        acc.vat      += Number(r.totalVatPrice  ?? 0);
+        acc.total    += Number(r.totalPrice     ?? 0);
+        acc.paying   += Number(r.productPrice   ?? 0);
+        return acc;
+      },
+      { purchase: 0, vat: 0, total: 0, paying: 0 }
+    );
+  }, [records]);
+
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
     if (!selectedCompany) {
@@ -126,18 +139,20 @@ const MonthlyPurchase = (): React.JSX.Element => {
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
       setMonthlyPurchase(res.data.data);
-      setRecords(res.data.data.map((item) => ({
-        createdAt: item.createdAt.split('T')[0],
-        productName: item.productName,
-        vat: item.vat,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalSalesAmount: Number(item.totalRawMatAmount) + Number(item.totalManufactureAmount),
-        totalVatPrice: item.totalVatPrice,
-        totalPrice: item.totalPrice,
-        productPrice: item.productPrice,
-        payableBalance: item.payableBalance,
-      })))
+      setRecords(res.data.data.map((item) => {
+        return ({
+          createdAt: item.createdAt.split('T')[0],
+          productName: item.productName,
+          vat: item.vat,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalSalesAmount: Number(item.totalRawMatAmount) + Number(item.totalManufactureAmount),
+          totalVatPrice: item.totalVatPrice,
+          totalPrice: item.totalPrice,
+          productPrice: item.productPrice,
+          payableBalance: item.payableBalance,
+        });
+      }))
     } catch (error) {
       showAlert('검색에 실패했습니다.', 'error');
     }
@@ -153,7 +168,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
       }
     }
     fetch();
-  }, [])
+  }, []);
 
   // debug
   // console.log('formData: ', formData);
@@ -242,12 +257,12 @@ const MonthlyPurchase = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2}>합계</TableCell>
-                <TableCell align='right'>재료비</TableCell>
-                <TableCell align='right'>가공비</TableCell>
-                <TableCell colSpan={2} align='right'/>
-                <TableCell align='right'>총합</TableCell>
-                <TableCell colSpan={2} align='right'></TableCell>
+                <TableCell colSpan={4}>합계</TableCell>
+                <TableCell align='right'>{totals.purchase.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.vat.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.total.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.paying.toLocaleString()}</TableCell>
+                <TableCell align='right'></TableCell>
               </TableRow>
             </TableFooter>
           </Table>
