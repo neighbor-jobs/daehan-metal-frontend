@@ -108,6 +108,7 @@ export enum PurchaseCompanyColumn {
   SUB_TEL_NUMBER = 'subTelNumber',
   TEL_NUMBER = 'telNumber',
   BUSINESS_NUMBER = 'businessNumber',
+  ADDRESS = 'address',
 }
 
 

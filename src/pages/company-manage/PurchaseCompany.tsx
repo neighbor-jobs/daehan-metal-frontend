@@ -54,6 +54,11 @@ const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
     id: PurchaseCompanyColumn.BUSINESS_NUMBER,
     label: '사업자등록번호',
     minWidth: 50,
+  },
+  {
+    id: PurchaseCompanyColumn.ADDRESS,
+    label: '주소',
+    minWidth: 280,
   }
 ]
 
@@ -314,10 +319,11 @@ const PurchaseCompany = (): React.JSX.Element => {
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                     <TableCell>{row.name}</TableCell>
-                    <TableCell>{row.info.phoneNumber}</TableCell>
-                    <TableCell>{row.info.telNumber}</TableCell>
-                    <TableCell>{row.info.subTelNumber}</TableCell>
-                    <TableCell>{row.info.businessNumber}</TableCell>
+                    <TableCell>{row.info.phoneNumber || ''}</TableCell>
+                    <TableCell>{row.info.telNumber || ''}</TableCell>
+                    <TableCell>{row.info.subTelNumber || ''}</TableCell>
+                    <TableCell>{row.info.businessNumber || ''}</TableCell>
+                    <TableCell>{row.info.address || ''}</TableCell>
                     <TableCell>
                       {row.bank?.length > 0 ? row.bank.map((b) => (
                         <p style={{padding: 0, margin: 0, cursor: 'pointer'}} key={b.id}
