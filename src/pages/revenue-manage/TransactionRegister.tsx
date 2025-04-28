@@ -121,7 +121,7 @@ const TransactionRegister = ({
   );
   const [newProductFormOpen, setNewProductFormOpen] = useState(false);
   const [productListState, setProductListState] = useState([]);
-  const { showAlert } = useAlertStore();
+  const { showAlert, openAlert } = useAlertStore();
 
   const locationOptions = useMemo(() => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === formData.companyName);
@@ -408,6 +408,7 @@ const TransactionRegister = ({
       <Dialog open={isOpen}
               fullWidth maxWidth="lg"
               onClose={onClose}
+              disableEscapeKeyDown={openAlert}
               // disableAutoFocus
               disableEnforceFocus
 

@@ -6,7 +6,7 @@ import MyAlert from '../components/MyAlert.tsx';
 import React from 'react';
 
 const MainLayout = (): React.JSX.Element => {
-  const { message, open, severity, closeAlert } = useAlertStore();
+  const { message, openAlert, severity, closeAlert } = useAlertStore();
 
   return (
     <Box
@@ -20,7 +20,7 @@ const MainLayout = (): React.JSX.Element => {
       <Header />
       <Outlet />
       <MyAlert
-        open={open}
+        open={openAlert}
         onClose={closeAlert}
         severity={severity}
         message={message}
