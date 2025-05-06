@@ -111,9 +111,11 @@ const ItemSales = (): React.JSX.Element => {
 
   // api
   const getProductReports = async () => {
-    const res: AxiosResponse = await axiosInstance.get(
+    const url = formData.scale.length > 0 ?
       `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}&scale=${formData.scale}`
-    );
+      : `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`
+
+    const res: AxiosResponse = await axiosInstance.get(url);
     let m: number = 0, r: number = 0, s: number = 0;
     setProductReports(res.data.data.map((item) => {
       r += Number(item.totalRawMatAmount);
@@ -152,7 +154,7 @@ const ItemSales = (): React.JSX.Element => {
         />
         <Autocomplete
           freeSolo
-          options={productList.map((option) => option.productName)}
+          options={productList.map((option) => option.name)}
           value={formData.productName}
           onInputChange={(_, newInputValue) => {
             setFormData(() => ({

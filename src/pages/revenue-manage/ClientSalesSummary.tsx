@@ -155,9 +155,11 @@ const ClientSalesSummary = ():React.JSX.Element => {
                           </TableCell>
                         );
                       })}
+                      {/* 총액 */}
                       <TableCell align='right'>
                         {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)).toLocaleString('ko-KR')}
                       </TableCell>
+                      {/* 잔액 */}
                       <TableCell align='right'>
                         {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)-Number(row.totalPayingAmount)).toLocaleString('ko-KR')}
                       </TableCell>
