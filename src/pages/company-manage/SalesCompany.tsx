@@ -167,11 +167,11 @@ const SalesCompany = (): React.JSX.Element => {
       infoArgs: {
         ownerName: formData.ownerName,
         address: formData.address,
-        fax: formData.fax,
+        fax: formData.fax || undefined,
         phoneNumber: formData.phoneNumber,
-        businessNumber: formData.businessNumber,
-        businessType: formData.businessType,
-        businessCategory: formData.businessCategory,
+        businessNumber: formData.businessNumber || undefined,
+        businessType: formData.businessType || undefined,
+        businessCategory: formData.businessCategory || undefined,
       },
     }
     try {
@@ -184,6 +184,7 @@ const SalesCompany = (): React.JSX.Element => {
         showAlert('거래처가 등록되었습니다.', 'success');
       }
       setOpen(false);
+      await fetchSalesCompanies();
     } catch {
       showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
@@ -192,6 +193,7 @@ const SalesCompany = (): React.JSX.Element => {
   const delSalesCompany = async (companyName: string) => {
     await axiosInstance.delete(`/company?companyName=${companyName}`);
     showAlert('거래처 삭제 완료', 'success');
+    await fetchSalesCompanies();
   }
 
   useEffect(() => {
