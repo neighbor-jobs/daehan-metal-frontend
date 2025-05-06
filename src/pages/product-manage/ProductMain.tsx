@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ProductMainColumn} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import axiosInstance from '../../api/axios.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
@@ -21,7 +20,7 @@ import ProductForm from '../../components/ProductForm.tsx';
 
 const columns: readonly ProductMainColumn[] = [
   {
-    id: 'productName',
+    id: 'name',
     label: '품명',
     minWidth: 120,
   },
@@ -29,32 +28,6 @@ const columns: readonly ProductMainColumn[] = [
     id: 'scale',
     label: '규격',
     minWidth: 100,
-  },
-  {
-    id: 'unitWeight',
-    label: '단중',
-    align: 'right',
-    minWidth: 80,
-  },
-  {
-    id: 'stocks',
-    label: '재고',
-    align: 'right',
-    minWidth: 80,
-  },
-  {
-    id: 'vCut',
-    label: 'V컷',
-    align: 'right',
-    minWidth: 80,
-    format: formatDecimal,
-  },
-  {
-    id: 'vCutAmount',
-    label: 'V컷가공비',
-    align: 'right',
-    minWidth: 80,
-    format: formatCurrency,
   },
 ]
 
@@ -71,17 +44,10 @@ const ProductMain = (): React.JSX.Element => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const formatProdList = useMemo(() =>
     productList.flatMap((item) =>
-      item.info.scales.map(({id, scale, snapshot}) => ({
+      item.scales.map((scale) => ({
         id: item.id,
-        infoId: item.info.id,
-        scaleId: id,
-        productName: item.productName,
+        name: item.name,
         scale,
-        unitWeight: snapshot.unitWeight,
-        stocks: snapshot.stocks,
-        vCut: snapshot.vCut,
-        vCutAmount: snapshot.vCutAmount,
-        productLength: snapshot.productLength,
       }))
     ), [productList]
   );
@@ -114,7 +80,7 @@ const ProductMain = (): React.JSX.Element => {
     setProductList(products.data.data.products);
     setPage(prev => ({
       ...prev,
-      totalPages: products.data.data.totalCount,
+      totalPages: products.data.data.totalPages,
     }))
   }
 
@@ -122,12 +88,11 @@ const ProductMain = (): React.JSX.Element => {
     getProductList();
   }, []);
 
-  const delProduct = async (prodId: string, scale: string, scaleId: string) => {
+  const delProduct = async (scale: string, name: string) => {
     try {
       await axiosInstance.patch(`/product/scale/remove`, {
-        id: prodId,
+        name: name,
         scale: scale,
-        scaleId: scaleId,
       })
       showAlert('삭제 완료', 'success');
       await getProductList();
@@ -135,6 +100,9 @@ const ProductMain = (): React.JSX.Element => {
       showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
+
+  // debug
+  // console.log(formatProdList);
 
   return (
     <Box>
@@ -209,7 +177,7 @@ const ProductMain = (): React.JSX.Element => {
                           <EditIcon fontSize='small'/>
                         </IconButton>*/}
                         <IconButton size='small' color='error'
-                                    onClick={() => delProduct(row.id, row.scale, row.scaleId)}
+                                    onClick={() => delProduct(row.scale, row.name)}
                         >
                           <CloseIcon fontSize='small'/>
                         </IconButton>

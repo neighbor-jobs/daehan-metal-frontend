@@ -4,7 +4,6 @@ import InputWithLabel from './InputWithLabel.tsx';
 import {useAlertStore} from '../stores/alertStore.ts';
 import {ProductDialogType} from '../types/dialogTypes.ts';
 import axiosInstance from '../api/axios.ts';
-import getAllProducts from '../api/getAllProducts.ts';
 import {moveFocusToNextInput} from '../utils/focus.ts';
 
 interface ProductFormProps {
@@ -22,15 +21,8 @@ const ProductForm = ({
                        onSuccess,
                      }: ProductFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState({
-    name: "",
-    scale: ['', '', '', ''],
-    unitWeight: "",
-    stocks: 0,
-    rawMatAmount: '',
-    manufactureAmount: '',
-    vCutAmount: '',
-    vCut: '',
-    productLength: '',
+    name: '',
+    scales: ['', '', '', ''],
   });
   const [updateAllProdName, setUpdateAllProdName] = useState({
     prevName: '',
@@ -47,11 +39,11 @@ const ProductForm = ({
   };
 
   const handleScaleChange = (index: number, value: string) => {
-    const newScales = [...formData.scale];
+    const newScales = [...formData.scales];
     newScales[index] = value;
     setFormData((prev) => ({
       ...prev,
-      scale: newScales,
+      scales: newScales
     }));
   };
 
@@ -64,63 +56,28 @@ const ProductForm = ({
 
   const handleSubmit = async () => {
     if (dialogType === ProductDialogType.CREATE) {
-      const isEmpty = formData.scale[0].length === 0 && formData.scale[1].length === 0 && formData.scale[2].length === 0 && formData.scale[3].length === 0;
+      const isEmpty = formData.scales[0].length === 0 && formData.scales[1].length === 0 && formData.scales[2].length === 0 && formData.scales[3].length === 0;
       if (!formData.name || isEmpty) {
-        showAlert('품목과 규격은 필수 입력 값입니다.', 'info');
+        showAlert('품목은 필수 입력 값입니다.', 'info');
         return;
       }
-      const validScales = formData.scale.filter(s => s && s.trim() !== '');
+      const validScales = formData.scales.filter(s => s && s.trim() !== '');
       try {
-        const failedScales: string[] = [];
-        for (const scale of validScales) {
-          try {
-            await axiosInstance.post('/product', {
-              name: formData.name,
-              scale,
-              unitWeight: formData.unitWeight,
-              stocks: Number(formData.stocks) || 0,
-              rawMatAmount: formData.rawMatAmount || '0',
-              manufactureAmount: formData.manufactureAmount || '0',
-              vCutAmount: formData.vCutAmount || '0',
-              vCut: formData.vCut,
-              productLength: formData.productLength,
-            });
-          } catch (err) {
-            failedScales.push(scale);
-          }
-        }
-        if (failedScales.length === 0) {
-          showAlert('등록이 완료되었습니다.', 'success');
-          if (onSuccess) onSuccess();
-          onClose();
-        } else if (failedScales.length === validScales.length) {
-          showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'warning');
-        } else {
-          showAlert(`일부 등록에 실패했습니다: ${failedScales.join(', ')}`, 'error');
-        }
-      } catch {
-        showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
-      }
-    } else if (dialogType === ProductDialogType.EDIT_ONLY_PRODUCT_NAME) {
-      try {
-        const productList = await getAllProducts();
-        const targetProducts = productList.filter(product => product.productName === updateAllProdName.prevName);
-        if (targetProducts.length === 0) {
-          showAlert('해당 품목명을 가진 제품이 없습니다.', 'error');
-          return;
-        }
-        await axiosInstance.patch('/product', {
-          id: targetProducts[0].id,
-          infoId: targetProducts[0].info.id,
-          productName: updateAllProdName.newName
+        await axiosInstance.post('/product', {
+          name: formData.name,
+          scales: validScales,
         });
+        showAlert('등록이 완료되었습니다.', 'success');
         if (onSuccess) onSuccess();
         onClose();
-      } catch {
-        showAlert('품목명 수정 실패. 재시도 해주세요', 'error');
+      } catch (err) {
+        showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'warning');
       }
     }
   }
+
+  // debug
+  console.log(formData);
 
   return (
     <Dialog
@@ -147,9 +104,9 @@ const ProductForm = ({
                                 if (e.key === 'Enter') moveFocusToNextInput(`name`);
                               }
                             }}
-                            value={formData.name} />
+                            value={formData.name}/>
             <InputWithLabel label='규격1' labelPosition='left'
-                            value={formData.scale[0]} placeholder='필수 입력 값입니다.'
+                            value={formData.scales[0]} placeholder='필수 입력 값입니다.'
                             inputProps={{
                               'data-input-id': `scale0`,
                               onKeyDown: (e) => {
@@ -158,7 +115,7 @@ const ProductForm = ({
                             }}
                             onChange={(e) => handleScaleChange(0, e.target.value)}/>
             <InputWithLabel name='scale[1]' label='규격2' labelPosition='left'
-                            value={formData.scale[1]}
+                            value={formData.scales[1]}
                             inputProps={{
                               'data-input-id': `scale1`,
                               onKeyDown: (e) => {
@@ -167,7 +124,7 @@ const ProductForm = ({
                             }}
                             onChange={(e) => handleScaleChange(1, e.target.value)}/>
             <InputWithLabel name='scale[2]' label='규격3' labelPosition='left'
-                            value={formData.scale[2]}
+                            value={formData.scales[2]}
                             inputProps={{
                               'data-input-id': `scale2`,
                               onKeyDown: (e) => {
@@ -176,7 +133,7 @@ const ProductForm = ({
                             }}
                             onChange={(e) => handleScaleChange(2, e.target.value)}/>
             <InputWithLabel name='scale[3]' label='규격4' labelPosition='left'
-                            value={formData.scale[3]}
+                            value={formData.scales[3]}
                             inputProps={{
                               'data-input-id': `scale3`,
                               onKeyDown: (e) => {
@@ -184,46 +141,6 @@ const ProductForm = ({
                               }
                             }}
                             onChange={(e) => handleScaleChange(3, e.target.value)}/>
-            <InputWithLabel name='unitWeight' label='단중' labelPosition='left' onChange={handleInputChange}
-                            inputProps={{
-                              'data-input-id': `unitWeight`,
-                              onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`unitWeight`);
-                              }
-                            }}
-                            value={formData.unitWeight}/>
-            <InputWithLabel name='vCut' label='V컷' labelPosition='left' onChange={handleInputChange}
-                            inputProps={{
-                              'data-input-id': `vCut`,
-                              onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`vCut`);
-                              }
-                            }}
-                            value={formData.vCut}/>
-            <InputWithLabel name='vCutAmount' label='V컷가공비' labelPosition='left' onChange={handleInputChange}
-                            inputProps={{
-                              'data-input-id': `vCutAmount`,
-                              onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`vCutAmount`);
-                              }
-                            }}
-                            value={formData.vCutAmount}/>
-            <InputWithLabel name='stocks' label='재고' labelPosition='left' onChange={handleInputChange}
-                            inputProps={{
-                              'data-input-id': `stocks`,
-                              onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`stocks`);
-                              }
-                            }}
-                            value={formData.stocks}/>
-            <InputWithLabel name='productLength' label='길이' labelPosition='left' onChange={handleInputChange}
-                            inputProps={{
-                              'data-input-id': `productLength`,
-                              onKeyDown: async (e) => {
-                                if (e.key === 'Enter') await handleSubmit();
-                              }
-                            }}
-                            value={formData.productLength}/>
           </>
         ) : (
           <>
