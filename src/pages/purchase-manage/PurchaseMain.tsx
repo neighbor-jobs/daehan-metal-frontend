@@ -227,8 +227,6 @@ const PurchaseMain = (): React.JSX.Element => {
     fetch();
   }, [])
 
-  console.log(receipts);
-
   return (
     <Box sx={{
       position: 'relative'

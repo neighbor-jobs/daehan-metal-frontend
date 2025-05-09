@@ -1,9 +1,14 @@
 export type Choice = {
-  bridgeId: string;
-  productName: string;
-  quantity: string | number;
-  productScale: string;
-  productScaleSequence: number;
+  quantity: number,
+  productName: string,
+  scale?: string ,
+  unitWeight?: string,
+  stocks?: number,
+  rawMatAmount: string,
+  manufactureAmount: string,
+  vCutAmount?: string,
+  vCut?: string ,
+  productLength?: string
 };
 
 export type Amount = {
@@ -14,11 +19,10 @@ export type Amount = {
 }
 
 export const defaultChoice: Choice = {
-  bridgeId: '',
   productName: '',
   quantity: 0,
-  productScale: '',
-  productScaleSequence: 1,
+  rawMatAmount: '0',
+  manufactureAmount: '0',
 };
 
 export const defaultAmount: Amount = {

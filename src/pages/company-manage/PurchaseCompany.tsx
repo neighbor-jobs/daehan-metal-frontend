@@ -165,18 +165,24 @@ const PurchaseCompany = (): React.JSX.Element => {
       showAlert('매입처명은 필수 입력값입니다.', 'info');
       return;
     }
-
+    const data = {
+      telNumber: formData.telNumber.length > 0 ? formData.telNumber : undefined,
+      phoneNumber: formData.phoneNumber.length > 0 ? formData.phoneNumber : undefined,
+      subTelNumber: formData.subTelNumber.length > 0 ? formData.subTelNumber : undefined,
+      businessNumber: formData.businessNumber.length > 0 ? formData.businessNumber : undefined,
+      address: formData.address.length > 0 ? formData.address : undefined,
+    }
     try {
       if (isEditing) {
         await axiosInstance.patch('/vendor', {
+          ...data,
           vendorName: formData.name,
-          telNumber: formData?.telNumber || undefined,
-          phoneNumber: formData?.phoneNumber || undefined,
-          subTelNumber: formData?.subTelNumber || undefined,
-          businessNumber: formData?.businessNumber || undefined,
         });
       } else {
-        await axiosInstance.post('/vendor', formData);
+        await axiosInstance.post('/vendor', {
+          ...data,
+          name: formData.name,
+        });
       }
       await fetchPurchaseCompanies();
       setOpen(false);
@@ -260,7 +266,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                             }
                           }}
                           value={formData?.telNumber}/>
-          <InputWithLabel name='subTelNumber' label='전화번호(2)' labelPosition='left' onChange={handlePhoneNumberChange}
+          <InputWithLabel name='subTelNumber' label='fax' labelPosition='left' onChange={handlePhoneNumberChange}
                           inputProps={{
                             'data-input-id': `subTelNumber`,
                             onKeyDown: (e) => {

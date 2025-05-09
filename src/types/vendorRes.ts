@@ -39,3 +39,20 @@ export interface Bank {
   accountOwner: string;
   createdAt: string;
 }
+
+export interface GetVendorReceiptResData {
+  id: string,
+  productName: string,
+  unitPrice: string,
+  productPrice: string,
+  totalManufactureAmount: string,
+  totalRawMatAmount: string,
+  totalVatPrice: string,
+  vatPrice: string,
+  quantity: 2,
+  totalPrice: string,
+  vat: boolean,
+  payableBalance: string,
+  isPaying: boolean,
+  createdAt: string
+}

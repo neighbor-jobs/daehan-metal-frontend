@@ -1,8 +1,9 @@
 import axiosInstance from './axios.ts';
 import {AxiosResponse} from 'axios';
+import {Product} from '../types/productRes.ts';
 
 const getAllProducts = async () => {
-  const allProducts = [];
+  const allProducts: Product[] = [];
 
   try {
     const firstRes: AxiosResponse = await axiosInstance.get(

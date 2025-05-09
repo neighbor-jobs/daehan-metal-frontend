@@ -3,7 +3,7 @@ import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import {
   Autocomplete,
   Box,
-  Button, InputLabel,
+  Button, IconButton, InputLabel,
   Paper,
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow, TextField
 } from '@mui/material';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import dayjs from 'dayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -22,6 +22,9 @@ import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
+import UpdateReceipt from './UpdateReceipt.tsx';
 
 const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   {
@@ -32,7 +35,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   },
   {
     id: MonthlyPurchaseColumn.PRODUCT_NAME,
-    label: '거래처명',
+    label: '품명',
     minWidth: 170
   },
   {
@@ -92,6 +95,8 @@ const MonthlyPurchase = (): React.JSX.Element => {
     standardDate: dayjs(),
     companyName: '',
   })
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState();
   const [purchaseCompanyList, setPurchaseCompanyList] = useState([]);
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
   const [selectedCompanyData, setSelectedCompanyData] = useState({});
@@ -135,6 +140,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
     });
   }, [purchaseCompanyList]);
 
+  // api
   const handleSearch = async () => {
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
@@ -155,6 +161,15 @@ const MonthlyPurchase = (): React.JSX.Element => {
       }))
     } catch (error) {
       showAlert('검색에 실패했습니다.', 'error');
+    }
+  }
+
+  const deletePurchase = async (receiptId: string) => {
+    try {
+      await axiosInstance.delete(`/vendor/receipt?receiptId=${receiptId}`);
+      await handleSearch();
+    } catch (error) {
+      showAlert('삭제에 실패했습니다', 'error');
     }
   }
 
@@ -234,6 +249,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -251,6 +267,21 @@ const MonthlyPurchase = (): React.JSX.Element => {
                       <TableCell align='right'>{formatCurrency(row.totalPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.productPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.payableBalance)}</TableCell>
+                      <TableCell sx={{padding: 0}}>
+                        <IconButton size='small'
+                          onClick={() => {
+                            setUpdateFormData(row);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <EditIcon fontSize='small'/>
+                        </IconButton>
+                        <IconButton color='error' size='small'
+                                    onClick={() => deletePurchase(row.id)}
+                        >
+                          <CloseIcon fontSize='small'/>
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -268,6 +299,11 @@ const MonthlyPurchase = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
+      <UpdateReceipt isOpen={dialogOpen}
+                     onClose={() => setDialogOpen(false)}
+                     prevFormData={updateFormData}
+                     companyName={formData.companyName}
+      />
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄'/>
       </Box>

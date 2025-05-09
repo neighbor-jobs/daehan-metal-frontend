@@ -28,8 +28,7 @@ import PrintButton from '../../layout/PrintButton.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import CloseIcon from '@mui/icons-material/Close';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import AddChoices from './AddChoices.tsx';
+import {Choice} from '../../types/transactionRegisterTypes.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -73,7 +72,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
 
 const RevenueMain = (): React.JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
-  const [isOpenedUpdateDialog, setIsOpenedUpdateDialog] = useState<boolean>(false);
+  const [dialogType, setDialogType] = useState<'create' | 'edit'>('create');
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [productList, setProductList] = useState([]);
   const [formData, setFormData] = useState({
@@ -82,6 +81,7 @@ const RevenueMain = (): React.JSX.Element => {
     sequence: 1,
   });
   const [report, setReport] = useState([]);
+  const [prevChoices, setPrevChoices] = useState<Choice[] | []>([]);
   const [endSeq, setEndSeq] = useState<number>(1);
   const [amount, setAmount] = useState({
     totalPayingAmount: "0",
@@ -133,8 +133,14 @@ const RevenueMain = (): React.JSX.Element => {
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
-    setReport(res.data.data.reports);
+    const latestReports = res.data.data.reports;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const simplifiedReport = latestReports.map(({ receiptId, locationNames, companyName, createdAt, ...rest }) => rest);
+
     setEndSeq(res.data.data.endSequence);
+    setReport(latestReports);
+    setPrevChoices(simplifiedReport);
     setAmount({
       totalPayingAmount: res.data.data.totalPayingAmount,
       totalSalesAmount: res.data.data.totalSalesAmount,
@@ -157,7 +163,7 @@ const RevenueMain = (): React.JSX.Element => {
 
   const deleteReceipt = async () => {
     try {
-      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}&sequence=${formData.sequence}&createdAt=${formData.startAt}`);
+      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}`);
       showAlert('삭제되었습니다.', 'success');
       await getReceipt();
       setFormData((prev) => ({
@@ -200,6 +206,8 @@ const RevenueMain = (): React.JSX.Element => {
     }
     fetchSalesCompanies();
   }, []);
+
+  // debug
 
   return (
     <Box sx={{position: 'relative'}}>
@@ -244,7 +252,10 @@ const RevenueMain = (): React.JSX.Element => {
         />
         <Button
           variant="outlined"
-          onClick={() => getReceipt(formData.sequence)}
+          onClick={() => {
+            getReceipt(formData.sequence);
+            setDialogType('create');
+          }}
         >
           확인
         </Button>
@@ -296,20 +307,6 @@ const RevenueMain = (): React.JSX.Element => {
                   );
                 })
               }
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{padding: 0}}>
-                  <Button
-                    fullWidth
-                    size="small"
-                    startIcon={<AddCircleOutlineIcon/>}
-                    sx={{textTransform: 'none'}}
-                    onClick={() => setIsOpenedUpdateDialog(true)}
-                    disabled={report.length === 0}
-                  >
-                    거래 내역 추가
-                  </Button>
-                </TableCell>
-              </TableRow>
             </TableBody>
             <TableFooter>
               <TableRow>
@@ -335,6 +332,15 @@ const RevenueMain = (): React.JSX.Element => {
           <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%' }}>
+          <Button variant='outlined'
+                  disabled={report.length === 0}
+                  onClick={() => {
+                    setDialogType('edit');
+                    setOpenDialog(true);
+                  }}
+          >
+            수정
+          </Button>
           <Button variant="outlined" color="error" onClick={deleteReceipt}>
             삭제
           </Button>
@@ -342,7 +348,10 @@ const RevenueMain = (): React.JSX.Element => {
       </Box>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'
-                onClick={() => setOpenDialog(true)}
+                onClick={() => {
+                  setDialogType('create');
+                  setOpenDialog(true);
+                }}
                 sx={{marginY: 1}}
         >
           등록
@@ -350,21 +359,23 @@ const RevenueMain = (): React.JSX.Element => {
         <PrintButton printData={printData} value='인쇄'/>
       </Box>
       <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
+                           dialogType={dialogType}
                            salesCompanyList={salesCompanyList}
                            productList={productList}
+                           prevFormData={{
+                             id: report[0]?.receiptId || '',
+                             locationName: report[0]?.locationNames || [],
+                             companyName: formData.companyName,
+                             createdAt: formData.startAt,
+                             payingAmount: amount.totalPayingAmount,
+                           }}
+                           prevChoices={prevChoices}
+                           onSuccess={async () => {
+                             if (dialogType === 'edit') {
+                               await getReceipt(formData.sequence);
+                             }
+                           }}
       />
-      <AddChoices isOpen={isOpenedUpdateDialog}
-                  onClose={() => setIsOpenedUpdateDialog(false)}
-                  onSuccess={getReceipt}
-                  productList={productList}
-                  defaultFormData={{
-                    id: report[0]?.receiptId || '',
-                    companyName: formData.companyName,
-                    sequence: formData.sequence,
-                    createdAt: formData.startAt
-                  }}
-      />
-
     </Box>
   )
 }

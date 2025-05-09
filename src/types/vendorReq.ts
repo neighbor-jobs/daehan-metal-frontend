@@ -4,7 +4,7 @@ export interface PostVendorReqBody {
   subTelNumber?: string | undefined,
   phoneNumber?: string | undefined,
   businessNumber?: string | undefined,
-  address: string | undefined,
+  address?: string | undefined,
 }
 
 export interface PostVendorBankReqBody {
