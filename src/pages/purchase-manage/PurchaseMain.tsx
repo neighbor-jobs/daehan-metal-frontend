@@ -218,7 +218,7 @@ const PurchaseMain = (): React.JSX.Element => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axiosInstance.get('/vendor/many');
+        const res = await axiosInstance.get('/vendor/many?orderBy=asc');
         setPurchaseCompanyList(res.data.data);
       } catch (error) {
         showAlert('새로고침 요망', 'info');
