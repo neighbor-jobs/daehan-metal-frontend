@@ -56,8 +56,7 @@ const ProductForm = ({
 
   const handleSubmit = async () => {
     if (dialogType === ProductDialogType.CREATE) {
-      const isEmpty = formData.scales[0].length === 0 && formData.scales[1].length === 0 && formData.scales[2].length === 0 && formData.scales[3].length === 0;
-      if (!formData.name || isEmpty) {
+      if (!formData.name) {
         showAlert('품목은 필수 입력 값입니다.', 'info');
         return;
       }
@@ -106,7 +105,7 @@ const ProductForm = ({
                             }}
                             value={formData.name}/>
             <InputWithLabel label='규격1' labelPosition='left'
-                            value={formData.scales[0]} placeholder='필수 입력 값입니다.'
+                            value={formData.scales[0]}
                             inputProps={{
                               'data-input-id': `scale0`,
                               onKeyDown: (e) => {

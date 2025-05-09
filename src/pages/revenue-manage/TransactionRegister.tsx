@@ -148,10 +148,10 @@ const TransactionRegister = ({
   const productScaleMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     productList.forEach((p) => {
-      map[p.name] = getUniqueScalesByProductName(productList, p.name);
+      map[p.name] = getUniqueScalesByProductName(productListState, p.name);
     });
     return map;
-  }, [productList]);
+  }, [productListState]);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {

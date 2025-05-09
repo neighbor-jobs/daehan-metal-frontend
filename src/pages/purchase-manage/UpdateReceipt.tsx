@@ -151,6 +151,7 @@ const UpdateReceipt = ({
         });
       }
       if (onSuccess) onSuccess();
+      onClose();
     } catch {
       showAlert('거래를 다시 등록해주세요', 'error');
     }
@@ -192,7 +193,7 @@ const UpdateReceipt = ({
       >
         <CloseIcon/>
       </IconButton>
-      <DialogTitle>거래등록</DialogTitle>
+      <DialogTitle>거래수정</DialogTitle>
       <DialogContent>
         <Box display="flex" flexDirection="column" gap={2} p={2} component={Paper}>
           <TableContainer component={Paper}>

@@ -303,6 +303,9 @@ const MonthlyPurchase = (): React.JSX.Element => {
                      onClose={() => setDialogOpen(false)}
                      prevFormData={updateFormData}
                      companyName={formData.companyName}
+                     onSuccess={async () => {
+                       await handleSearch();
+                     }}
       />
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄'/>
