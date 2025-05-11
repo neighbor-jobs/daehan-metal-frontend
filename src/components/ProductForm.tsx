@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle} from '@mui/material';
 import InputWithLabel from './InputWithLabel.tsx';
 import {useAlertStore} from '../stores/alertStore.ts';
@@ -9,6 +9,9 @@ import {moveFocusToNextInput} from '../utils/focus.ts';
 interface ProductFormProps {
   dialogType: ProductDialogType;
   defaultFormData?: any;
+  productName?: string;
+  prevScaleName?: string;
+  prevScales?: string[];
   isOpened: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -16,6 +19,9 @@ interface ProductFormProps {
 
 const ProductForm = ({
                        dialogType = ProductDialogType.CREATE,
+                       productName,
+                       prevScaleName,
+                       prevScales,
                        isOpened,
                        onClose,
                        onSuccess,
@@ -24,8 +30,8 @@ const ProductForm = ({
     name: '',
     scales: ['', '', '', ''],
   });
-  const [updateAllProdName, setUpdateAllProdName] = useState({
-    prevName: '',
+  const [updateScaleName, setUpdateScaleName] = useState({
+    prevName: prevScaleName ?? '',
     newName: '',
   });
   const {showAlert, openAlert} = useAlertStore();
@@ -48,8 +54,8 @@ const ProductForm = ({
   };
 
   const handleUpdateFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUpdateAllProdName({
-      ...updateAllProdName,
+    setUpdateScaleName({
+      ...updateScaleName,
       [event.target.name]: event.target.value
     })
   }
@@ -57,7 +63,7 @@ const ProductForm = ({
   const handleSubmit = async () => {
     if (dialogType === ProductDialogType.CREATE) {
       if (!formData.name) {
-        showAlert('품목은 필수 입력 값입니다.', 'info');
+        showAlert('품명은 필수 입력 값입니다.', 'info');
         return;
       }
       const validScales = formData.scales.filter(s => s && s.trim() !== '');
@@ -70,13 +76,43 @@ const ProductForm = ({
         if (onSuccess) onSuccess();
         onClose();
       } catch (err) {
-        showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'warning');
+        showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'error');
+      }
+    } else {
+      if (updateScaleName.newName.length === 0) {
+        showAlert('새 규격명이 빈칸입니다.', 'info');
+        return;
+      }
+      try {
+        const updatedScales = prevScales.map((scale) =>
+          scale === updateScaleName.prevName ? updateScaleName.newName : scale
+        );
+
+        await axiosInstance.put('/product/scale', {
+          name: productName,
+          scales: updatedScales,
+        });
+
+        showAlert('수정이 완료되었습니다.', 'success');
+        if (onSuccess) onSuccess();
+        onClose();
+      } catch {
+        showAlert('규격명 수정에 실패했습니다. 다시 시도해주세요.', 'error');
       }
     }
   }
 
+  useEffect(() => {
+    if (dialogType === ProductDialogType.EDIT && prevScaleName) {
+      setUpdateScaleName((prev) => ({
+        ...prev,
+        prevName: prevScaleName,
+      }));
+    }
+  }, [dialogType, prevScaleName]);
+
   // debug
-  console.log(formData);
+  // console.log(formData);
 
   return (
     <Dialog
@@ -135,30 +171,32 @@ const ProductForm = ({
                             value={formData.scales[3]}
                             inputProps={{
                               'data-input-id': `scale3`,
-                              onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`scale3`);
+                              onKeyDown: async (e) => {
+                                if (e.key === 'Enter') await handleSubmit();
                               }
                             }}
                             onChange={(e) => handleScaleChange(3, e.target.value)}/>
           </>
         ) : (
           <>
-            <InputWithLabel name='prevName' label='기존 품목명' labelPosition='left' onChange={handleUpdateFormChange}
+            <InputWithLabel name='prevName'
+                            label='기존 규격명' labelPosition='left'
+                            onChange={handleUpdateFormChange}
+                            disabled
                             inputProps={{
                               'data-input-id': `prevName`,
                               onKeyDown: (e) => {
                                 if (e.key === 'Enter') moveFocusToNextInput(`prevName`);
                               }
                             }}
-                            value={updateAllProdName.prevName}/>
-            <InputWithLabel name='newName' label='새 품목명' labelPosition='left' onChange={handleUpdateFormChange}
+                            value={updateScaleName.prevName}/>
+            <InputWithLabel name='newName' label='새 규격명' labelPosition='left' onChange={handleUpdateFormChange}
                             inputProps={{
                               'data-input-id': `newName`,
                               onKeyDown: async (e) => {
-                                if (e.key === 'Enter') await handleSubmit();
-                              }
+                                if (e.key === 'Enter') await handleSubmit()                             }
                             }}
-                            value={updateAllProdName.newName}/>
+                            value={updateScaleName.newName}/>
           </>
         )}
       </DialogContent>

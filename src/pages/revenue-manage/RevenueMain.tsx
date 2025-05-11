@@ -2,7 +2,7 @@
 import {
   Autocomplete,
   Box,
-  Button, IconButton,
+  Button,
   InputLabel, Pagination,
   Paper,
   Table,
@@ -27,7 +27,6 @@ import axiosInstance from '../../api/axios.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
-import CloseIcon from '@mui/icons-material/Close';
 import {Choice} from '../../types/transactionRegisterTypes.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
@@ -175,24 +174,6 @@ const RevenueMain = (): React.JSX.Element => {
     }
   }
 
-  const removeChoice = async (receiptId: string, choiceId: string) => {
-    try {
-      await axiosInstance.patch('/receipt/choice/remove', {
-        id: receiptId,
-        companyName: formData.companyName,
-        removeChoiceIds: [
-          choiceId
-        ],
-        sequence: formData.sequence,
-        createdAt: formData.startAt,
-      });
-      showAlert('삭제되었습니다.', 'success');
-      await getReceipt(formData.sequence);
-    } catch {
-      showAlert('항목 삭제 실패. 재시도 해주세요', 'error');
-    }
-  }
-
   useEffect(() => {
     const fetchSalesCompanies = async () => {
       try {
@@ -275,7 +256,6 @@ const RevenueMain = (): React.JSX.Element => {
                   </TableCell>
                 ))}
                 <TableCell align='right'>금액</TableCell>
-                <TableCell align='center' sx={{width: 2}}>삭제</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -295,13 +275,6 @@ const RevenueMain = (): React.JSX.Element => {
                       })}
                       <TableCell align='right'>
                         {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
-                      </TableCell>
-                      <TableCell align='center' sx={{padding: 0}}>
-                        <IconButton color='error' size='small'
-                                    onClick={() => removeChoice(row.receiptId, row.choiceId)}
-                        >
-                          <CloseIcon fontSize='small'/>
-                        </IconButton>
                       </TableCell>
                     </TableRow>
                   );

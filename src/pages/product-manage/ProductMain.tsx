@@ -17,6 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import ProductForm from '../../components/ProductForm.tsx';
+import EditIcon from '@mui/icons-material/Edit';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -34,7 +35,12 @@ const columns: readonly ProductMainColumn[] = [
 const ProductMain = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const [dialogType, setDialogType] = useState<ProductDialogType>(ProductDialogType.CREATE);
-  const [productList, setProductList] = useState([]); // 데이터 원본
+  const [productList, setProductList] = useState([]);
+  const [editScale, setEditScale] = useState({
+    prodName: '',
+    prevScaleName: '',
+    prevScales: [] as string[],
+  });
   const [page, setPage] = useState({
     page: 1,
     totalPages: 1,
@@ -58,8 +64,13 @@ const ProductMain = (): React.JSX.Element => {
     setOpen(true);
   }
 
-  const handleEditProdName = () => {
-    setDialogType(ProductDialogType.EDIT_ONLY_PRODUCT_NAME);
+  const handleEditProdName = (prodName: string, prevScaleName: string, prevScales: string[]) => {
+    setEditScale({
+      prodName: prodName,
+      prevScaleName: prevScaleName,
+      prevScales: prevScales,
+    })
+    setDialogType(ProductDialogType.EDIT);
     setOpen(true);
   }
 
@@ -84,10 +95,6 @@ const ProductMain = (): React.JSX.Element => {
     }))
   }
 
-  useEffect(() => {
-    getProductList();
-  }, []);
-
   const delProduct = async (scale: string, name: string) => {
     try {
       await axiosInstance.patch(`/product/scale/remove`, {
@@ -101,8 +108,12 @@ const ProductMain = (): React.JSX.Element => {
     }
   }
 
+  useEffect(() => {
+    getProductList();
+  }, []);
+
   // debug
-  // console.log(formatProdList);
+  // console.log(editScale);
 
   return (
     <Box>
@@ -115,12 +126,6 @@ const ProductMain = (): React.JSX.Element => {
       }}>
         <Button
           variant="outlined"
-          onClick={() => handleEditProdName()}
-        >
-          품목명 수정
-        </Button>
-        <Button
-          variant="outlined"
           onClick={() => handleCreate()}
         >
           등록
@@ -128,12 +133,16 @@ const ProductMain = (): React.JSX.Element => {
       </Box>
 
       {/* dialog */}
-      <ProductForm dialogType={dialogType} isOpened={open} onClose={() => setOpen(false)}
+      <ProductForm dialogType={dialogType}
+                   isOpened={open}
+                   productName={editScale.prodName}
+                   prevScaleName={editScale.prevScaleName}
+                   prevScales={editScale.prevScales}
+                   onClose={() => setOpen(false)}
                    onSuccess={async () => {
                      await getProductList(page.page);
                    }}
       />
-
       <Paper sx={{
         width: '100%',
         overflow: 'auto',
@@ -171,11 +180,14 @@ const ProductMain = (): React.JSX.Element => {
                         );
                       })}
                       <TableCell sx={{padding: '0'}}>
-                        {/*<IconButton size='small'
-                                    onClick={() => handleEdit(row)}
+                        <IconButton size='small'
+                                    onClick={() => {
+                                      const matchedProduct = productList.find(p => p.name === row.name);
+                                      handleEditProdName(row.name, row.scale, matchedProduct?.scales ?? [])
+                                    }}
                         >
                           <EditIcon fontSize='small'/>
-                        </IconButton>*/}
+                        </IconButton>
                         <IconButton size='small' color='error'
                                     onClick={() => delProduct(row.scale, row.name)}
                         >

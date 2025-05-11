@@ -82,6 +82,7 @@ const PurchaseCompany = (): React.JSX.Element => {
     accountNumber: '',
     accountOwner: '',
   });
+  const [companyName, setCompanyName] = useState('');
   const {showAlert, openAlert: alertOpen} = useAlertStore();
 
   // handler
@@ -142,8 +143,9 @@ const PurchaseCompany = (): React.JSX.Element => {
     setBankOpen(true);
   }
 
-  const handleBankEdit = (b: Bank, infoId: string) => {
+  const handleBankEdit = (b: Bank, infoId: string, companyName: string) => {
     setIsBankEditing(BankDialogType.EDIT);
+    setCompanyName(companyName);
     setBankData({
       infoId: infoId,
       bankId: b.id,
@@ -156,7 +158,7 @@ const PurchaseCompany = (): React.JSX.Element => {
 
   // api
   const fetchPurchaseCompanies = async () => {
-    const res: AxiosResponse = await axiosInstance.get('/vendor/many');
+    const res: AxiosResponse = await axiosInstance.get('/vendor/many?orderBy=asc');
     setPurchaseCompanyList(res.data.data || []);
   };
 
@@ -244,7 +246,8 @@ const PurchaseCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `name`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`name`);
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing &&(e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`name`);
                             }
                           }}
                           value={formData.name}/>
@@ -295,6 +298,7 @@ const PurchaseCompany = (): React.JSX.Element => {
       {/* 은행 관련 dialog */}
       <BankForm isEdit={isBankEditing} isOpened={bankOpen} onClose={() => setBankOpen(false)}
                 defaultFormData={bankData}
+                companyName={companyName}
                 onSwitchEditToCreate={() => setIsBankEditing(BankDialogType.CREATE)}
                 onSuccess={async () => {
                   await fetchPurchaseCompanies();
@@ -333,7 +337,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                     <TableCell>
                       {row.bank?.length > 0 ? row.bank.map((b) => (
                         <p style={{padding: 0, margin: 0, cursor: 'pointer'}} key={b.id}
-                           onClick={() => handleBankEdit(b, row.info.id)}
+                           onClick={() => handleBankEdit(b, row.info.id, row.name)}
                         >
                           {b.bankName + ': ' + b.accountNumber + ' (' + b.accountOwner + ')'}
                         </p>

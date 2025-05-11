@@ -273,6 +273,8 @@ const TransactionRegister = ({
           id: prevFormData.id,
           locationNames: formData.locationName,
           payingAmount: formData.payingAmount,
+          companyName: formData.companyName,
+          createdAt: formData.createdAt,
           sales: updatedChoices.filter((c) => c.productName.length > 0),
         })
       }
@@ -283,7 +285,7 @@ const TransactionRegister = ({
         showAlert(`${res.data.message}`, 'error');
         return;
       }
-      if (onSuccess) onSuccess();
+      // if (onSuccess) onSuccess();
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
         companyId: '',

@@ -239,7 +239,10 @@ const SalesCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `companyName`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`companyName`);
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) {
+                                moveFocusToNextInput('companyName');
+                              }
                             }
                           }}
                           value={formData.companyName}/>
@@ -247,8 +250,13 @@ const SalesCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `ownerName`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`ownerName`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('ownerName');
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) {
+                                moveFocusToNextInput(`ownerName`);
+                              }
+                              else if (!isComposing && e.key === 'ArrowUp') {
+                                moveFocusToPrevInput('ownerName');
+                              }
                             }
                           }}
                           value={formData.ownerName}/>
@@ -274,7 +282,8 @@ const SalesCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `address`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`address`);
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`address`);
                               else if (e.key === 'ArrowUp') moveFocusToPrevInput('address');
                             }
                           }}
@@ -283,8 +292,9 @@ const SalesCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `businessType`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`businessType`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessType');
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing &&(e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`businessType`);
+                              else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('businessType');
                             }
                           }}
                           value={formData.businessType}/>
@@ -292,8 +302,9 @@ const SalesCompany = (): React.JSX.Element => {
                           inputProps={{
                             'data-input-id': `businessCategory`,
                             onKeyDown: (e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`businessCategory`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessCategory');
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`businessCategory`);
+                              else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('businessCategory');
                             }
                           }}
                           value={formData.businessCategory}/>
