@@ -1,6 +1,12 @@
 import React from "react";
 import {Box, Button, Grid2} from "@mui/material";
-import {MenuType, menuTypeArr} from '../types/headerMenu.ts';
+import {
+  ClientManageMenuType,
+  MenuType,
+  menuTypeArr,
+  PurchaseManageMenuType,
+  RevenueManageMenuType
+} from '../types/headerMenu.ts';
 import {useNavigate} from 'react-router-dom';
 import {useHeaderStore} from '../stores/headerStore.ts';
 
@@ -10,18 +16,20 @@ const Home = (): React.JSX.Element => {
 
   const handleMainNav = (menuType: MenuType) => {
     setSelectedType(menuType);
-    setSelectedSubType(null);
     switch (menuType) {
       case MenuType.RevenueManage:
+        setSelectedSubType(RevenueManageMenuType.SalesDetail);
         navigate('/revenue');
         break;
       case MenuType.PurchaseManage:
+        setSelectedSubType(PurchaseManageMenuType.PurchaseDetail)
         navigate('/purchase');
         break;
       case MenuType.InventoryManage:
         navigate('/item');
         break;
       case MenuType.ClientManage:
+        setSelectedSubType(ClientManageMenuType.SalesManage);
         navigate('/client/sales');
         break;
       default:

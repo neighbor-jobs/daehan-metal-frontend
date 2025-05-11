@@ -3,11 +3,13 @@ import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.
 import {
   Autocomplete,
   Box,
-  Button, Chip,
+  Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton, Input,
+  IconButton,
+  Input,
   InputLabel,
   Paper,
   Table,
@@ -22,21 +24,29 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
-import {decimalRegex, formatCurrency, formatDecimal} from '../../utils/format.ts';
+import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import dayjs from 'dayjs';
-import {Amount, Choice, defaultAmount, defaultChoice} from '../../types/transactionRegisterTypes.ts';
-import {moveFocusToNextInput} from '../../utils/focus.ts';
+import {Choice, defaultChoice} from '../../types/transactionRegisterTypes.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
 import ProductForm from '../../components/ProductForm.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
+import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
+import {ProductDialogType} from '../../types/dialogTypes.ts';
+import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
+import {Product} from '../../types/productRes.ts';
 
 interface TransactionRegisterProps {
+  dialogType: 'create' | 'edit';
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   salesCompanyList: any[];
-  productList: any[];
+  productList: Product[];
+  prevChoices?: Choice[] | [];
+  prevFormData?: any;
 }
 
 const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
@@ -95,28 +105,30 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
 ];
 
 const TransactionRegister = ({
+                               dialogType,
                                isOpen,
                                onClose,
+                               onSuccess,
                                salesCompanyList,
-                               productList
+                               productList,
+                               prevChoices,
+                               prevFormData
                              }: TransactionRegisterProps): React.JSX.Element => {
-  const [choices, setChoices] = useState<Choice[]>(
+  const [choices, setChoices] = useState<Choice[]>( dialogType === 'create' ?
     Array.from({length: 1}, () => ({...defaultChoice}))
+    : prevChoices
   );
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState( dialogType === 'create' ? {
     companyId: '',
     locationName: [] as string[],
     companyName: "",
     payingAmount: "0",
     sequence: 1,
     createdAt: dayjs().format('YYYY-MM-DD'),
-  })
-  const [amount, setAmount] = useState<Amount[]>(
-    Array.from({length: 1}, () => ({...defaultAmount}))
-  );
+  } : prevFormData)
   const [newProductFormOpen, setNewProductFormOpen] = useState(false);
-
-  const [productListState, setProductListState] = useState([]);
+  const [productListState, setProductListState] = useState<Product[] | []>([]);
+  const {showAlert, openAlert} = useAlertStore();
 
   const locationOptions = useMemo(() => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === formData.companyName);
@@ -124,14 +136,22 @@ const TransactionRegister = ({
   }, [formData.companyName, salesCompanyList]);
 
   const totalSales = useMemo(() => {
-    return choices.reduce((acc, choice, index) => {
+    return choices.reduce((acc, choice) => {
       const quantity = Number(choice.quantity) || 0;
-      const rawMat = Number(amount[index].newRawMatAmount) || 0;
-      const manufacture = Number(amount[index].newManufactureAmount) || 0;
+      const rawMat = Number(choice.rawMatAmount) || 0;
+      const manufacture = Number(choice.manufactureAmount) || 0;
       const total = (rawMat + manufacture) * quantity;
       return acc + total;
     }, 0);
-  }, [choices, amount]);
+  }, [choices]);
+
+  const productScaleMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    productList.forEach((p) => {
+      map[p.name] = getUniqueScalesByProductName(productListState, p.name);
+    });
+    return map;
+  }, [productListState]);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -152,14 +172,14 @@ const TransactionRegister = ({
   }, []);
 
   const handleProductChange = (index: number, newValue: string | null) => {
-    const selectedProduct = productListState.find((item) => item.productName === newValue);
+    const selectedProduct = productListState.find((item: Product) => item.name === newValue);
     setChoices((prevChoices) =>
       prevChoices.map((choice, i) =>
         i === index
           ? {
             ...choice,
-            bridgeId: selectedProduct?.bridgeId || '',
-            productName: selectedProduct?.productName || '',
+            productName: selectedProduct?.name || '',
+            scale: '',
           }
           : choice
       )
@@ -168,70 +188,49 @@ const TransactionRegister = ({
 
   const handleScaleChange = (index: number, newValue: string | null, prodName: string | null) => {
     for (const product of productListState) {
-      if (product.productName === prodName) {
-        const matchedScale = product.info.scales.find(s => s.scale === newValue);
+      if (product.name === prodName) {
+        const matchedScale = product.scales?.find(s => s === newValue);
         if (matchedScale) {
           setChoices((prevChoices) =>
             prevChoices.map((choice, i) => (i === index ? {
               ...choice,
-              productScale: newValue || '',
-              productScaleSequence: matchedScale.snapshot.sequence,
+              scale: newValue || '',
             } : choice))
-          );
-          setAmount((prevAmounts) =>
-            prevAmounts.map((amount, i) => (i === index ? {
-              ...amount,
-              cachedRawMatAmount: matchedScale.snapshot.rawMatAmount,
-              newRawMatAmount: matchedScale.snapshot.rawMatAmount,
-              cachedManufactureAmount: matchedScale.snapshot.manufactureAmount,
-              newManufactureAmount: matchedScale.snapshot.manufactureAmount,
-            } : amount))
           );
         }
       }
     }
   };
 
-  const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index) => {
-    setAmount((prevAmounts) =>
-      prevAmounts.map((amount, i) => (i === index ? {
-        ...amount,
-        [event.target.name]: event.target.value
-      } : amount))
-    )
-  };
-
-  const handleQuantityChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, index) => {
-    const input = event.target.value;
-    if (input === '' || decimalRegex.test(input)) {
-      setChoices((prevChoices) =>
-        prevChoices.map((choice, i) => (i === index ? {
-          ...choice,
-          quantity: input
-        } : choice))
+  const handleChoiceChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    rowIndex: number
+  ) => {
+    const {name, value} = e.target;
+    setChoices((prevChoices) =>
+      prevChoices.map((choice, idx) =>
+        idx === rowIndex ? {...choice, [name]: value} : choice
       )
-    }
+    );
   };
 
   const addRow = () => {
     setChoices((prev) => [...prev, {...defaultChoice}]);
-    setAmount((prev) => [...prev, {...defaultAmount}]);
   };
 
   const deleteRow = (index: number) => {
     setChoices((prev) => prev.filter((_, i) => i !== index));
-    setAmount((prev) => prev.filter((_, i) => i !== index));
   }
 
   // api
   const getEndSeq = async (companyName: string, startAt: string) => {
-    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=1`);
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=asc&startAt=${startAt}&sequence=1`);
     return res.data?.data?.endSequence ?? null;
   }
 
   const register = async () => {
     if (formData.companyName.length === 0) {
-      alert('거래처명은 필수 입력값입니다.');
+      showAlert('거래처명은 필수 입력 값입니다.', 'info');
       return;
     }
     const endSeq = await getEndSeq(formData.companyName, formData.createdAt);
@@ -246,56 +245,47 @@ const TransactionRegister = ({
     const updatedChoices = choices.map((c) => ({
       ...c,
       quantity: Number(c.quantity),
+      rawMatAmount: String(Number(c.rawMatAmount || '0')),
+      manufactureAmount: String(Number(c.manufactureAmount || '0')),
+      // TODO: 필수값 바뀌면 아래 값도 지워야 함
+      unitWeight: "0",
+      stocks: 0,
+      vCutAmount: "0",
+      vCut: "0",
+      productLength: "0"
     }));
-
-    for (let index = 0; index < amount.length; index++) {
-      // console.log('업데이트 전 seq ', index, ' :', updatedChoices[index]);
-      const a = amount[index];
-      const choice = updatedChoices[index];
-
-      if (a.cachedRawMatAmount !== a.newRawMatAmount || a.cachedManufactureAmount !== a.newManufactureAmount) {
-        const product = productListState.find((item) => item.productName === choice.productName);
-        const scale = product.info.scales.find(s => s.scale === choice.productScale);
-
-        if (product && scale) {
-          try {
-            await axiosInstance.patch(`/product/scale/info`, {
-              id: product.id,
-              infoId: product.info.id,
-              productName: product.productName,
-              scaleArgs: {
-                scaleId: scale.id,
-                rawMatAmount: a.newRawMatAmount,
-                manufactureAmount: a.newManufactureAmount,
-              }
-            });
-            // 바로 반영
-            updatedChoices[index] = {
-              ...updatedChoices[index],
-              productScaleSequence: choice.productScaleSequence + 1,
-            };
-            // console.log('업데이트 후 seq ', index, ' :', updatedChoices[index]);
-          } catch (error) {
-            console.error(`가격 업데이트 실패 - row ${index}`, error);
-          }
-        }
-      }
-    }
 
     const data = {
       ...updatedFormData,
-      choices: updatedChoices,
+      sales: updatedChoices.filter((c) => c.productName.length > 0),
     };
-
+    let amountInfo = null;
+    let res: AxiosResponse;
     try {
-      const res: AxiosResponse = await axiosInstance.post('/receipt', data);
-
-      if (res.data.statusCode === 204) {
-        alert('입력 필드를 재확인해주세요');
-      } else if (res.data.statusCode === 409) {
-        alert(res.data.message);
+      if (dialogType === 'create') {
+        res = await axiosInstance.post('/receipt', data);
+        amountInfo = {
+          carryoverAmount: res.data.data?.outstandingAmount,
+          totalSalesAmount: res.data.data?.receipt.totalAmount,
+        }
+      } else {
+        res = await axiosInstance.patch('/receipt', {
+          id: prevFormData.id,
+          locationNames: formData.locationName,
+          payingAmount: formData.payingAmount,
+          companyName: formData.companyName,
+          createdAt: formData.createdAt,
+          sales: updatedChoices.filter((c) => c.productName.length > 0),
+        })
       }
-
+      if (res.data.statusCode === 204) {
+        showAlert('입력 필드를 재확인 해주세요.', 'info');
+        return;
+      } else if (res.data.statusCode === 409) {
+        showAlert(`${res.data.message}`, 'error');
+        return;
+      }
+      // if (onSuccess) onSuccess();
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
         companyId: '',
@@ -305,25 +295,23 @@ const TransactionRegister = ({
         sequence: 1,
         createdAt: prev.createdAt,
       }))
-      setAmount(Array.from({length: 1}, () => ({...defaultAmount})));
-      // console.log(res.data.data);
     } catch (err) {
-      alert(err);
+      showAlert(`${err}`, 'error');
     }
-    return data;
+    onClose();
+    return {...data, ...amountInfo};
   }
 
   const handlePrint = async () => {
     const data = await register();
     if (window.ipcRenderer && data) {
       try {
-        await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data, amount});
+        await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data});
       } catch (error) {
-        console.error(error);
+        showAlert(`${error}`, 'error');
       }
     }
   }
-
 
   useEffect(() => {
     if (productList.length > 0) {
@@ -331,12 +319,43 @@ const TransactionRegister = ({
     }
   }, [productList]);
 
+  useEffect(() => {
+    if (dialogType === 'edit' && prevChoices) {
+      setChoices(prevChoices);
+    } else if (dialogType === 'create') {
+      setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
+    }
+  }, [dialogType, prevChoices]);
+
+  useEffect(() => {
+    if (dialogType === 'edit' && prevFormData) {
+      setFormData(prevFormData);
+    } else if (dialogType === 'create') {
+      setFormData({
+        companyId: '',
+        locationName: [] as string[],
+        companyName: '',
+        payingAmount: '0',
+        sequence: 1,
+        createdAt: dayjs().format('YYYY-MM-DD'),
+      });
+    }
+  }, [dialogType, prevFormData]);
+
   // debug
-  // console.log(productListState);
-  // console.log('날짜설정: ', formData.createdAt);
+  // console.log(dialogType);
+  // console.log('formData: ', formData, 'choices: ', choices);
   return (
     <>
-      <Dialog open={isOpen} fullWidth maxWidth="lg">
+      {/* 거래 등록 Dialog */}
+      <Dialog open={isOpen}
+              fullWidth maxWidth="lg"
+              onClose={onClose}
+              disableEscapeKeyDown={openAlert}
+        // disableAutoFocus
+              disableEnforceFocus
+
+      >
         <IconButton onClick={onClose} size='small'
                     sx={{
                       position: "absolute",
@@ -422,7 +441,7 @@ const TransactionRegister = ({
                           <TextField {...params}
                                      value={formData.locationName}
                                      size='small'
-                                     sx={{minWidth: 150}}
+                                     sx={{minWidth: 300}}
                           />
                         }
                       />
@@ -465,13 +484,19 @@ const TransactionRegister = ({
                       <TableCell>
                         <Autocomplete
                           size='small'
-                          options={productListState.map((option) => option.productName)}
+                          options={productListState.map((option) => option.name)}
                           onChange={(_, newValue) => handleProductChange(rowIndex, newValue)}
                           value={choice.productName}
                           renderInput={(params) =>
                             <TextField {...params}
-                                       size='small'
                                        data-table-input
+                                       slotProps={{
+                                         htmlInput: {
+                                           'data-col-index': 0,
+                                           'data-row-index': rowIndex,
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4), ...params.inputProps
+                                         }
+                                       }}
                             />
                           }
                         />
@@ -479,13 +504,20 @@ const TransactionRegister = ({
                       {/* 규격 */}
                       <TableCell>
                         <Autocomplete
-                          options={productListState.find((p) => p.productName === choice.productName)?.info.scales.map((s) => s.scale) || []}
-                          value={choice.productScale}
+                          options={productScaleMap[choice.productName] || []}
+                          value={choice.scale || null}
                           onChange={(_, newValue: string | null) => handleScaleChange(rowIndex, newValue, choice.productName)}
                           renderInput={(params) =>
                             <TextField {...params}
                                        size='small'
                                        data-table-input
+                                       slotProps={{
+                                         htmlInput: {
+                                           'data-col-index': 1,
+                                           'data-row-index': rowIndex,
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4), ...params.inputProps
+                                         }
+                                       }}
                             />
                           }
                         />
@@ -497,13 +529,13 @@ const TransactionRegister = ({
                                fullWidth
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `quantity-${rowIndex}`,
-                                 onKeyDown: (e) => {
-                                   if (e.key === 'Enter') moveFocusToNextInput(`quantity-${rowIndex}`);
-                                 }
+                                 'data-col-index': 2,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
                                }}
                                value={choice.quantity}
-                               onChange={(e) => handleQuantityChange(e, rowIndex)}
+                               name='quantity'
+                               onChange={(e) => handleChoiceChange(e, rowIndex)}
                                data-table-input/>
                       </TableCell>
                       {/* 재료단가/재료비 */}
@@ -513,14 +545,13 @@ const TransactionRegister = ({
                                fullWidth
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `newRawMatAmount-${rowIndex}`,
-                                 onKeyDown: (e) => {
-                                   if (e.key === 'Enter') moveFocusToNextInput(`newRawMatAmount-${rowIndex}`);
-                                 }
+                                 'data-col-index': 3,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
                                }}
-                               name='newRawMatAmount'
-                               value={amount[rowIndex].newRawMatAmount}
-                               onChange={(event) => handleAmountChange(event, rowIndex)}
+                               name='rawMatAmount'
+                               value={choice.rawMatAmount || '0'}
+                               onChange={(event) => handleChoiceChange(event, rowIndex)}
                                data-table-input/>
                       </TableCell>
                       <TableCell>
@@ -528,7 +559,7 @@ const TransactionRegister = ({
                                disabled
                                disableUnderline
                                fullWidth
-                               value={`${Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}
@@ -542,25 +573,25 @@ const TransactionRegister = ({
                                data-table-input
                                inputProps={{
                                  sx: {textAlign: 'right'},
-                                 'data-input-id': `newManufactureAmount-${rowIndex}`,
-                                 onKeyDown: (e) => {
+                                 'data-col-index': 4,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                                    if (e.key === 'Enter') {
-                                     moveFocusToNextInput(`newManufactureAmount-${rowIndex}`);
                                      addRow();
                                    }
+                                   arrowNavAtRegister(e, 4);
                                  }
                                }}
-                               value={`${amount[rowIndex].newManufactureAmount}`}
-                               onChange={(event) => handleAmountChange(event, rowIndex)}
-                               name='newManufactureAmount'/>
+                               value={`${choice.manufactureAmount || '0'}`}
+                               onChange={(event) => handleChoiceChange(event, rowIndex)}
+                               name='manufactureAmount'/>
                       </TableCell>
                       <TableCell>
                         <Input size='small'
                                disableUnderline
                                disabled
                                fullWidth
-                               data-table-input
-                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -571,9 +602,8 @@ const TransactionRegister = ({
                                name='sum'
                                disableUnderline
                                fullWidth
-                               data-table-input
                                disabled
-                               value={`${Number(amount[rowIndex].newManufactureAmount) * Number(choice.quantity) + Number(amount[rowIndex].newRawMatAmount) * Number(choice.quantity)}`}
+                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity) + Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -613,7 +643,7 @@ const TransactionRegister = ({
                 <InputLabel sx={{fontSize: 'small',}}>매출계</InputLabel>
                 <TextField size='small'
                            variant="outlined"
-                           value={totalSales}
+                           value={totalSales.toLocaleString()}
                            disabled/>
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -644,7 +674,10 @@ const TransactionRegister = ({
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* 새 품명 & 규격 등록 Dialog */}
       <ProductForm isOpened={newProductFormOpen}
+                   dialogType={ProductDialogType.CREATE}
                    onClose={() => setNewProductFormOpen(false)}
                    onSuccess={async () => {
                      const newProdList = await getAllProducts();

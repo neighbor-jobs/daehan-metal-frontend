@@ -22,8 +22,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import {PurchaseCompanyColumn, TableColumns} from '../../types/tableColumns.ts';
 import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
-import {GetVendorResData} from '../../types/vendorRes.ts';
+import {Bank, GetVendorResData} from '../../types/vendorRes.ts';
 import {PatchVendorBankReqBody, PostVendorBankReqBody, PostVendorReqBody} from '../../types/vendorReq.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
+import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
+import BankForm from '../../components/BankForm.tsx';
+import {BankDialogType} from '../../types/dialogTypes.ts';
 
 const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
@@ -50,6 +54,11 @@ const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
     id: PurchaseCompanyColumn.BUSINESS_NUMBER,
     label: '사업자등록번호',
     minWidth: 50,
+  },
+  {
+    id: PurchaseCompanyColumn.ADDRESS,
+    label: '주소',
+    minWidth: 280,
   }
 ]
 
@@ -57,21 +66,24 @@ const PurchaseCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
-  const [isBankEditing, setIsBankEditing] = useState(false);
+  const [isBankEditing, setIsBankEditing] = useState(BankDialogType.CREATE);
   const [purchaseCompanyList, setPurchaseCompanyList] = useState<GetVendorResData[]>([]);
   const [formData, setFormData] = useState<PostVendorReqBody>({
     name: '',
-    phoneNumber: undefined,
-    telNumber: undefined,
-    subTelNumber: undefined,
-    businessNumber: undefined,
+    phoneNumber: '',
+    telNumber: '',
+    subTelNumber: '',
+    businessNumber: '',
+    address: '',
   });
   const [bankData, setBankData] = useState<PostVendorBankReqBody | PatchVendorBankReqBody>({
-    infoId: undefined,
-    bankName: undefined,
-    accountNumber: undefined,
-    accountOwner: undefined,
+    infoId: '',
+    bankName: '',
+    accountNumber: '',
+    accountOwner: '',
   });
+  const [companyName, setCompanyName] = useState('');
+  const {showAlert, openAlert: alertOpen} = useAlertStore();
 
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,6 +92,7 @@ const PurchaseCompany = (): React.JSX.Element => {
       [event.target.name]: event.target.value
     });
   };
+
   const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -97,10 +110,11 @@ const PurchaseCompany = (): React.JSX.Element => {
     setIsEditing(false)
     setFormData({
       name: '',
-      phoneNumber: undefined,
-      telNumber: undefined,
-      subTelNumber: undefined,
-      businessNumber: undefined,
+      phoneNumber: '',
+      telNumber: '',
+      subTelNumber: '',
+      businessNumber: '',
+      address: '',
     });
     setOpen(true);
   }
@@ -113,12 +127,13 @@ const PurchaseCompany = (): React.JSX.Element => {
       telNumber: row.info.telNumber,
       subTelNumber: row.info.subTelNumber,
       businessNumber: row.info.businessNumber,
+      address: row.info.address,
     })
     setOpen(true);
   }
 
   const handleBankCreate = (infoId: string) => {
-    setIsBankEditing(false);
+    setIsBankEditing(BankDialogType.CREATE);
     setBankData({
       infoId: infoId,
       accountOwner: '',
@@ -128,54 +143,64 @@ const PurchaseCompany = (): React.JSX.Element => {
     setBankOpen(true);
   }
 
-  const handleBankEdit = (row: GetVendorResData) => {
-    setIsBankEditing(true);
+  const handleBankEdit = (b: Bank, infoId: string, companyName: string) => {
+    setIsBankEditing(BankDialogType.EDIT);
+    setCompanyName(companyName);
     setBankData({
-      bankId: row.bank.id,
-      bankName: row.bank.bankName,
-      accountOwner: row.bank.accountOwner,
-      accountNumber: row.bank.accountNumber,
+      infoId: infoId,
+      bankId: b.id,
+      bankName: b.bankName,
+      accountOwner: b.accountOwner,
+      accountNumber: b.accountNumber,
     })
     setBankOpen(true);
   }
 
   // api
   const fetchPurchaseCompanies = async () => {
-    const res: AxiosResponse = await axiosInstance.get('/vendor/many');
+    const res: AxiosResponse = await axiosInstance.get('/vendor/many?orderBy=asc');
     setPurchaseCompanyList(res.data.data || []);
   };
 
   const handleSubmit = async () => {
-    // TODO: 에러 핸들링 추가
-    if (isEditing) {
-      await axiosInstance.patch('/vendor', {
-        vendorName: formData.name,
-        telNumber: formData?.telNumber || undefined,
-        phoneNumber: formData?.phoneNumber || undefined,
-        subTelNumber: formData?.subTelNumber || undefined,
-        businessNumber: formData?.businessNumber || undefined,
-      });
-    } else {
-      await axiosInstance.post('/vendor', formData);
+    if (formData.name.length === 0) {
+      showAlert('매입처명은 필수 입력값입니다.', 'info');
+      return;
     }
-    await fetchPurchaseCompanies();
-    setOpen(false);
-  }
-
-  const handleBankSubmit = async () => {
-    if (isBankEditing) {
-      await axiosInstance.patch('/vendor/bank', bankData);
-    } else {
-      await axiosInstance.post('/vendor/bank', bankData);
+    const data = {
+      telNumber: formData.telNumber.length > 0 ? formData.telNumber : undefined,
+      phoneNumber: formData.phoneNumber.length > 0 ? formData.phoneNumber : undefined,
+      subTelNumber: formData.subTelNumber.length > 0 ? formData.subTelNumber : undefined,
+      businessNumber: formData.businessNumber.length > 0 ? formData.businessNumber : undefined,
+      address: formData.address.length > 0 ? formData.address : undefined,
     }
-    await fetchPurchaseCompanies();
-    setBankOpen(false);
+    try {
+      if (isEditing) {
+        await axiosInstance.patch('/vendor', {
+          ...data,
+          vendorName: formData.name,
+        });
+      } else {
+        await axiosInstance.post('/vendor', {
+          ...data,
+          name: formData.name,
+        });
+      }
+      await fetchPurchaseCompanies();
+      setOpen(false);
+    } catch (err) {
+      if (err.status === 400) {
+        showAlert('전화번호 또는 사업자 등록번호의 형식이 올바르지 않습니다.', 'error');
+        return;
+      }
+      showAlert('제출 실패. 재시도 해주세요', 'error');
+    }
   }
 
   const delPurchaseCompany = async (companyName: string) => {
     await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
     await fetchPurchaseCompanies();
-    alert('거래처 삭제 완료');
+    showAlert('거래처 삭제 완료', 'success');
   }
 
   useEffect(() => {
@@ -205,13 +230,10 @@ const PurchaseCompany = (): React.JSX.Element => {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
+        disableEscapeKeyDown={alertOpen}
         slotProps={{
           paper: {
             component: 'form',
-            onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              setOpen(false);
-            },
           },
         }}
       >
@@ -220,43 +242,71 @@ const PurchaseCompany = (): React.JSX.Element => {
           sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
         >
           <InputWithLabel name='name' label='거래처명' labelPosition='left' onChange={handleInputChange}
+                          placeholder='필수 입력 값입니다.'
+                          inputProps={{
+                            'data-input-id': `name`,
+                            onKeyDown: (e) => {
+                              const isComposing = e.nativeEvent.isComposing;
+                              if (!isComposing &&(e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`name`);
+                            }
+                          }}
                           value={formData.name}/>
           <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handlePhoneNumberChange}
+                          inputProps={{
+                            'data-input-id': `phoneNumber`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`phoneNumber`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('phoneNumber');
+                            }
+                          }}
                           value={formData?.phoneNumber}/>
           <InputWithLabel name='telNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
+                          inputProps={{
+                            'data-input-id': `telNumber`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`telNumber`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('telNumber');
+                            }
+                          }}
                           value={formData?.telNumber}/>
-          <InputWithLabel name='subTelNumber' label='전화번호(2)' labelPosition='left' onChange={handlePhoneNumberChange}
+          <InputWithLabel name='subTelNumber' label='fax' labelPosition='left' onChange={handlePhoneNumberChange}
+                          inputProps={{
+                            'data-input-id': `subTelNumber`,
+                            onKeyDown: (e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`subTelNumber`);
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('subTelNumber');
+                            }
+                          }}
                           value={formData?.subTelNumber}/>
-          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left' onChange={handleBusinessNumberChange}
+          <InputWithLabel name='businessNumber' label='사업자등록번호' labelPosition='left'
+                          onChange={handleBusinessNumberChange}
+                          inputProps={{
+                            'data-input-id': `businessNumber`,
+                            onKeyDown: async (e) => {
+                              if (e.key === 'Enter') await handleSubmit();
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessNumber');
+                            }
+                          }}
                           value={formData?.businessNumber}/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>취소</Button>
-          <Button type="submit" onClick={handleSubmit}>등록</Button>
+          <Button onClick={handleSubmit}>등록</Button>
         </DialogActions>
       </Dialog>
 
       {/* 은행 관련 dialog */}
-      <Dialog open={bankOpen}
-              onClose={() => setBankOpen(false)}
-      >
-        <DialogTitle>{isBankEditing ? '계좌수정' : '계좌등록'}</DialogTitle>
-        <DialogContent
-          sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
-        >
-          <InputWithLabel name='accountOwner' label='예금주' labelPosition='left' onChange={handleInputChange}
-                          value={bankData?.accountOwner}/>
-          <InputWithLabel name='bankName' label='은행명' labelPosition='left' onChange={handleInputChange}
-                          value={bankData?.bankName}/>
-          <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left' onChange={handleInputChange}
-                          value={bankData?.accountNumber}/>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBankOpen(false)}>취소</Button>
-          <Button type="submit" onClick={handleBankSubmit}>등록</Button>
-        </DialogActions>
-      </Dialog>
-      <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
+      <BankForm isEdit={isBankEditing} isOpened={bankOpen} onClose={() => setBankOpen(false)}
+                defaultFormData={bankData}
+                companyName={companyName}
+                onSwitchEditToCreate={() => setIsBankEditing(BankDialogType.CREATE)}
+                onSuccess={async () => {
+                  await fetchPurchaseCompanies();
+                  setBankOpen(false);
+                }}
+      />
+
+      <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1, marginBottom: 5}}>
         <TableContainer sx={{maxHeight: '100%'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
@@ -270,56 +320,37 @@ const PurchaseCompany = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
-                <TableCell sx={{minWidth: 80}}>예금주</TableCell>
                 <TableCell sx={{minWidth: 200}}>계좌정보</TableCell>
                 <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
             <TableBody>
-              {purchaseCompanyList && purchaseCompanyList.map((row, rowIndex) => {
+              {purchaseCompanyList && purchaseCompanyList.map((row) => {
                 return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
+                  <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>{row.info.phoneNumber || ''}</TableCell>
+                    <TableCell>{row.info.telNumber || ''}</TableCell>
+                    <TableCell>{row.info.subTelNumber || ''}</TableCell>
+                    <TableCell>{row.info.businessNumber || ''}</TableCell>
+                    <TableCell>{row.info.address || ''}</TableCell>
                     <TableCell>
-                      {row.name}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.phoneNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.telNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.subTelNumber}
-                    </TableCell>
-                    <TableCell>
-                      {row.info.businessNumber}
-                    </TableCell>
-                    {row.bank &&
-                      <>
-                        <TableCell>
-                          {row.bank.accountOwner}
-                        </TableCell>
-                        <TableCell>
-                          {row.bank.bankName + ' : ' + row.bank.accountNumber}
-                          <Button variant='text' size='small'
-                                  onClick={() => handleBankEdit(row)}
-                                  sx={{fontSize: 11}}
-                          >
-                            계좌수정
-                          </Button>
-                        </TableCell>
-                      </>
-                    }
-                    {!row.bank &&
-                      <TableCell colSpan={2}>
+                      {row.bank?.length > 0 ? row.bank.map((b) => (
+                        <p style={{padding: 0, margin: 0, cursor: 'pointer'}} key={b.id}
+                           onClick={() => handleBankEdit(b, row.info.id, row.name)}
+                        >
+                          {b.bankName + ': ' + b.accountNumber + ' (' + b.accountOwner + ')'}
+                        </p>
+                      )) : (
                         <Button size='small'
                                 onClick={() => handleBankCreate(row.info.id)}
                                 sx={{fontSize: 11}}
                         >
                           은행정보 추가
                         </Button>
-                      </TableCell>
-                    }
+                      )}
+                    </TableCell>
+
                     <TableCell sx={{padding: 0}}>
                       <IconButton size='small'
                                   onClick={() => handleEdit(row)}

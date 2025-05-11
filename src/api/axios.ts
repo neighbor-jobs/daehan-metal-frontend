@@ -1,5 +1,6 @@
 // 재시도 설정
 import axios from 'axios';
+import {useAlertStore} from '../stores/alertStore.ts';
 
 const VITE_API_URL_NGROK = import.meta.env.VITE_API_URL_NGROK;
 
@@ -18,5 +19,16 @@ const axiosInstance = axios.create({
     'ngrok-skip-browser-warning': '69420',
   }
 });
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 400) {
+      const { showAlert } = useAlertStore.getState();
+      showAlert('잘못된 요청입니다', 'error');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

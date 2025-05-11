@@ -3,7 +3,8 @@ export interface PostVendorReqBody {
   telNumber?: string | undefined,
   subTelNumber?: string | undefined,
   phoneNumber?: string | undefined,
-  businessNumber?: string | undefined
+  businessNumber?: string | undefined,
+  address?: string | undefined,
 }
 
 export interface PostVendorBankReqBody {
@@ -15,6 +16,7 @@ export interface PostVendorBankReqBody {
 }
 
 export interface PatchVendorBankReqBody {
+  infoId?: string | null | undefined;
   bankId: string | null;         // 필수
   bankName: string | null;
   accountNumber: string | null;

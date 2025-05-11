@@ -2,7 +2,7 @@
 import {
   Autocomplete,
   Box,
-  Button,
+  Button, createFilterOptions,
   Paper,
   Table,
   TableBody,
@@ -17,12 +17,13 @@ import DateRangePicker from '../../components/DateRangePicker';
 
 // project
 import {ItemSalesColumn, TableColumns} from '../../types/tableColumns';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import dayjs from 'dayjs';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import getAllProducts from '../../api/getAllProducts.ts';
+import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 
 const columns: readonly TableColumns<ItemSalesColumn>[] = [
   {
@@ -72,13 +73,6 @@ const columns: readonly TableColumns<ItemSalesColumn>[] = [
     format: formatCurrency,
   },
   {
-    id: ItemSalesColumn.PRODUCT_LENGTH,
-    label: '길이',
-    minWidth: 100,
-    align: 'right',
-    format: formatDecimal
-  },
-  {
     id: ItemSalesColumn.TOTAL_SALES_AMOUNT,
     label: '매출액',
     minWidth: 100,
@@ -103,6 +97,11 @@ const ItemSales = (): React.JSX.Element => {
     rawSum: 0,
     sum: 0,
   })
+  const uniqueScaleOptions = useMemo(() => {
+    return getUniqueScalesByProductName(productList, formData.productName);
+  }, [productList, formData.productName]);
+
+  const filter = createFilterOptions<string>();
 
   // handler
   const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
@@ -112,9 +111,11 @@ const ItemSales = (): React.JSX.Element => {
 
   // api
   const getProductReports = async () => {
-    const res: AxiosResponse = await axiosInstance.get(
+    const url = formData.scale.length > 0 ?
       `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}&scale=${formData.scale}`
-    );
+      : `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`
+
+    const res: AxiosResponse = await axiosInstance.get(url);
     let m: number = 0, r: number = 0, s: number = 0;
     setProductReports(res.data.data.map((item) => {
       r += Number(item.totalRawMatAmount);
@@ -153,7 +154,7 @@ const ItemSales = (): React.JSX.Element => {
         />
         <Autocomplete
           freeSolo
-          options={productList.map((option) => option.productName)}
+          options={productList.map((option) => option.name)}
           value={formData.productName}
           onInputChange={(_, newInputValue) => {
             setFormData(() => ({
@@ -169,8 +170,9 @@ const ItemSales = (): React.JSX.Element => {
           }
         />
         <Autocomplete
-          freeSolo
-          options={productList.find((p) => p.productName === formData.productName)?.info.scales.map((s) => s.scale) || []}
+          // freeSolo
+          options={uniqueScaleOptions}
+          filterOptions={(options, state) => filter(options, state)}
           value={formData.scale}
           onInputChange={(_, newInputValue) => {
             setFormData((prev) => ({...prev, scale: newInputValue}));
@@ -225,7 +227,7 @@ const ItemSales = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={3}></TableCell>
+                <TableCell colSpan={2}></TableCell>
                 <TableCell align='right'>재료비합계</TableCell>
                 <TableCell align='right'>{sum.rawSum.toLocaleString()}</TableCell>
                 <TableCell align='right'>가공비합계</TableCell>

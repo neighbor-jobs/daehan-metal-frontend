@@ -1,4 +1,3 @@
-// UI
 import {
   Box,
   Button,
@@ -132,7 +131,7 @@ const ItemSalesSummary = (): React.JSX.Element => {
     getItemSalesSumList();
   }, []);
 
-  // console.log(itemSalesSumList);
+  console.log(itemSalesSumList);
 
   return (
     <Box>
@@ -168,9 +167,9 @@ const ItemSalesSummary = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {itemSalesSumList && itemSalesSumList.map((row) => {
+              {itemSalesSumList && itemSalesSumList.map((row, rowIndex) => {
                 return (
-                  <TableRow hover role="checkbox" tabIndex={-1}>
+                  <TableRow hover role="checkbox" key={rowIndex} tabIndex={-1}>
                     {columns.map((column) => {
                       const value = row[column.id];
                       return (

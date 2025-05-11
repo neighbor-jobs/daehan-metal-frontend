@@ -1,20 +1,21 @@
 import axiosInstance from './axios.ts';
 import {AxiosResponse} from 'axios';
+import {Product} from '../types/productRes.ts';
 
 const getAllProducts = async () => {
-  const allProducts = [];
+  const allProducts: Product[] = [];
 
   try {
     const firstRes: AxiosResponse = await axiosInstance.get(
-      `product?page=1&orderBy=desc`
+      `product?page=1&orderBy=asc`
     );
-    const { products, totalCount } = firstRes.data.data;
+    const { products, totalPages } = firstRes.data.data;
     allProducts.push(...products);
 
-    for (let page = 2; page <= totalCount; page++) {
+    for (let page = 2; page <= totalPages; page++) {
       try {
         const res: AxiosResponse = await axiosInstance.get(
-          `product?page=${page}&orderBy=desc`
+          `product?page=${page}&orderBy=asc`
         );
         allProducts.push(...res.data.data.products);
       } catch (err) {

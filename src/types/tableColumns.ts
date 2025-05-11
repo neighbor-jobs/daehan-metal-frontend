@@ -80,6 +80,24 @@ export enum ItemSalesSummaryColumn {
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   TOTAL_SALES_AMOUNT = 'totalSalesAmount',
 }
+/*{
+            "salesReport": {
+                "receiptId": "1e0e87b4-27db-40de-9374-08242e038888",
+                "companyName": "가거래처",
+                "productName": "가이드마감",
+                "vCutAmount": "0",
+                "rawMatAmount": "1000",
+                "manufactureAmount": "2000",
+                "quantity": 0,
+                "productLength": "0",
+                "scale": "1.2TX4X8",
+                "vCut": "0",
+                "createdAt": "2025-05-07T00:00:00.000Z"
+            },
+            "totalManufactureAmount": "0",
+            "totalRawMatAmount": "0",
+            "totalSalesAmount": "0"
+        }*/
 
 export enum ClientOutstandingBalanceColumn {
   COMPANY_NAME = 'companyName',
@@ -108,6 +126,7 @@ export enum PurchaseCompanyColumn {
   SUB_TEL_NUMBER = 'subTelNumber',
   TEL_NUMBER = 'telNumber',
   BUSINESS_NUMBER = 'businessNumber',
+  ADDRESS = 'address',
 }
 
 
@@ -116,7 +135,7 @@ export enum PurchaseCompanyColumn {
 */
 
 export interface ProductMainColumn {
-  id: 'productName' | 'scale' | 'unitWeight' | 'stocks' | 'vCut' | 'vCutAmount' | 'productLength';
+  id: 'name' | 'scale';
   label: string;
   minWidth?: number;
   align?: 'right';

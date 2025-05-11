@@ -3,7 +3,7 @@ import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import {
   Autocomplete,
   Box,
-  Button, InputLabel,
+  Button, IconButton, InputLabel,
   Paper,
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow, TextField
 } from '@mui/material';
-import {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import dayjs from 'dayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -21,6 +21,10 @@ import 'dayjs/locale/ko';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import PrintButton from '../../layout/PrintButton.tsx';
+import {useAlertStore} from '../../stores/alertStore.ts';
+import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
+import UpdateReceipt from './UpdateReceipt.tsx';
 
 const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   {
@@ -31,7 +35,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   },
   {
     id: MonthlyPurchaseColumn.PRODUCT_NAME,
-    label: '거래처명',
+    label: '품명',
     minWidth: 170
   },
   {
@@ -91,13 +95,29 @@ const MonthlyPurchase = (): React.JSX.Element => {
     standardDate: dayjs(),
     companyName: '',
   })
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState();
   const [purchaseCompanyList, setPurchaseCompanyList] = useState([]);
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
   const [selectedCompanyData, setSelectedCompanyData] = useState({});
   const [records, setRecords] = useState([]);
+  const { showAlert } = useAlertStore();
+
+  const totals = useMemo(() => {
+    return records.reduce(
+      (acc, r) => {
+        acc.purchase += Number(r.totalSalesAmount ?? 0);
+        acc.vat      += Number(r.totalVatPrice  ?? 0);
+        acc.total    += Number(r.totalPrice     ?? 0);
+        acc.paying   += Number(r.productPrice   ?? 0);
+        return acc;
+      },
+      { purchase: 0, vat: 0, total: 0, paying: 0 }
+    );
+  }, [records]);
 
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
-    const selectedCompany = purchaseCompanyList.find((company) => company.name === newValue);
+    const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
     if (!selectedCompany) {
       setFormData(prev => ({
         ...prev,
@@ -120,38 +140,50 @@ const MonthlyPurchase = (): React.JSX.Element => {
     });
   }, [purchaseCompanyList]);
 
+  // api
   const handleSearch = async () => {
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
       setMonthlyPurchase(res.data.data);
-      setRecords(res.data.data.map((item) => ({
-        createdAt: item.createdAt.split('T')[0],
-        productName: item.productName,
-        vat: item.vat,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalSalesAmount: Number(item.totalRawMatAmount) + Number(item.totalManufactureAmount),
-        totalVatPrice: item.totalVatPrice,
-        totalPrice: item.totalPrice,
-        productPrice: item.productPrice,
-        payableBalance: item.payableBalance,
-      })))
+      setRecords(res.data.data.map((item) => {
+        return ({
+          createdAt: item.createdAt.split('T')[0],
+          productName: item.productName,
+          vat: item.vat,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalSalesAmount: Number(item.totalRawMatAmount) + Number(item.totalManufactureAmount),
+          totalVatPrice: item.totalVatPrice,
+          totalPrice: item.totalPrice,
+          productPrice: item.productPrice,
+          payableBalance: item.payableBalance,
+        });
+      }))
     } catch (error) {
-      alert('검색에 실패했습니다.');
+      showAlert('검색에 실패했습니다.', 'error');
+    }
+  }
+
+  const deletePurchase = async (receiptId: string) => {
+    try {
+      await axiosInstance.delete(`/vendor/receipt?receiptId=${receiptId}`);
+      await handleSearch();
+    } catch (error) {
+      showAlert('삭제에 실패했습니다', 'error');
     }
   }
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axiosInstance.get('/vendor/many');
+        const res = await axiosInstance.get('/vendor/many?orderBy=asc');
         setPurchaseCompanyList(res.data.data);
       } catch (error) {
-        alert('새로고침 요망');
+        showAlert('새로고침 요망', 'info');
       }
     }
     fetch();
-  }, [])
+  }, []);
 
   // debug
   // console.log('formData: ', formData);
@@ -217,6 +249,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -234,23 +267,46 @@ const MonthlyPurchase = (): React.JSX.Element => {
                       <TableCell align='right'>{formatCurrency(row.totalPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.productPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.payableBalance)}</TableCell>
+                      <TableCell sx={{padding: 0}}>
+                        <IconButton size='small'
+                          onClick={() => {
+                            setUpdateFormData(row);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <EditIcon fontSize='small'/>
+                        </IconButton>
+                        <IconButton color='error' size='small'
+                                    onClick={() => deletePurchase(row.id)}
+                        >
+                          <CloseIcon fontSize='small'/>
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2}>합계</TableCell>
-                <TableCell align='right'>재료비</TableCell>
-                <TableCell align='right'>가공비</TableCell>
-                <TableCell colSpan={2} align='right'/>
-                <TableCell align='right'>총합</TableCell>
-                <TableCell colSpan={2} align='right'></TableCell>
+                <TableCell colSpan={4}>합계</TableCell>
+                <TableCell align='right'>{totals.purchase.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.vat.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.total.toLocaleString()}</TableCell>
+                <TableCell align='right'>{totals.paying.toLocaleString()}</TableCell>
+                <TableCell align='right'></TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
+      <UpdateReceipt isOpen={dialogOpen}
+                     onClose={() => setDialogOpen(false)}
+                     prevFormData={updateFormData}
+                     companyName={formData.companyName}
+                     onSuccess={async () => {
+                       await handleSearch();
+                     }}
+      />
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄'/>
       </Box>

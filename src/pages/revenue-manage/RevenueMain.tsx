@@ -19,13 +19,15 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 // project
 import {RevenueMainColumn, TableColumns} from '../../types/tableColumns';
 import {formatCurrency, formatDecimal} from '../../utils/format';
-import {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import TransactionRegister from './TransactionRegister.tsx';
 import dayjs from 'dayjs';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
+import {Choice} from '../../types/transactionRegisterTypes.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -65,17 +67,11 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     align: 'right',
     format: formatCurrency,
   },
-  {
-    id: RevenueMainColumn.PRODUCT_LENGTH,
-    label: '길이',
-    minWidth: 100,
-    align: 'right',
-    format: formatDecimal,
-  },
 ];
 
 const RevenueMain = (): React.JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [dialogType, setDialogType] = useState<'create' | 'edit'>('create');
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [productList, setProductList] = useState([]);
   const [formData, setFormData] = useState({
@@ -84,6 +80,7 @@ const RevenueMain = (): React.JSX.Element => {
     sequence: 1,
   });
   const [report, setReport] = useState([]);
+  const [prevChoices, setPrevChoices] = useState<Choice[] | []>([]);
   const [endSeq, setEndSeq] = useState<number>(1);
   const [amount, setAmount] = useState({
     totalPayingAmount: "0",
@@ -100,12 +97,15 @@ const RevenueMain = (): React.JSX.Element => {
     choices: any[],
     amount: any[],
   } | null>();
+  const { showAlert } = useAlertStore();
 
+  // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === newValue);
     setFormData((prev) => ({
       ...prev,
       companyName: selectedCompany ? newValue : "",
+      sequence: 1,
     }));
   }, [salesCompanyList]);
 
@@ -129,11 +129,17 @@ const RevenueMain = (): React.JSX.Element => {
       });
       setPrintData(null);
       setEndSeq(1);
-      alert('해당 거래 내역이 존재하지 않습니다.');
+      showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
-    setReport(res.data.data.reports);
+    const latestReports = res.data.data.reports;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const simplifiedReport = latestReports.map(({ receiptId, locationNames, companyName, createdAt, ...rest }) => rest);
+
     setEndSeq(res.data.data.endSequence);
+    setReport(latestReports);
+    setPrevChoices(simplifiedReport);
     setAmount({
       totalPayingAmount: res.data.data.totalPayingAmount,
       totalSalesAmount: res.data.data.totalSalesAmount,
@@ -156,31 +162,33 @@ const RevenueMain = (): React.JSX.Element => {
 
   const deleteReceipt = async () => {
     try {
-      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}&sequence=${formData.sequence}&createdAt=${formData.startAt}`);
-      alert('삭제되었습니다');
+      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}`);
+      showAlert('삭제되었습니다.', 'success');
       await getReceipt();
       setFormData((prev) => ({
         ...prev,
         sequence: 1,
       }))
     } catch {
-      alert('삭제 실패');
+      showAlert('삭제 실패', 'error');
     }
   }
 
   useEffect(() => {
     const fetchSalesCompanies = async () => {
       try {
-        const companies = await axiosInstance.get('/company?orderBy=desc');
+        const companies = await axiosInstance.get('/company?orderBy=asc');
         const products = await getAllProducts();
         setSalesCompanyList(companies.data.data);
         setProductList(products);
       } catch {
-        alert('새로고침 요망')
+        showAlert('새로고침 요망', 'info')
       }
     }
     fetchSalesCompanies();
   }, []);
+
+  // debug
 
   return (
     <Box sx={{position: 'relative'}}>
@@ -225,13 +233,16 @@ const RevenueMain = (): React.JSX.Element => {
         />
         <Button
           variant="outlined"
-          onClick={() => getReceipt(formData.sequence)}
+          onClick={() => {
+            getReceipt(formData.sequence);
+            setDialogType('create');
+          }}
         >
           확인
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
-        <TableContainer sx={{maxHeight: 440}}>
+        <TableContainer>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -267,7 +278,8 @@ const RevenueMain = (): React.JSX.Element => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
+                })
+              }
             </TableBody>
             <TableFooter>
               <TableRow>
@@ -292,7 +304,16 @@ const RevenueMain = (): React.JSX.Element => {
         <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
           <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
         </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '33%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%' }}>
+          <Button variant='outlined'
+                  disabled={report.length === 0}
+                  onClick={() => {
+                    setDialogType('edit');
+                    setOpenDialog(true);
+                  }}
+          >
+            수정
+          </Button>
           <Button variant="outlined" color="error" onClick={deleteReceipt}>
             삭제
           </Button>
@@ -300,7 +321,10 @@ const RevenueMain = (): React.JSX.Element => {
       </Box>
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <Button variant='contained'
-                onClick={() => setOpenDialog(true)}
+                onClick={() => {
+                  setDialogType('create');
+                  setOpenDialog(true);
+                }}
                 sx={{marginY: 1}}
         >
           등록
@@ -308,8 +332,22 @@ const RevenueMain = (): React.JSX.Element => {
         <PrintButton printData={printData} value='인쇄'/>
       </Box>
       <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
+                           dialogType={dialogType}
                            salesCompanyList={salesCompanyList}
                            productList={productList}
+                           prevFormData={{
+                             id: report[0]?.receiptId || '',
+                             locationName: report[0]?.locationNames || [],
+                             companyName: formData.companyName,
+                             createdAt: formData.startAt,
+                             payingAmount: amount.totalPayingAmount,
+                           }}
+                           prevChoices={prevChoices}
+                           onSuccess={async () => {
+                             if (dialogType === 'edit') {
+                               await getReceipt(formData.sequence);
+                             }
+                           }}
       />
     </Box>
   )

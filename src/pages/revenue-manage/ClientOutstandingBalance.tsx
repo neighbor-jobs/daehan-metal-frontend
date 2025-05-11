@@ -85,7 +85,7 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
 
   const getClientReceivable = async () => {
     let s: number = 0, p: number =0, c: number =0, o: number = 0;
-    const res: AxiosResponse = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${startAt.format('YYYY-MM-DD')}`)
+    const res: AxiosResponse = await axiosInstance.get(`/company/receivable?orderBy=asc&startAt=${startAt.format('YYYY-MM-DD')}`)
     res.data.data.map(item => {
       s += Number(item.salesAmount);
       p += Number(item.payingAmount);
@@ -189,10 +189,10 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
             <TableFooter>
               <TableRow>
                 <TableCell>합계</TableCell>
-                <TableCell align='right'>{tableFooter.sumCarryoverAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumSalesAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumPayingAmount}</TableCell>
-                <TableCell align='right'>{tableFooter.sumOutstandingAmount}</TableCell>
+                <TableCell align='right'>{tableFooter.sumCarryoverAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumSalesAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumPayingAmount.toLocaleString()}</TableCell>
+                <TableCell align='right'>{tableFooter.sumOutstandingAmount.toLocaleString()}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>

@@ -22,13 +22,13 @@ import dayjs from 'dayjs';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly TableColumns<ClientSalesColumn>[] = [
   {
     id: ClientSalesColumn.DATE,
     label: '날짜',
     minWidth: 100,
-    format: (date: string) => date.split('T')[0],
   },
   {
     id: ClientSalesColumn.PRODUCT_NAME,
@@ -45,25 +45,17 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '수량',
     minWidth: 100,
     align: 'right',
-    format: formatDecimal
+    format: formatDecimal,
   },
   {
     id: ClientSalesColumn.TOTAL_RAW_MAT_AMOUNT,
     label: '재료비',
     minWidth: 100,
     align: 'right',
-    // format: (rawMatAmount: string, quantity: number) => (Number(rawMatAmount) * quantity).toLocaleString('ko-KR')
   },
   {
     id: ClientSalesColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
-    minWidth: 100,
-    align: 'right',
-    // format: (manufactureAmount: string, quantity: number) => (Number(manufactureAmount) * quantity).toLocaleString('ko-KR')
-  },
-  {
-    id: ClientSalesColumn.PRODUCT_LENGTH,
-    label: '길이',
     minWidth: 100,
     align: 'right',
   },
@@ -89,8 +81,6 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
 
 
 const ClientSales = (): React.JSX.Element => {
-  // TODO: 미수금 현황 api로 받아온 후 잔액 부분 업데이트
-
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [date, setDate] = useState({
     startAt: dayjs(),
@@ -109,6 +99,8 @@ const ClientSales = (): React.JSX.Element => {
     endAt: string;
   } | null>(null);
 
+  const { showAlert } = useAlertStore();
+
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === newValue);
@@ -123,7 +115,6 @@ const ClientSales = (): React.JSX.Element => {
   // api
   const getClientSales = async () => {
     const res: AxiosResponse = await axiosInstance.get(`receipt/company/sales/report?companyName=${companyName}&orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
-    setReports(res.data.data?.reports);
     setAmount({
       totalPayingAmount: res.data.data?.totalPayingAmount,
       totalSalesAmount: res.data.data?.totalSalesAmount,
@@ -144,16 +135,17 @@ const ClientSales = (): React.JSX.Element => {
       outstanding = isNaN(outstanding) ? total : outstanding + total;
 
       return {
-        'date': item.createdAt.split('T')[0],
-        'item': item.productName,
-        'size': item.scale,
-        'count': item.quantity,
-        'material-price': materialPrice,
-        'processing-price': processingPrice,
+        'createdAt': item.createdAt.split('T')[0],
+        'productName': item.productName,
+        'scale': item.scale,
+        'quantity': item.quantity,
+        'rawMatAmount': materialPrice.toLocaleString(),
+        'manufactureAmount': processingPrice.toLocaleString(),
         'amount': total,
-        'remaining-amount' : outstanding,
+        'remainingAmount' : outstanding,
       }
     }) ?? [];
+    setReports(data);
     setPrintData({
       data,
       'companyName': companyName,
@@ -165,14 +157,16 @@ const ClientSales = (): React.JSX.Element => {
   useEffect(() => {
     const getCompanies = async () => {
       try {
-        const res = await axiosInstance.get('/company?orderBy=desc');
+        const res = await axiosInstance.get('/company?orderBy=asc');
         setSalesCompanyList(res.data.data);
       } catch {
-        alert('새로고침 요망');
+        showAlert('새로고침 요망', 'warning');
       }
     }
     getCompanies();
   }, []);
+
+  console.log(reports);
 
   return (
     <Box>
@@ -205,7 +199,7 @@ const ClientSales = (): React.JSX.Element => {
       </Box>
 
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer sx={{maxHeight: 440}}>
+        <TableContainer>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -236,8 +230,8 @@ const ClientSales = (): React.JSX.Element => {
                         </TableCell>
                       );
                     })}
-                    <TableCell align='right'>{printData?.data[rowIdx]?.amount.toLocaleString() || '-'}</TableCell>
-                    <TableCell align='right'>{printData?.data[rowIdx]['remaining-amount']?.toLocaleString() || '-'}</TableCell>
+                    <TableCell align='right'>{row.amount?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell align='right'>{row.remainingAmount?.toLocaleString() ?? '-'}</TableCell>
                   </TableRow>
                 );
               })}

@@ -64,14 +64,6 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
     align: 'right',
     format: formatCurrency
   },
-  {
-    id: DailySalesColumn.PRODUCT_LENGTH,
-    label: '길이',
-    minWidth: 100,
-    align: 'right',
-    format: formatDecimal
-  },
-
 ];
 
 const DailySales = () => {
@@ -173,9 +165,9 @@ const DailySales = () => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={5}>합계</TableCell>
-                <TableCell align='right'>{formatCurrency(amount.totalRawMatAmount)}</TableCell>
-                <TableCell align='right'>{formatCurrency(amount.totalManufactureAmount)}</TableCell>
+                <TableCell colSpan={4}>합계</TableCell>
+                <TableCell align='right'>{`총재료비: ${formatCurrency(amount.totalRawMatAmount)}`}</TableCell>
+                <TableCell align='right'>{`총가공비: ${formatCurrency(amount.totalManufactureAmount)}`}</TableCell>
                 <TableCell align='right'>총합</TableCell>
                 <TableCell align='right'>{(Number(amount.totalManufactureAmount) + Number(amount.totalRawMatAmount)).toLocaleString()}</TableCell>
               </TableRow>
