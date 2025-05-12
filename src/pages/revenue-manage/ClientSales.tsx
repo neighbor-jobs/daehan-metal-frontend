@@ -52,12 +52,14 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    format: (value: number) => value.toLocaleString(),
   },
   {
     id: ClientSalesColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    format: (value: number) => value.toLocaleString(),
   },
   /*{
     id: 'total-amount',
@@ -139,8 +141,8 @@ const ClientSales = (): React.JSX.Element => {
         'productName': item.productName,
         'scale': item.scale,
         'quantity': item.quantity,
-        'rawMatAmount': materialPrice.toLocaleString(),
-        'manufactureAmount': processingPrice.toLocaleString(),
+        'rawMatAmount': materialPrice,
+        'manufactureAmount': processingPrice,
         'amount': total,
         'remainingAmount' : outstanding,
       }
@@ -148,10 +150,69 @@ const ClientSales = (): React.JSX.Element => {
     setReports(data);
     setPrintData({
       data,
-      'companyName': companyName,
-      'startAt': date.startAt.format('YYYY-MM-DD'),
-      'endAt': date.endAt.format('YYYY-MM-DD'),
+      companyName: companyName,
+      startAt: date.startAt.format('YYYY-MM-DD'),
+      endAt: date.endAt.format('YYYY-MM-DD'),
     })
+    /*
+    * {
+    "data": [
+        {
+            "createdAt": "2025-05-13",
+            "productName": "0",
+            "scale": "1",
+            "quantity": 2,
+            "rawMatAmount": "2,000",
+            "manufactureAmount": "400",
+            "amount": 2400,
+            "remainingAmount": 86944
+        },
+        {
+            "createdAt": "2025-05-13",
+            "productName": "0",
+            "scale": "2",
+            "quantity": 2.5,
+            "rawMatAmount": "7,500",
+            "manufactureAmount": "10,000",
+            "amount": 17500,
+            "remainingAmount": 104444
+        },
+        {
+            "createdAt": "2025-05-13",
+            "productName": "0",
+            "scale": "1",
+            "quantity": 2,
+            "rawMatAmount": "20",
+            "manufactureAmount": "0",
+            "amount": 20,
+            "remainingAmount": 104464
+        },
+        {
+            "createdAt": "2025-05-13",
+            "productName": "0",
+            "scale": "3",
+            "quantity": 2,
+            "rawMatAmount": "2,224",
+            "manufactureAmount": "0",
+            "amount": 2224,
+            "remainingAmount": 106688
+        },
+        {
+            "createdAt": "2025-05-13",
+            "productName": "0000",
+            "scale": "11",
+            "quantity": 2,
+            "rawMatAmount": "400",
+            "manufactureAmount": "0",
+            "amount": 400,
+            "remainingAmount": 107088
+        }
+    ],
+    "companyName": "(가)거래처",
+    "startAt": "2025-05-13",
+    "endAt": "2025-05-13"
+}
+    * */
   }
 
   useEffect(() => {
@@ -166,7 +227,8 @@ const ClientSales = (): React.JSX.Element => {
     getCompanies();
   }, []);
 
-  console.log(reports);
+  // debug
+  console.log(printData);
 
   return (
     <Box>

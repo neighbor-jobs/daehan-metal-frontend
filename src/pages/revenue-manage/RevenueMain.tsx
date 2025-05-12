@@ -3,12 +3,14 @@ import {
   Autocomplete,
   Box,
   Button,
-  InputLabel, Pagination,
+  InputLabel,
+  Pagination,
   Paper,
   Table,
   TableBody,
   TableCell,
-  TableContainer, TableFooter,
+  TableContainer,
+  TableFooter,
   TableHead,
   TableRow,
   TextField
@@ -44,7 +46,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     id: RevenueMainColumn.LOCATION_NAMES,
     label: '현장명',
     minWidth: 140,
-    format: (value: string[]) => value.join(', ')
+    format: (value: string[] | undefined) => value?.length > 0 ? value.join(', ') : ''
   },
   {
     id: RevenueMainColumn.QUANTITY,
@@ -61,12 +63,26 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     format: formatCurrency,
   },
   {
+    id: RevenueMainColumn.TOTAL_RAW_MAT_AMOUNT,
+    label: '재료비',
+    minWidth: 100,
+    align: 'right',
+    format: (amount: number) => amount?.toLocaleString(),
+  },
+  {
     id: RevenueMainColumn.MANUFACTURE_AMOUNT,
     label: '가공단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
+  {
+    id: RevenueMainColumn.TOTAL_MANUFACTURE_AMOUNT,
+    label: '가공비',
+    minWidth: 100,
+    align: 'right',
+    format: (amount: number) => amount?.toLocaleString(),
+  }
 ];
 
 const RevenueMain = (): React.JSX.Element => {
@@ -94,10 +110,9 @@ const RevenueMain = (): React.JSX.Element => {
     createdAt: string,
     carryoverAmount: string,
     totalSalesAmount: string,
-    choices: any[],
-    amount: any[],
+    sales: any[],
   } | null>();
-  const { showAlert } = useAlertStore();
+  const {showAlert} = useAlertStore();
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -114,11 +129,11 @@ const RevenueMain = (): React.JSX.Element => {
       ...prev,
       sequence: value,
     }))
-    getReceipt(value);
+    getReceipt(formData.companyName, formData.startAt, value);
   }
   // api
-  const getReceipt = async (sequence = 1) => {
-    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${formData.companyName}&orderBy=desc&startAt=${formData.startAt}&sequence=${sequence}`);
+  const getReceipt = async (companyName: string, startAt: string, sequence: number = 1) => {
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=${sequence}`);
 
     if (res.data.statusCode === 204) {
       setReport([]);
@@ -135,7 +150,11 @@ const RevenueMain = (): React.JSX.Element => {
     const latestReports = res.data.data.reports;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const simplifiedReport = latestReports.map(({ receiptId, locationNames, companyName, createdAt, ...rest }) => rest);
+    const simplifiedReport = latestReports.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => ({
+      ...rest,
+      totalRawMatAmount: Number(rest.rawMatAmount) * rest.quantity,
+      totalManufactureAmount: Number(rest.manufactureAmount) * rest.quantity,
+    }));
 
     setEndSeq(res.data.data.endSequence);
     setReport(latestReports);
@@ -152,11 +171,7 @@ const RevenueMain = (): React.JSX.Element => {
       carryoverAmount: res.data.data.carryoverAmount,
       totalSalesAmount: res.data.data.totalSalesAmount,
       createdAt: formData.startAt,
-      choices: res.data.data.reports,
-      amount: res.data.data.reports.map((item) => ({
-        newRawMatAmount: item.rawMatAmount,
-        newManufactureAmount: item.manufactureAmount,
-      }))
+      sales: res.data.data.reports,
     })
   }
 
@@ -164,7 +179,7 @@ const RevenueMain = (): React.JSX.Element => {
     try {
       await axiosInstance.delete(`/receipt?id=${report[0].receiptId}`);
       showAlert('삭제되었습니다.', 'success');
-      await getReceipt();
+      await getReceipt(formData.companyName, formData.startAt);
       setFormData((prev) => ({
         ...prev,
         sequence: 1,
@@ -234,7 +249,7 @@ const RevenueMain = (): React.JSX.Element => {
         <Button
           variant="outlined"
           onClick={() => {
-            getReceipt(formData.sequence);
+            getReceipt(formData.companyName, formData.startAt, formData.sequence);
             setDialogType('create');
           }}
         >
@@ -300,11 +315,11 @@ const RevenueMain = (): React.JSX.Element => {
         marginTop: 4,
         marginX: 3,
       }}>
-        <Box sx={{ width: '33%' }} />
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
-          <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
+        <Box sx={{width: '33%'}}/>
+        <Box sx={{display: 'flex', justifyContent: 'center', width: '33%'}}>
+          <Pagination page={formData.sequence} count={endSeq} shape="rounded" onChange={handlePageChange}/>
         </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%' }}>
+        <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%'}}>
           <Button variant='outlined'
                   disabled={report.length === 0}
                   onClick={() => {
@@ -337,16 +352,20 @@ const RevenueMain = (): React.JSX.Element => {
                            productList={productList}
                            prevFormData={{
                              id: report[0]?.receiptId || '',
+                             sequence: formData.sequence,
                              locationName: report[0]?.locationNames || [],
                              companyName: formData.companyName,
                              createdAt: formData.startAt,
                              payingAmount: amount.totalPayingAmount,
                            }}
                            prevChoices={prevChoices}
-                           onSuccess={async () => {
-                             if (dialogType === 'edit') {
-                               await getReceipt(formData.sequence);
-                             }
+                           onSuccess={async (companyName: string, startAt: string, sequence: number = 1) => {
+                             await getReceipt(companyName, startAt, sequence);
+                             setFormData({
+                               startAt: startAt,
+                               companyName: companyName,
+                               sequence: sequence,
+                             });
                            }}
       />
     </Box>
