@@ -67,11 +67,12 @@ export const companySalesDocDef = (companySalesData) => {
 }
 
 /**
- * 매입처 관리대장
+ * 월별매입조회
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
   return {
     pageSize: 'A4', // A4 크기 유지
+    pageMargins: [25, 20, 25, 20], // 좌 25, 상 20, 우 25, 하 20
     content: [
       {
         text: `${data.companyName}`,
@@ -90,10 +91,11 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       {
         table: {
           headerRows: 1,
-          widths: ['10%', '20%', '5%', '5%', '10%', '10%', '10%', '10%', '12%', '12%'],
+          widths: ['10%', '20%', '*', '*', '10%', '10%', '8%', '10%', '10%', '12%'],
           body: [
             ['날짜', '품명', '세액', '수량', '단가', '매입금액', '매입세액', '합계', '입금', '잔액'].map(header => ({
               text: header,
+              alignment: 'center',
             })),
             ...data.records.map((item: any) => [
               {text: item.createdAt, style: 'tableText', alignment: 'center'}, // 날짜

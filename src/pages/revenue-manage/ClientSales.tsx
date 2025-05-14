@@ -125,7 +125,7 @@ const ClientSales = (): React.JSX.Element => {
     const getOutstanding = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}`)
     let outstanding = Number(getOutstanding.data.data.find((item) => item.companyName === companyName)?.outstandingAmount);
 
-    const data = res.data.data.reports?.map((item) => {
+    const data = (res.data.data.reports?.map((item) => {
       const raw = Number(item.rawMatAmount) || 0;
       const manu = Number(item.manufactureAmount) || 0;
       const quantity = item.quantity;
@@ -146,7 +146,9 @@ const ClientSales = (): React.JSX.Element => {
         'amount': total,
         'remainingAmount' : outstanding,
       }
-    }) ?? [];
+    }) ?? []).sort((a, b) => {
+      return dayjs(a.createdAt).diff(dayjs(b.createdAt))
+    });
     setReports(data);
     setPrintData({
       data,

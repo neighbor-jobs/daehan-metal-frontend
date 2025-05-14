@@ -96,6 +96,7 @@ const RevenueMain = (): React.JSX.Element => {
     sequence: 1,
   });
   const [report, setReport] = useState([]);
+  const [reportId, setReportId] = useState('');
   const [prevChoices, setPrevChoices] = useState<Choice[] | []>([]);
   const [endSeq, setEndSeq] = useState<number>(1);
   const [amount, setAmount] = useState({
@@ -136,28 +137,30 @@ const RevenueMain = (): React.JSX.Element => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=${sequence}`);
 
     if (res.data.statusCode === 204) {
-      setReport([]);
+      /*setReport([]);
+      setReportId('');
       setAmount({
         totalPayingAmount: "0",
         totalSalesAmount: "0",
         carryoverAmount: "0"
       });
       setPrintData(null);
-      setEndSeq(1);
+      setEndSeq(1);*/
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
-    const latestReports = res.data.data.reports;
+    const latestReports = res.data.data?.reports?.map((report) => ({
+      ...report,
+      totalRawMatAmount: Number(report.rawMatAmount) * report.quantity,
+      totalManufactureAmount: Number(report.manufactureAmount) * report.quantity,
+    }));
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const simplifiedReport = latestReports.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => ({
-      ...rest,
-      totalRawMatAmount: Number(rest.rawMatAmount) * rest.quantity,
-      totalManufactureAmount: Number(rest.manufactureAmount) * rest.quantity,
-    }));
+    const simplifiedReport = latestReports.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => rest);
 
     setEndSeq(res.data.data.endSequence);
     setReport(latestReports);
+    setReportId(res.data.data.id);
     setPrevChoices(simplifiedReport);
     setAmount({
       totalPayingAmount: res.data.data.totalPayingAmount,
@@ -177,7 +180,7 @@ const RevenueMain = (): React.JSX.Element => {
 
   const deleteReceipt = async () => {
     try {
-      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}`);
+      await axiosInstance.delete(`/receipt?id=${reportId}`);
       showAlert('삭제되었습니다.', 'success');
       await getReceipt(formData.companyName, formData.startAt);
       setFormData((prev) => ({
@@ -226,6 +229,7 @@ const RevenueMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
+              value={dayjs(formData.startAt)}
               onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
@@ -321,7 +325,7 @@ const RevenueMain = (): React.JSX.Element => {
         </Box>
         <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%'}}>
           <Button variant='outlined'
-                  disabled={report.length === 0}
+                  disabled={reportId.length === 0}
                   onClick={() => {
                     setDialogType('edit');
                     setOpenDialog(true);
@@ -351,7 +355,7 @@ const RevenueMain = (): React.JSX.Element => {
                            salesCompanyList={salesCompanyList}
                            productList={productList}
                            prevFormData={{
-                             id: report[0]?.receiptId || '',
+                             id: reportId || '',
                              sequence: formData.sequence,
                              locationName: report[0]?.locationNames || [],
                              companyName: formData.companyName,

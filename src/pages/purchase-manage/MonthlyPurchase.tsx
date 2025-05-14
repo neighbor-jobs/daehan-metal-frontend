@@ -69,7 +69,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   {
     id: MonthlyPurchaseColumn.TOTAL_PRICE,
     label: '합계',
-    minWidth: 100,
+    minWidth: 110,
     align: 'right',
     format: formatCurrency,
   },
