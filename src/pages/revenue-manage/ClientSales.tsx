@@ -130,8 +130,8 @@ const ClientSales = (): React.JSX.Element => {
       const manu = Number(item.manufactureAmount) || 0;
       const quantity = item.quantity;
 
-      const materialPrice = raw * quantity;
-      const processingPrice = manu * quantity;
+      const materialPrice = Math.round(raw * quantity);
+      const processingPrice = Math.trunc(manu * quantity);
       const total = materialPrice + processingPrice;
 
       outstanding = isNaN(outstanding) ? total : outstanding + total;

@@ -163,7 +163,12 @@ const DailySales = () => {
                         );
                       })}
                       <TableCell align='right'>
-                        {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
+                        {
+                          (
+                            Math.round(Number(row.rawMatAmount) * row.quantity) +
+                            Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                          ).toLocaleString('ko-KR')
+                        }
                       </TableCell>
                     </TableRow>
                   );

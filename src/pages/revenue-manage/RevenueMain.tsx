@@ -67,7 +67,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
-    format: (amount: number) => amount?.toLocaleString(),
+    format: (amount: number) => amount?.toLocaleString(undefined, { maximumFractionDigits: 0 })
   },
   {
     id: RevenueMainColumn.MANUFACTURE_AMOUNT,
@@ -81,7 +81,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     label: '가공비',
     minWidth: 100,
     align: 'right',
-    format: (amount: number) => amount?.toLocaleString(),
+    format: (amount: number) => Math.floor(amount)?.toLocaleString()
   }
 ];
 
@@ -293,7 +293,12 @@ const RevenueMain = (): React.JSX.Element => {
                         );
                       })}
                       <TableCell align='right'>
-                        {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
+                        {
+                          (
+                            Math.round(Number(row.rawMatAmount) * row.quantity) +
+                            Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                          ).toLocaleString('ko-KR')
+                        }
                       </TableCell>
                     </TableRow>
                   );

@@ -142,7 +142,7 @@ const TransactionRegister = ({
       const quantity = Number(choice.quantity) || 0;
       const rawMat = Number(choice.rawMatAmount) || 0;
       const manufacture = Number(choice.manufactureAmount) || 0;
-      const total = (rawMat + manufacture) * quantity;
+      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity);
       return acc + total;
     }, 0);
   }, [choices]);
@@ -584,7 +584,7 @@ const TransactionRegister = ({
                                disabled
                                disableUnderline
                                fullWidth
-                               value={`${(Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={`${Math.round((Number(choice.rawMatAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}
@@ -616,7 +616,7 @@ const TransactionRegister = ({
                                disableUnderline
                                disabled
                                fullWidth
-                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={`${Math.trunc((Number(choice.manufactureAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -628,7 +628,12 @@ const TransactionRegister = ({
                                disableUnderline
                                fullWidth
                                disabled
-                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity) + Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={
+                                 (
+                                   Math.round(Number(choice.rawMatAmount) * choice.quantity) +
+                                   Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
+                                 ).toLocaleString('ko-KR')
+                               }
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
