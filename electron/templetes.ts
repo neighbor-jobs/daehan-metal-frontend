@@ -323,7 +323,7 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', 'auto', 'auto', '*', 'auto', '*', '*'],
+          widths: ['*', '*', 'auto', '10%', '*', '10%', '*', '*'],
           body: [
             ['품명', '규격', '수량', '재료단가', '재료비', '가공단가', '가공비', '금액'].map(header => ({
               text: header,
@@ -407,7 +407,7 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', '*', '*', '*', '*', '*',],
+          widths: ['5%', '*', '*', '*', '*', '*', '*',],
           body: [
             ['연번', '거래처명', '이월액', '매출액', '입금액', '미수금액', '전화번호'].map(header => ({
               text: header,

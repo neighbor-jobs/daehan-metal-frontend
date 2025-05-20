@@ -35,7 +35,7 @@ import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
-import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
+import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts';
 import {Product} from '../../types/productRes.ts';
 import {moveFocusToNextInput} from '../../utils/focus.ts';
 
@@ -54,17 +54,17 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
   {
     id: TransactionRegisterColumn.ITEM,
     label: '품명',
-    minWidth: 170,
+    minWidth: 160,
   },
   {
     id: TransactionRegisterColumn.SCALE,
     label: '규격',
-    minWidth: 210,
+    minWidth: 200,
   },
   {
     id: TransactionRegisterColumn.COUNT,
     label: '수량',
-    minWidth: 90,
+    minWidth: 70,
     align: 'right',
     format: formatDecimal,
   },
@@ -99,7 +99,7 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
   {
     id: TransactionRegisterColumn.TOTAL_AMOUNT,
     label: '계',
-    minWidth: 100,
+    minWidth: 90,
     align: 'right',
     format: formatCurrency,
   },
@@ -119,7 +119,6 @@ const TransactionRegister = ({
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
   );
-  console.log(prevFormData);
   const [formData, setFormData] = useState(dialogType === 'create' ? {
     companyId: '',
     locationName: [] as string[],
@@ -518,7 +517,7 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 0,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true),
                                            ...params.inputProps
                                          }
                                        }}
@@ -540,7 +539,7 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 1,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4), ...params.inputProps
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true), ...params.inputProps
                                          }
                                        }}
                             />
@@ -575,7 +574,7 @@ const TransactionRegister = ({
                                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
                                }}
                                name='rawMatAmount'
-                               value={choice.rawMatAmount || '0'}
+                               value={choice.rawMatAmount}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                data-table-input/>
                       </TableCell>
@@ -602,12 +601,20 @@ const TransactionRegister = ({
                                  'data-row-index': rowIndex,
                                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                                    if (e.key === 'Enter') {
+                                     const nextRowIndex = choices.length; // 새로 추가될 행 index
                                      addRow();
+
+                                     // 비동기 렌더링 후 focus 적용
+                                     setTimeout(() => {
+                                       focusByCell(nextRowIndex, 0);
+                                     }, 0);
+
+                                     e.preventDefault();
+                                   } else {
+                                     arrowNavAtRegister(e, 4);
                                    }
-                                   arrowNavAtRegister(e, 4);
-                                 }
-                               }}
-                               value={`${choice.manufactureAmount || '0'}`}
+                                 }                               }}
+                               value={`${choice.manufactureAmount}`}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                name='manufactureAmount'/>
                       </TableCell>
