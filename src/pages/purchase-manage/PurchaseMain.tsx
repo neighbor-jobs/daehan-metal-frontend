@@ -16,13 +16,13 @@ import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import React, {useCallback, useEffect, useState} from 'react';
-import {moveFocusToNextInput} from '../../utils/focus.ts';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal, formatVatRate} from '../../utils/format.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
@@ -127,12 +127,29 @@ const PurchaseMain = (): React.JSX.Element => {
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
-    setReceipts((prev) =>
-      prev.map((item, i) => (i === rowIndex ? {
-        ...item,
-        [event.target.name]: event.target.value
-      } : item))
-    )
+    const {name, value} = event.target;
+    const numericOnlyFields = [
+      'quantity',
+      'rawMatAmount',
+      'productPrice',
+      'manufactureAmount',
+      'vatRate'
+    ];
+    if (numericOnlyFields.includes(name)) {
+      const numericValue = value.replace(/[^0-9.]/g, ''); // 소수점 허용
+      setReceipts((prev) =>
+        prev.map((item, i) =>
+          i === rowIndex ? { ...item, [name]: numericValue } : item
+        )
+      );
+    } else {
+      setReceipts((prev) =>
+        prev.map((item, i) => (i === rowIndex ? {
+          ...item,
+          [name]: value
+        } : item))
+      )
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, rowIndex: number) => {
@@ -315,11 +332,9 @@ const PurchaseMain = (): React.JSX.Element => {
                            value={row.productName}
                            name='productName'
                            inputProps={{
-                             'data-input-id': `productName-${rowIndex}`,
-                             onKeyDown: (e) => {
-                               const isComposing = e.nativeEvent.isComposing;
-                               if (!isComposing && e.key === 'Enter') moveFocusToNextInput(`productName-${rowIndex}`);
-                             }
+                             'data-row-index': rowIndex,
+                             'data-col-index': 0,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
                            }}
                            onChange={(e) => handleInputChange(e, rowIndex)}
                     />
@@ -330,27 +345,36 @@ const PurchaseMain = (): React.JSX.Element => {
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `quantity-${rowIndex}`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`quantity-${rowIndex}`);
-                             }
+                             'data-row-index': rowIndex,
+                             'data-col-index': 1,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
                            }}
                            value={row.quantity}
                            name='quantity'
                            onChange={(e) => handleInputChange(e, rowIndex)}
-                           data-table-input/>
+                           />
                   </TableCell>
                   <TableCell>
-                    {/* 재료단가 */}
+                    {/* 단가 */}
                     <Input size='small'
                            disableUnderline={row.isPaying}
                            disabled={row.isPaying}
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `rawMatAmount-${rowIndex}`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`rawMatAmount-${rowIndex}`);
+                             'data-row-index': rowIndex,
+                             'data-col-index': 2,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                               if (e.key === 'Enter') {
+                                 const nextRowIndex = receipts.length; // 새로 추가될 행 index
+                                 addRow();
+                                 setTimeout(() => {
+                                   focusByCell(nextRowIndex, 0);
+                                 }, 0);
+                                 e.preventDefault();
+                               } else {
+                                 arrowNavAtRegister(e, 4);
+                               }
                              }
                            }}
                            name='rawMatAmount'
@@ -359,7 +383,7 @@ const PurchaseMain = (): React.JSX.Element => {
                            data-table-input/>
                   </TableCell>
                   <TableCell>
-                    {/* 재료비 */}
+                    {/* 매입금액 */}
                     <Input size='small'
                            disableUnderline
                            disabled
@@ -369,7 +393,7 @@ const PurchaseMain = (): React.JSX.Element => {
                              'data-input-id': `totalRawMatAmount-${rowIndex}`,
                            }}
                            name='totalRawMatAmount'
-                           value={((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0)).toLocaleString()}
+                           value={(Math.round((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0))).toLocaleString()}
                            data-table-input/>
                   </TableCell>
                   {/* 입금액 */}
@@ -378,12 +402,28 @@ const PurchaseMain = (): React.JSX.Element => {
                            disabled={!row.isPaying}
                            disableUnderline={!row.isPaying}
                            inputProps={{
+                             'data-row-index': rowIndex,
+                             'data-col-index': 3,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                               if (e.key === 'Enter') {
+                                 const nextRowIndex = receipts.length; // 새로 추가될 행 index
+                                 addRow();
+
+                                 setTimeout(() => {
+                                   focusByCell(nextRowIndex, 0);
+                                 }, 0);
+
+                                 e.preventDefault();
+                               } else {
+                                 arrowNavAtRegister(e, 4);
+                               }
+                             },
                              sx: {textAlign: 'right'},
                            }}
                            name='productPrice'
                            onChange={(e) => handleInputChange(e, rowIndex)}
                            value={row.productPrice}
-                           data-table-input/>
+                           />
                   </TableCell>
                   {/* 세금 */}
                   <TableCell align='center'>
@@ -402,6 +442,8 @@ const PurchaseMain = (): React.JSX.Element => {
                            fullWidth
                            value={row.vatRate}
                            inputProps={{
+                             'data-row-index': {rowIndex},
+                             'data-col-index': 4,
                              sx: {textAlign: 'right'},
                            }}
                            name='vatRate'
@@ -415,6 +457,8 @@ const PurchaseMain = (): React.JSX.Element => {
                     <Checkbox size='small'
                               onChange={(e) => handleCheckboxChange(e, rowIndex)}
                               name='isPaying'
+                              data-row-index={rowIndex}
+                              data-col-index={6}
                     />
                   </TableCell>
                   {/* 행 삭제 */}
