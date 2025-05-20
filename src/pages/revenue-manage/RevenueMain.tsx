@@ -114,6 +114,7 @@ const RevenueMain = (): React.JSX.Element => {
     sales: any[],
   } | null>();
   const {showAlert} = useAlertStore();
+  console.log(formData);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -180,9 +181,20 @@ const RevenueMain = (): React.JSX.Element => {
 
   const deleteReceipt = async () => {
     try {
-      await axiosInstance.delete(`/receipt?id=${reportId}`);
+      await axiosInstance.delete(`/receipt?id=${reportId}&companyName=${formData.companyName}&standardAt=${formData.startAt}`);
       showAlert('삭제되었습니다.', 'success');
-      await getReceipt(formData.companyName, formData.startAt);
+      if (endSeq === 1 && formData.sequence === 1) {
+        setReport([]);
+        setPrevChoices([]);
+        setAmount({
+          totalPayingAmount: "0",
+          totalSalesAmount: "0",
+          carryoverAmount: "0"
+          })
+        setPrintData(null);
+      } else {
+        await getReceipt(formData.companyName, formData.startAt);
+      }
       setFormData((prev) => ({
         ...prev,
         sequence: 1,
@@ -260,8 +272,14 @@ const RevenueMain = (): React.JSX.Element => {
           확인
         </Button>
       </Box>
-      <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
-        <TableContainer>
+      <Paper sx={{
+        width: '100%',
+        flexGrow: 1,
+      }}>
+        <TableContainer sx={{
+          maxHeight: 'calc(100vh - 260px)', // 헤더 + 날짜입력 등 UI 높이 고려
+          overflow: 'auto',
+        }}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -307,43 +325,43 @@ const RevenueMain = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
+                <TableCell colSpan={2} align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
                 <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
-                <TableCell colSpan={2}
+                <TableCell colSpan={3}
                            align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          py: 0.5,
+          marginX: 3,
+        }}>
+          <Box sx={{width: '33%'}}/>
+          <Box sx={{display: 'flex', justifyContent: 'center', width: '33%'}}>
+            <Pagination page={formData.sequence} count={endSeq} shape="rounded" onChange={handlePageChange}/>
+          </Box>
+          <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%'}}>
+            <Button variant='outlined'
+                    disabled={reportId.length === 0}
+                    onClick={() => {
+                      setDialogType('edit');
+                      setOpenDialog(true);
+                    }}
+            >
+              수정
+            </Button>
+            <Button variant="outlined" color="error" onClick={deleteReceipt}>
+              삭제
+            </Button>
+          </Box>
+        </Box>
       </Paper>
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 4,
-        marginX: 3,
-      }}>
-        <Box sx={{width: '33%'}}/>
-        <Box sx={{display: 'flex', justifyContent: 'center', width: '33%'}}>
-          <Pagination page={formData.sequence} count={endSeq} shape="rounded" onChange={handlePageChange}/>
-        </Box>
-        <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%'}}>
-          <Button variant='outlined'
-                  disabled={reportId.length === 0}
-                  onClick={() => {
-                    setDialogType('edit');
-                    setOpenDialog(true);
-                  }}
-          >
-            수정
-          </Button>
-          <Button variant="outlined" color="error" onClick={deleteReceipt}>
-            삭제
-          </Button>
-        </Box>
-      </Box>
-      <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
+      <Box sx={{position: 'fixed', bottom: 8, right: 8, display: 'flex', gap: 2}}>
         <Button variant='contained'
                 onClick={() => {
                   setDialogType('create');

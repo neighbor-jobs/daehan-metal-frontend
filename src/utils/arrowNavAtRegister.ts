@@ -1,9 +1,11 @@
-export const arrowNavAtRegister = (e: React.KeyboardEvent<HTMLInputElement>, maxCols: number ) => {
+export const arrowNavAtRegister = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    maxCols: number,
+    isAutoComplete?: boolean,
+  ) => {
   const input = e.currentTarget;
   // Autocomplete 목록 열려 있으면 기본 동작
-  if (input.getAttribute('aria-expanded') === 'true') {
-    return;
-  }
+  if (input.getAttribute('aria-expanded') === 'true') return;
 
   const { selectionStart, selectionEnd, value } = input;
   const row = Number(input.dataset.rowIndex);
@@ -12,12 +14,14 @@ export const arrowNavAtRegister = (e: React.KeyboardEvent<HTMLInputElement>, max
   let newCol = col;
 
   switch (e.key) {
-    /*case 'ArrowUp':
+    case 'ArrowUp':
+      if (isAutoComplete) return;
       newRow = row - 1;
       break;
     case 'ArrowDown':
+      if (isAutoComplete) return;
       newRow = row + 1;
-      break;*/
+      break;
     case 'ArrowLeft':
       // 커서가 맨 앞이 아닐 땐 내부 이동
       if ((selectionStart ?? 0) > 0 || selectionStart !== selectionEnd) {

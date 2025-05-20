@@ -191,6 +191,7 @@ const PurchaseMain = (): React.JSX.Element => {
       } else {
         return {
           ...item,
+          vatRate: Number(item.vatRate),
           createdAt: header.createdAt,
           quantity: Number(item.quantity),
           vendorId: header.vendorId,
@@ -316,7 +317,8 @@ const PurchaseMain = (): React.JSX.Element => {
                            inputProps={{
                              'data-input-id': `productName-${rowIndex}`,
                              onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`productName-${rowIndex}`);
+                               const isComposing = e.nativeEvent.isComposing;
+                               if (!isComposing && e.key === 'Enter') moveFocusToNextInput(`productName-${rowIndex}`);
                              }
                            }}
                            onChange={(e) => handleInputChange(e, rowIndex)}
