@@ -94,6 +94,7 @@ const ClientSales = (): React.JSX.Element => {
     totalPayingAmount: '0',
     totalSalesAmount: '0',
   })
+  const [outstandingBeforeOneDay, setOutstandingBeforeOneDay] = useState(0);
   const [printData, setPrintData] = useState<{
     data: any[];
     companyName: string;
@@ -121,9 +122,38 @@ const ClientSales = (): React.JSX.Element => {
       totalPayingAmount: res.data.data?.totalPayingAmount,
       totalSalesAmount: res.data.data?.totalSalesAmount,
     })
+    const { startAt } = date;
+    const isFirstDay = startAt.date() === 1;
 
-    const getOutstanding = await axiosInstance.get(`/company/receivable?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}`)
-    let outstanding = Number(getOutstanding.data.data.find((item) => item.companyName === companyName)?.outstandingAmount);
+    const salesStartAt = startAt.startOf('month');
+    const salesEndAt = isFirstDay ? startAt : startAt.subtract(1, 'day');
+
+    // carryover 조회
+    const carryoverRes = await axiosInstance.get(
+      `/company/receivable?orderBy=asc&startAt=${startAt.format('YYYY-MM-DD')}`
+    );
+    const carryoverAmount =
+      Number(
+        carryoverRes.data.data?.find((item) => item.companyName === companyName)?.carryoverAmount
+      ) || 0;
+
+    // sales amount 조회
+    let rawAmount = 0;
+    let manuAmount = 0;
+
+    if (!isFirstDay) {
+      const salesRes: AxiosResponse = await axiosInstance.get(
+        `receipt/company/sales/summary/report?orderBy=asc&startAt=${salesStartAt.format('YYYY-MM-DD')}&endAt=${salesEndAt.format('YYYY-MM-DD')}`
+      );
+      const salesAmount = salesRes.data.data?.find(
+        (item) => item.companyName === companyName
+      );
+      rawAmount = Number(salesAmount?.totalRawMatAmount || 0);
+      manuAmount = Number(salesAmount?.totalManufactureAmount || 0);
+    }
+
+    let outstanding = carryoverAmount + rawAmount + manuAmount;
+    setOutstandingBeforeOneDay(outstanding);
 
     const data = (res.data.data.reports?.map((item) => {
       const raw = Number(item.rawMatAmount) || 0;
@@ -230,7 +260,7 @@ const ClientSales = (): React.JSX.Element => {
   }, []);
 
   // debug
-  console.log(printData);
+  // console.log(printData);
 
   return (
     <Box>
@@ -281,6 +311,16 @@ const ClientSales = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
+              <TableRow>
+                <TableCell />
+                <TableCell align='left'>전일이월</TableCell>
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell />
+                <TableCell align='right'>{outstandingBeforeOneDay.toLocaleString()}</TableCell>
+              </TableRow>
               {reports && reports.map((row, rowIdx) => {
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
