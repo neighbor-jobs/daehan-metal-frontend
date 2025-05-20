@@ -37,12 +37,13 @@ import {getUniqueScalesByProductName} from '../../utils/autoComplete.ts';
 import {ProductDialogType} from '../../types/dialogTypes.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 import {Product} from '../../types/productRes.ts';
+import {moveFocusToNextInput} from '../../utils/focus.ts';
 
 interface TransactionRegisterProps {
   dialogType: 'create' | 'edit';
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (companyName: string, startAt: string, sequence: number) => void;
   salesCompanyList: any[];
   productList: Product[];
   prevChoices?: Choice[] | [];
@@ -58,7 +59,7 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
   {
     id: TransactionRegisterColumn.SCALE,
     label: '규격',
-    minWidth: 170,
+    minWidth: 210,
   },
   {
     id: TransactionRegisterColumn.COUNT,
@@ -114,11 +115,12 @@ const TransactionRegister = ({
                                prevChoices,
                                prevFormData
                              }: TransactionRegisterProps): React.JSX.Element => {
-  const [choices, setChoices] = useState<Choice[]>( dialogType === 'create' ?
+  const [choices, setChoices] = useState<Choice[]>(dialogType === 'create' ?
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
   );
-  const [formData, setFormData] = useState( dialogType === 'create' ? {
+  console.log(prevFormData);
+  const [formData, setFormData] = useState(dialogType === 'create' ? {
     companyId: '',
     locationName: [] as string[],
     companyName: "",
@@ -140,18 +142,19 @@ const TransactionRegister = ({
       const quantity = Number(choice.quantity) || 0;
       const rawMat = Number(choice.rawMatAmount) || 0;
       const manufacture = Number(choice.manufactureAmount) || 0;
-      const total = (rawMat + manufacture) * quantity;
+      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity);
       return acc + total;
     }, 0);
   }, [choices]);
 
   const productScaleMap = useMemo(() => {
     const map: Record<string, string[]> = {};
-    productList.forEach((p) => {
+    productListState.forEach((p) => {
       map[p.name] = getUniqueScalesByProductName(productListState, p.name);
     });
+    // console.log(map);
     return map;
-  }, [productListState]);
+  }, [productListState, productList]);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -160,7 +163,7 @@ const TransactionRegister = ({
       ...prev,
       companyId: selectedCompany ? selectedCompany.id : "",
       companyName: selectedCompany ? newValue : "",
-      locationName: [], // 거래처가 바뀌면 locationName 초기화
+      locationName: [],
     }));
   }, [salesCompanyList]);
 
@@ -207,6 +210,10 @@ const TransactionRegister = ({
     rowIndex: number
   ) => {
     const {name, value} = e.target;
+    // 숫자와 소수점만 허용하고 그 외 입력 무시
+    const isValidNumberInput = /^(\d+)?(\.\d*)?$/.test(value);
+    if (!isValidNumberInput && value !== '') return;
+
     setChoices((prevChoices) =>
       prevChoices.map((choice, idx) =>
         idx === rowIndex ? {...choice, [name]: value} : choice
@@ -238,8 +245,10 @@ const TransactionRegister = ({
     const updatedFormData = {
       ...formData,
       payingAmount: formData.payingAmount === "" ? "0" : formData.payingAmount,
-      sequence: endSeq && endSeq + 1 || 1,
-    };
+      sequence: dialogType === 'create'
+        ? (endSeq !== null ? endSeq + 1 : 1)
+        : prevFormData.sequence,
+      };
 
     // choices 복사본 생성
     const updatedChoices = choices.map((c) => ({
@@ -247,7 +256,6 @@ const TransactionRegister = ({
       quantity: Number(c.quantity),
       rawMatAmount: String(Number(c.rawMatAmount || '0')),
       manufactureAmount: String(Number(c.manufactureAmount || '0')),
-      // TODO: 필수값 바뀌면 아래 값도 지워야 함
       unitWeight: "0",
       stocks: 0,
       vCutAmount: "0",
@@ -285,7 +293,7 @@ const TransactionRegister = ({
         showAlert(`${res.data.message}`, 'error');
         return;
       }
-      // if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
         companyId: '',
@@ -403,13 +411,23 @@ const TransactionRegister = ({
                     <Box display="flex" flexDirection="column">
                       <InputLabel sx={{fontSize: 'small',}}>거래처명</InputLabel>
                       <Autocomplete
+                        size='small'
                         options={salesCompanyList.map((option) => option.companyName)}
                         onChange={handleCompanyChange}
                         value={formData.companyName}
                         renderInput={(params) =>
                           <TextField {...params}
-                                     size='small'
                                      sx={{minWidth: 150}}
+                                     slotProps={{
+                                       htmlInput: {
+                                         ...params.inputProps,
+                                         'data-input-id': 'companyName',
+                                         onKeyDown: (e) => {
+                                           const isComposing = e.nativeEvent.isComposing;
+                                           if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowRight')) moveFocusToNextInput(`companyName`);
+                                         }
+                                       }
+                                     }}
                           />
                         }
                       />
@@ -442,6 +460,12 @@ const TransactionRegister = ({
                                      value={formData.locationName}
                                      size='small'
                                      sx={{minWidth: 300}}
+                                     slotProps={{
+                                       htmlInput: {
+                                         ...params.inputProps,
+                                         'data-input-id': 'locationName',
+                                       }
+                                     }}
                           />
                         }
                       />
@@ -494,7 +518,8 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 0,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4), ...params.inputProps
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
+                                           ...params.inputProps
                                          }
                                        }}
                             />
@@ -559,7 +584,7 @@ const TransactionRegister = ({
                                disabled
                                disableUnderline
                                fullWidth
-                               value={`${(Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={`${Math.round((Number(choice.rawMatAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}
@@ -591,7 +616,7 @@ const TransactionRegister = ({
                                disableUnderline
                                disabled
                                fullWidth
-                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={`${Math.trunc((Number(choice.manufactureAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -603,7 +628,12 @@ const TransactionRegister = ({
                                disableUnderline
                                fullWidth
                                disabled
-                               value={`${(Number(choice.manufactureAmount) * Number(choice.quantity) + Number(choice.rawMatAmount) * Number(choice.quantity)).toLocaleString()}`}
+                               value={
+                                 (
+                                   Math.round(Number(choice.rawMatAmount) * choice.quantity) +
+                                   Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
+                                 ).toLocaleString('ko-KR')
+                               }
                                inputProps={{
                                  sx: {textAlign: 'right'},
                                }}/>
@@ -678,6 +708,7 @@ const TransactionRegister = ({
       {/* 새 품명 & 규격 등록 Dialog */}
       <ProductForm isOpened={newProductFormOpen}
                    dialogType={ProductDialogType.CREATE}
+                   productList={productListState}
                    onClose={() => setNewProductFormOpen(false)}
                    onSuccess={async () => {
                      const newProdList = await getAllProducts();

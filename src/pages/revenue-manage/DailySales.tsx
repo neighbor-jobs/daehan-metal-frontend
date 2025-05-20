@@ -84,7 +84,10 @@ const DailySales = () => {
 
   const getDailySalesList = async (startAt: string, endAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/daily/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`);
-    setDailySalesList(res.data.data.reports);
+    const sortedList = res.data.data?.reports.sort((a, b) => {
+      return dayjs(a.createdAt).diff(dayjs(b.createdAt))
+    });
+    setDailySalesList(sortedList);
     setAmount({
       totalManufactureAmount: res.data.data.totalManufactureAmount,
       totalRawMatAmount: res.data.data.totalRawMatAmount,
@@ -98,6 +101,9 @@ const DailySales = () => {
   useEffect(() => {
     getDailySalesList(date.startAt.format('YYYY-MM-DD'), date.endAt.format('YYYY-MM-DD'));
   },[])
+
+  // debug
+  // console.log(dailySalesList);
 
   return (
     <Box>
@@ -157,7 +163,12 @@ const DailySales = () => {
                         );
                       })}
                       <TableCell align='right'>
-                        {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
+                        {
+                          (
+                            Math.round(Number(row.rawMatAmount) * row.quantity) +
+                            Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                          ).toLocaleString('ko-KR')
+                        }
                       </TableCell>
                     </TableRow>
                   );

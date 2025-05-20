@@ -1,11 +1,11 @@
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {formatDecimal, formatCurrency} from '../src/utils/format.ts';
 
-/*
+/**
 * 거래처별 매출현황
 */
 export const companySalesDocDef = (companySalesData) => {
-  // console.log('printData: ', companySalesData);
+  console.log('printData: ', companySalesData);
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -41,14 +41,14 @@ export const companySalesDocDef = (companySalesData) => {
               text: header,
             })),
             ...companySalesData.data.map((item) => [
-              {text: item['date'], style: 'tableText'}, // 날짜
-              {text: item['item'], style: 'tableText'}, // 품명
-              {text: item['size'], style: 'tableText'}, // 규격
-              {text: formatDecimal(item['count']), alignment: 'right', style: 'tableText'}, // 수량
-              {text: formatCurrency(item['material-price']), alignment: 'right', style: 'tableText'}, // 재료비
-              {text: formatCurrency(item['processing-price']), alignment: 'right', style: 'tableText'}, // 가공비
-              {text: formatCurrency(item['amount']), alignment: 'right', style: 'tableText'}, // 금액
-              {text: formatCurrency(item['remaining-amount']), alignment: 'right'}, // 잔액
+              {text: item['createdAt'], style: 'tableText'}, // 날짜
+              {text: item['productName'], style: 'tableText'}, // 품명
+              {text: item['scale'], style: 'tableText'}, // 규격
+              {text: item['quantity'].toFixed(3), alignment: 'right', style: 'tableText'}, // 수량
+              {text: formatCurrency(item['rawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
+              {text: formatCurrency(item['manufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
+              {text: item['amount'].toLocaleString(), alignment: 'right', style: 'tableText'}, // 금액
+              {text: item['remainingAmount'].toLocaleString(), alignment: 'right'}, // 잔액
             ]),
           ],
         },
@@ -67,11 +67,12 @@ export const companySalesDocDef = (companySalesData) => {
 }
 
 /**
- * 매입처 관리대장
+ * 월별매입조회
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
   return {
     pageSize: 'A4', // A4 크기 유지
+    pageMargins: [25, 20, 25, 20], // 좌 25, 상 20, 우 25, 하 20
     content: [
       {
         text: `${data.companyName}`,
@@ -90,10 +91,11 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       {
         table: {
           headerRows: 1,
-          widths: ['10%', '20%', '5%', '5%', '10%', '10%', '10%', '10%', '12%', '12%'],
+          widths: ['10%', '20%', '*', '*', '10%', '10%', '8%', '10%', '10%', '12%'],
           body: [
             ['날짜', '품명', '세액', '수량', '단가', '매입금액', '매입세액', '합계', '입금', '잔액'].map(header => ({
               text: header,
+              alignment: 'center',
             })),
             ...data.records.map((item: any) => [
               {text: item.createdAt, style: 'tableText', alignment: 'center'}, // 날짜
@@ -225,7 +227,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
   };
 };
 
-/*
+/**
 * 거래처별 매출집계
 */
 export const companySalesSumDocDef = (companySalesSumData) => {
@@ -443,7 +445,7 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
   return docDef;
 }
 
-/*
+/**
 * 거래명세서
 */
 
@@ -476,11 +478,11 @@ const basicInvoiceTable = (data, index) => {
   ]
 }
 */
-  console.log(data);
+  // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.choices.length > 12 ? 25 : 12;
+  const totalRowsNum = data.sales.length > 12 ? 25 : 12;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
-  const sum = data.choices.map((item, index) => (Number(data.amount[index].newRawMatAmount) + Number(data.amount[index].newManufactureAmount)) * item.quantity)
+  const sum = data.sales.map((item) => (Number(item.rawMatAmount) + Number(item.manufactureAmount)) * item.quantity)
   const [firstRowNames, secondRowNames] =
     data.locationName.length > 3
       ? [data.locationName.slice(0, 3), data.locationName.slice(3)]
@@ -548,15 +550,15 @@ const basicInvoiceTable = (data, index) => {
             {text: '가공단가', alignment: 'center', border: [true, false, true, true]},
             {text: '계', alignment: 'center', border: [true, false, true, true]}
           ],
-          ...data.choices.map((item, index) => [
+          ...data.sales.map((item, index) => [
             {text: `${item.productName}`},
             {text: `${item.productScale || item.scale}`},
             {text: `${item.quantity.toFixed(3)}`, alignment: 'right'},
-            {text: `${formatCurrency(data.amount[index].newRawMatAmount)}`, alignment: 'right'},
-            {text: `${formatCurrency(data.amount[index].newManufactureAmount)}`, alignment: 'right'},
+            {text: `${formatCurrency(item.rawMatAmount)}`, alignment: 'right'},
+            {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right'},
             {text: `${sum[index].toLocaleString('ko-KR')}`, alignment: 'right'},
           ]),
-          ...Array.from({length: totalRowsNum - data.choices.length}, () =>
+          ...Array.from({length: totalRowsNum - data.sales.length}, () =>
             Array.from({length: 6}, () => ({
               text: ' ',
             }))
@@ -608,7 +610,7 @@ export const invoiceDocDef = (data: any) => {
   ]
 }
   * */
-  const totalRowsNum = data.choices?.length > 12 ? 25 : 12;
+  const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
     content: [

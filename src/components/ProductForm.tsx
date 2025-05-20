@@ -4,14 +4,15 @@ import InputWithLabel from './InputWithLabel.tsx';
 import {useAlertStore} from '../stores/alertStore.ts';
 import {ProductDialogType} from '../types/dialogTypes.ts';
 import axiosInstance from '../api/axios.ts';
-import {moveFocusToNextInput} from '../utils/focus.ts';
+import {moveFocusToNextInput, moveFocusToPrevInput} from '../utils/focus.ts';
+import {Product} from '../types/productRes.ts';
 
 interface ProductFormProps {
   dialogType: ProductDialogType;
   defaultFormData?: any;
+  productList: Product[];
   productName?: string;
   prevScaleName?: string;
-  prevScales?: string[];
   isOpened: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -19,9 +20,9 @@ interface ProductFormProps {
 
 const ProductForm = ({
                        dialogType = ProductDialogType.CREATE,
+                       productList = [],
                        productName,
                        prevScaleName,
-                       prevScales,
                        isOpened,
                        onClose,
                        onSuccess,
@@ -67,12 +68,28 @@ const ProductForm = ({
         return;
       }
       const validScales = formData.scales.filter(s => s && s.trim() !== '');
+
+      // 중복 규격 검사 및 알림
+      const duplicateScales = productList
+        .find((product) => product.name === formData.name)
+        ?.scales.filter((existingScale) => validScales.includes(existingScale)) || [];
+
+      if (duplicateScales.length > 0) {
+        const dupMsg = duplicateScales.join(', ');
+        showAlert(`"${formData.name}" 품목에 이미 등록된 규격: ${dupMsg}`, 'warning');
+        return;
+      }
+
       try {
         await axiosInstance.post('/product', {
           name: formData.name,
           scales: validScales,
         });
         showAlert('등록이 완료되었습니다.', 'success');
+        setFormData({
+          name: '',
+          scales: ['', '', '', ''],
+        })
         if (onSuccess) onSuccess();
         onClose();
       } catch (err) {
@@ -83,8 +100,14 @@ const ProductForm = ({
         showAlert('새 규격명이 빈칸입니다.', 'info');
         return;
       }
+      const prevScales = productList.find((item) => item.name === productName).scales ?? [];
+      if (prevScales.includes(updateScaleName.newName)) {
+        showAlert('이미 존재하는 규격명입니다. 다른 이름으로 입력해주세요.', 'warning');
+        return;
+      }
+
       try {
-        const updatedScales = prevScales.map((scale) =>
+        const updatedScales = prevScales?.map((scale) =>
           scale === updateScaleName.prevName ? updateScaleName.newName : scale
         );
 
@@ -136,7 +159,8 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `name`,
                               onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`name`);
+                                const isComposing = e.nativeEvent.isComposing;
+                                if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`name`);
                               }
                             }}
                             value={formData.name}/>
@@ -145,7 +169,9 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `scale0`,
                               onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`scale0`);
+                                const isComposing = e.nativeEvent.isComposing;
+                                if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`scale0`);
+                                else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('scale0');
                               }
                             }}
                             onChange={(e) => handleScaleChange(0, e.target.value)}/>
@@ -154,7 +180,9 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `scale1`,
                               onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`scale1`);
+                                const isComposing = e.nativeEvent.isComposing;
+                                if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`scale1`);
+                                else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('scale1');
                               }
                             }}
                             onChange={(e) => handleScaleChange(1, e.target.value)}/>
@@ -163,7 +191,9 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `scale2`,
                               onKeyDown: (e) => {
-                                if (e.key === 'Enter') moveFocusToNextInput(`scale2`);
+                                const isComposing = e.nativeEvent.isComposing;
+                                if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`scale2`);
+                                else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('scale2');
                               }
                             }}
                             onChange={(e) => handleScaleChange(2, e.target.value)}/>
@@ -172,7 +202,9 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `scale3`,
                               onKeyDown: async (e) => {
-                                if (e.key === 'Enter') await handleSubmit();
+                                const isComposing = e.nativeEvent.isComposing;
+                                if (!isComposing && e.key === 'Enter') await handleSubmit();
+                                else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('scale3');
                               }
                             }}
                             onChange={(e) => handleScaleChange(3, e.target.value)}/>
@@ -194,7 +226,8 @@ const ProductForm = ({
                             inputProps={{
                               'data-input-id': `newName`,
                               onKeyDown: async (e) => {
-                                if (e.key === 'Enter') await handleSubmit()                             }
+                                if (e.key === 'Enter') await handleSubmit()
+                              }
                             }}
                             value={updateScaleName.newName}/>
           </>

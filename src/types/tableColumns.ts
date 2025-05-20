@@ -3,7 +3,7 @@ export interface TableColumns<T> {
   label: string;
   minWidth?: number;
   align?: 'right' | 'center';
-  format?: (value: string | string[], numValue?: number) => string;
+  format?: (value: string | string[] | number, numValue?: number) => string;
 }
 
 /*
@@ -15,7 +15,9 @@ export enum RevenueMainColumn {
   LOCATION_NAMES = 'locationNames',
   QUANTITY = 'quantity',
   RAW_MAT_AMOUNT = 'rawMatAmount',
+  TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
   MANUFACTURE_AMOUNT = 'manufactureAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   PRODUCT_LENGTH = 'productLength',
 }
 

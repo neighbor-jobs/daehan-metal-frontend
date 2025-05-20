@@ -1,5 +1,5 @@
 import {Box, Tab, Tabs} from '@mui/material';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../../types/headerMenu.ts';
 
 interface SubHeaderProps {
@@ -16,6 +16,9 @@ const SubHeader = ({subMenu, handleChange, idx}: SubHeaderProps): React.JSX.Elem
     handleChange(subMenu[newValue].value);
   };
 
+  useEffect(() => {
+    setValue(idx);
+  }, [idx]);
   // console.log('sub header value: ', value);
 
   return (

@@ -2,12 +2,13 @@ import MainHeader from './MainHeader.tsx';
 import SubHeader from './SubHeader.tsx';
 import {Box} from '@mui/material';
 import {ClientManageMenuType, MenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../../types/headerMenu.ts';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useHeaderStore} from '../../stores/headerStore.ts';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 
 const Header = (): React.JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedType, setSelectedType, setSelectedSubType } = useHeaderStore();
   const [ subNavIdx, setSubNavIdx ] = useState(0);
   const revenueManageSubMenu = Object.entries(RevenueManageMenuType).map(([key, value]) => ({
@@ -108,6 +109,58 @@ const Header = (): React.JSX.Element => {
         navigate('/');
     }
   };
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.startsWith('/revenue')) {
+      setSelectedType(MenuType.RevenueManage);
+      if (path === '/revenue') {
+        setSelectedSubType(RevenueManageMenuType.SalesDetail);
+        setSubNavIdx(0);
+      } else if (path === '/revenue/daily') {
+        setSelectedSubType(RevenueManageMenuType.DailySales);
+        setSubNavIdx(1);
+      } else if (path === '/revenue/client') {
+        setSelectedSubType(RevenueManageMenuType.ClientSales);
+        setSubNavIdx(2);
+      } else if (path === '/revenue/client-summary') {
+        setSelectedSubType(RevenueManageMenuType.ClientSalesSummary);
+        setSubNavIdx(3);
+      } else if (path === '/revenue/item') {
+        setSelectedSubType(RevenueManageMenuType.ItemSales);
+        setSubNavIdx(4);
+      } else if (path === '/revenue/item-summary') {
+        setSelectedSubType(RevenueManageMenuType.ItemSalesSummary);
+        setSubNavIdx(5);
+      } else if (path === '/revenue/client-outstanding') {
+        setSelectedSubType(RevenueManageMenuType.ClientOutstandingBalance);
+        setSubNavIdx(6);
+      }
+    }
+
+    else if (path.startsWith('/purchase')) {
+      setSelectedType(MenuType.PurchaseManage);
+      if (path === '/purchase') {
+        setSelectedSubType(PurchaseManageMenuType.PurchaseDetail);
+        setSubNavIdx(0);
+      } else if (path === '/purchase/monthly') {
+        setSelectedSubType(PurchaseManageMenuType.MonthlyPurchase);
+        setSubNavIdx(1);
+      }
+    }
+
+    else if (path.startsWith('/client')) {
+      setSelectedType(MenuType.ClientManage);
+      if (path === '/client/sales') {
+        setSelectedSubType(ClientManageMenuType.SalesManage);
+        setSubNavIdx(0);
+      } else if (path === '/client/purchase') {
+        setSelectedSubType(ClientManageMenuType.SupplierManage);
+        setSubNavIdx(1);
+      }
+    }
+  }, [location.pathname, setSelectedType, setSelectedSubType]);
 
   // console.log('main', selectedType, 'sub', selectedSubType);
 

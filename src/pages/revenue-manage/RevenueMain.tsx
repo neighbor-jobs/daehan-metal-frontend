@@ -3,12 +3,14 @@ import {
   Autocomplete,
   Box,
   Button,
-  InputLabel, Pagination,
+  InputLabel,
+  Pagination,
   Paper,
   Table,
   TableBody,
   TableCell,
-  TableContainer, TableFooter,
+  TableContainer,
+  TableFooter,
   TableHead,
   TableRow,
   TextField
@@ -44,7 +46,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     id: RevenueMainColumn.LOCATION_NAMES,
     label: '현장명',
     minWidth: 140,
-    format: (value: string[]) => value.join(', ')
+    format: (value: string[] | undefined) => value?.length > 0 ? value.join(', ') : ''
   },
   {
     id: RevenueMainColumn.QUANTITY,
@@ -61,12 +63,26 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     format: formatCurrency,
   },
   {
+    id: RevenueMainColumn.TOTAL_RAW_MAT_AMOUNT,
+    label: '재료비',
+    minWidth: 100,
+    align: 'right',
+    format: (amount: number) => amount?.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  },
+  {
     id: RevenueMainColumn.MANUFACTURE_AMOUNT,
     label: '가공단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
+  {
+    id: RevenueMainColumn.TOTAL_MANUFACTURE_AMOUNT,
+    label: '가공비',
+    minWidth: 100,
+    align: 'right',
+    format: (amount: number) => Math.floor(amount)?.toLocaleString()
+  }
 ];
 
 const RevenueMain = (): React.JSX.Element => {
@@ -80,6 +96,7 @@ const RevenueMain = (): React.JSX.Element => {
     sequence: 1,
   });
   const [report, setReport] = useState([]);
+  const [reportId, setReportId] = useState('');
   const [prevChoices, setPrevChoices] = useState<Choice[] | []>([]);
   const [endSeq, setEndSeq] = useState<number>(1);
   const [amount, setAmount] = useState({
@@ -94,10 +111,9 @@ const RevenueMain = (): React.JSX.Element => {
     createdAt: string,
     carryoverAmount: string,
     totalSalesAmount: string,
-    choices: any[],
-    amount: any[],
+    sales: any[],
   } | null>();
-  const { showAlert } = useAlertStore();
+  const {showAlert} = useAlertStore();
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -114,31 +130,37 @@ const RevenueMain = (): React.JSX.Element => {
       ...prev,
       sequence: value,
     }))
-    getReceipt(value);
+    getReceipt(formData.companyName, formData.startAt, value);
   }
   // api
-  const getReceipt = async (sequence = 1) => {
-    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${formData.companyName}&orderBy=desc&startAt=${formData.startAt}&sequence=${sequence}`);
+  const getReceipt = async (companyName: string, startAt: string, sequence: number = 1) => {
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=${sequence}`);
 
     if (res.data.statusCode === 204) {
-      setReport([]);
+      /*setReport([]);
+      setReportId('');
       setAmount({
         totalPayingAmount: "0",
         totalSalesAmount: "0",
         carryoverAmount: "0"
       });
       setPrintData(null);
-      setEndSeq(1);
+      setEndSeq(1);*/
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
-    const latestReports = res.data.data.reports;
+    const latestReports = res.data.data?.reports?.map((report) => ({
+      ...report,
+      totalRawMatAmount: Number(report.rawMatAmount) * report.quantity,
+      totalManufactureAmount: Number(report.manufactureAmount) * report.quantity,
+    }));
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const simplifiedReport = latestReports.map(({ receiptId, locationNames, companyName, createdAt, ...rest }) => rest);
+    const simplifiedReport = latestReports.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => rest);
 
     setEndSeq(res.data.data.endSequence);
     setReport(latestReports);
+    setReportId(res.data.data.id);
     setPrevChoices(simplifiedReport);
     setAmount({
       totalPayingAmount: res.data.data.totalPayingAmount,
@@ -152,19 +174,15 @@ const RevenueMain = (): React.JSX.Element => {
       carryoverAmount: res.data.data.carryoverAmount,
       totalSalesAmount: res.data.data.totalSalesAmount,
       createdAt: formData.startAt,
-      choices: res.data.data.reports,
-      amount: res.data.data.reports.map((item) => ({
-        newRawMatAmount: item.rawMatAmount,
-        newManufactureAmount: item.manufactureAmount,
-      }))
+      sales: res.data.data.reports,
     })
   }
 
   const deleteReceipt = async () => {
     try {
-      await axiosInstance.delete(`/receipt?id=${report[0].receiptId}`);
+      await axiosInstance.delete(`/receipt?id=${reportId}`);
       showAlert('삭제되었습니다.', 'success');
-      await getReceipt();
+      await getReceipt(formData.companyName, formData.startAt);
       setFormData((prev) => ({
         ...prev,
         sequence: 1,
@@ -211,6 +229,7 @@ const RevenueMain = (): React.JSX.Element => {
               views={['day']}
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
+              value={dayjs(formData.startAt)}
               onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {size: 'small'},
@@ -234,7 +253,7 @@ const RevenueMain = (): React.JSX.Element => {
         <Button
           variant="outlined"
           onClick={() => {
-            getReceipt(formData.sequence);
+            getReceipt(formData.companyName, formData.startAt, formData.sequence);
             setDialogType('create');
           }}
         >
@@ -274,7 +293,12 @@ const RevenueMain = (): React.JSX.Element => {
                         );
                       })}
                       <TableCell align='right'>
-                        {((Number(row.manufactureAmount) + Number(row.rawMatAmount)) * row.quantity).toLocaleString('ko-KR')}
+                        {
+                          (
+                            Math.round(Number(row.rawMatAmount) * row.quantity) +
+                            Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                          ).toLocaleString('ko-KR')
+                        }
                       </TableCell>
                     </TableRow>
                   );
@@ -300,13 +324,13 @@ const RevenueMain = (): React.JSX.Element => {
         marginTop: 4,
         marginX: 3,
       }}>
-        <Box sx={{ width: '33%' }} />
-        <Box sx={{ display: 'flex', justifyContent: 'center', width: '33%' }}>
-          <Pagination count={endSeq} shape="rounded" onChange={handlePageChange}/>
+        <Box sx={{width: '33%'}}/>
+        <Box sx={{display: 'flex', justifyContent: 'center', width: '33%'}}>
+          <Pagination page={formData.sequence} count={endSeq} shape="rounded" onChange={handlePageChange}/>
         </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%' }}>
+        <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2, width: '33%'}}>
           <Button variant='outlined'
-                  disabled={report.length === 0}
+                  disabled={reportId.length === 0}
                   onClick={() => {
                     setDialogType('edit');
                     setOpenDialog(true);
@@ -336,17 +360,21 @@ const RevenueMain = (): React.JSX.Element => {
                            salesCompanyList={salesCompanyList}
                            productList={productList}
                            prevFormData={{
-                             id: report[0]?.receiptId || '',
+                             id: reportId || '',
+                             sequence: formData.sequence,
                              locationName: report[0]?.locationNames || [],
                              companyName: formData.companyName,
                              createdAt: formData.startAt,
                              payingAmount: amount.totalPayingAmount,
                            }}
                            prevChoices={prevChoices}
-                           onSuccess={async () => {
-                             if (dialogType === 'edit') {
-                               await getReceipt(formData.sequence);
-                             }
+                           onSuccess={async (companyName: string, startAt: string, sequence: number = 1) => {
+                             await getReceipt(companyName, startAt, sequence);
+                             setFormData({
+                               startAt: startAt,
+                               companyName: companyName,
+                               sequence: sequence,
+                             });
                            }}
       />
     </Box>

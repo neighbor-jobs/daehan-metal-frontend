@@ -39,7 +39,6 @@ const ProductMain = (): React.JSX.Element => {
   const [editScale, setEditScale] = useState({
     prodName: '',
     prevScaleName: '',
-    prevScales: [] as string[],
   });
   const [page, setPage] = useState({
     page: 1,
@@ -50,11 +49,17 @@ const ProductMain = (): React.JSX.Element => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const formatProdList = useMemo(() =>
     productList.flatMap((item) =>
-      item.scales.map((scale) => ({
-        id: item.id,
-        name: item.name,
-        scale,
-      }))
+      item.scales.length > 0
+        ? item.scales.map((scale) => ({
+          id: item.id,
+          name: item.name,
+          scale,
+        }))
+        : {
+          id: item.id,
+          name: item.name,
+
+        }
     ), [productList]
   );
 
@@ -64,11 +69,10 @@ const ProductMain = (): React.JSX.Element => {
     setOpen(true);
   }
 
-  const handleEditProdName = (prodName: string, prevScaleName: string, prevScales: string[]) => {
+  const handleEditProdName = (prodName: string, prevScaleName: string) => {
     setEditScale({
       prodName: prodName,
       prevScaleName: prevScaleName,
-      prevScales: prevScales,
     })
     setDialogType(ProductDialogType.EDIT);
     setOpen(true);
@@ -93,16 +97,25 @@ const ProductMain = (): React.JSX.Element => {
       ...prev,
       totalPages: products.data.data.totalPages,
     }))
+    return products.data.data;
   }
 
-  const delProduct = async (scale: string, name: string) => {
+  const delProduct = async (id: string, scale: string, name: string) => {
+    console.log(scale);
     try {
-      await axiosInstance.patch(`/product/scale/remove`, {
-        name: name,
-        scale: scale,
-      })
+      if (scale) {
+        await axiosInstance.patch(`/product/scale/remove`, {
+          name: name,
+          scale: scale,
+        })
+      } else {
+        await axiosInstance.delete(`/product?id=${id}`);
+      }
       showAlert('삭제 완료', 'success');
-      await getProductList();
+      const res= await getProductList(page.page);
+
+      // 삭제 후에 (전체 페이지 < 현재 페이지) 면 마지막 페이지 불러오기
+      if (res.totalPages < page.page) await getProductList(page.totalPages);
     } catch {
       showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
@@ -113,7 +126,8 @@ const ProductMain = (): React.JSX.Element => {
   }, []);
 
   // debug
-  // console.log(editScale);
+  // console.log(formatProdList);
+  console.log(page.totalPages);
 
   return (
     <Box>
@@ -135,9 +149,9 @@ const ProductMain = (): React.JSX.Element => {
       {/* dialog */}
       <ProductForm dialogType={dialogType}
                    isOpened={open}
+                   productList={productList}
                    productName={editScale.prodName}
                    prevScaleName={editScale.prevScaleName}
-                   prevScales={editScale.prevScales}
                    onClose={() => setOpen(false)}
                    onSuccess={async () => {
                      await getProductList(page.page);
@@ -182,14 +196,13 @@ const ProductMain = (): React.JSX.Element => {
                       <TableCell sx={{padding: '0'}}>
                         <IconButton size='small'
                                     onClick={() => {
-                                      const matchedProduct = productList.find(p => p.name === row.name);
-                                      handleEditProdName(row.name, row.scale, matchedProduct?.scales ?? [])
+                                      handleEditProdName(row.name, row.scale)
                                     }}
                         >
                           <EditIcon fontSize='small'/>
                         </IconButton>
                         <IconButton size='small' color='error'
-                                    onClick={() => delProduct(row.scale, row.name)}
+                                    onClick={() => delProduct(row.id, row.scale, row.name)}
                         >
                           <CloseIcon fontSize='small'/>
                         </IconButton>

@@ -116,8 +116,12 @@ const ItemSales = (): React.JSX.Element => {
       : `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`
 
     const res: AxiosResponse = await axiosInstance.get(url);
+    const sortedList = res.data.data?.sort((a, b) => {
+      return dayjs(a.salesReport.createdAt).diff(dayjs(b.salesReport.createdAt))
+    });
+
     let m: number = 0, r: number = 0, s: number = 0;
-    setProductReports(res.data.data.map((item) => {
+    setProductReports(sortedList.map((item) => {
       r += Number(item.totalRawMatAmount);
       m += Number(item.totalManufactureAmount);
       s += Number(item.totalSalesAmount);
