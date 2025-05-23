@@ -37,3 +37,11 @@ export enum ClientManageMenuType {
 }
 
 export const clientManageTypeArr = Object.entries(ClientManageMenuType).map(([key, value]) => ({key, value}));
+
+/** 임시 직원 템플릿 메뉴 */
+export enum EmployeeMenuType {
+  Payment = '급여명세서',
+  PayrollRegister = '급여대장',
+}
+
+export const emplyeeManageTypeArr = Object.entries(EmployeeMenuType).map(([key, value]) => ({ key, value }))

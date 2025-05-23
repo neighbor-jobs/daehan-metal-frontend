@@ -309,9 +309,234 @@ const MonthlyPurchase = (): React.JSX.Element => {
       />
       <Box sx={{position: 'fixed', bottom: 16, right: 16, display: 'flex', gap: 2}}>
         <PrintButton printData={{...selectedCompanyData, records: records}} value='인쇄'/>
+        {/* <PrintButton printData={paymentTestData} value='인쇄'/> */}
+        {/* <PrintButton printData={docData} value='인쇄'/> */}
       </Box>
     </Box>
   )
+}
+
+/// 아래는 급여 대장 및 명세관련 테스트 데이터
+import { IEmployeePayment, IPayrollRegister, IFinancialLedger, IIntegrationDoc } from '../../../electron/templetes.ts';
+
+/** 급여명세서 테스트 데이터 */
+const paymentTestData: IEmployeePayment = {
+  id: "101bfcef-df7d-47e9-8683-99739c812be8",
+  memo: "23/03/01퇴사",
+  employeeName: "이우석",
+  employeePosition: "생산직",
+  paymentDetail: {
+    pay: "2.000.000",
+    workingDay: 209,
+    hourlyWage: "14.388",
+    mealAllowance: "9.000",
+    extendWokringWage: "43.164",
+    extendWorkingTime: 2,
+    dayOffWorkingWage: "43.164",
+    dayOffWorkingTime: 2,
+    annualLeaveAllowance: "230.208",
+  },
+  deductionDetail: [
+    {
+      purpose: "근로 소득세",
+      value: "12.678",
+    },
+    {
+      purpose: "지방세",
+      value: "1.260",
+    },
+    {
+      purpose: "건강보험료",
+      value: "71.060",
+    },
+    {
+      purpose: "국민연금",
+      value: "82.840",
+    },
+    {
+      purpose: "경조사비",
+      value: "20.000",
+    },
+    {
+      purpose: "경로,가불",
+      value: "104.240",
+    },
+  ],
+  salary: "2,316,536",
+  deduction: "292.078",
+  totalSalary: "2,024,458",
+}
+
+/** 급여내역 테스트 데이터 */
+const payrollRegisterData: IPayrollRegister = {
+  id: "101bfcef-df7d-47e9-8683-99739c812be8",
+  payments: [
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+    paymentTestData,
+  ],
+  createdAt: new Date()
+}
+
+/** 지출내역 테스트 데이터 */
+const financialLedgerData: IFinancialLedger = {
+  id: "101bfcef-df7d-47e9-8683-99739c812be8",
+  payingExpenses: [
+    {
+      purpose: "5월 급여",
+      value: "10.000.000",
+      group: "5일",
+    },
+    {
+      purpose: "사장님 급여",
+      value: "5.000.000",
+      group: "5일",
+    },
+    {
+      purpose: "회계사무실",
+      value: "3.000.000",
+      group: "5일",
+    },
+    {
+      purpose: "식대",
+      value: "800.000",
+      group: "5일",
+    },
+    {
+      purpose: "용달",
+      value: "2.500.000",
+      group: "5일",
+    },
+    {
+      purpose: "현대보험",
+      value: "250.000",
+      group: "5일",
+    },
+    {
+      purpose: "세콤",
+      value: "200.000",
+      group: "10일",
+    },
+    {
+      purpose: "정수기",
+      value: "300.000",
+      group: "10일",
+    },
+    {
+      purpose: "국민연금",
+      value: "4.500.000",
+      group: "10일",
+    },
+    {
+      purpose: "고용산재",
+      value: "200.000",
+      group: "10일",
+    },
+    {
+      purpose: "LIG암보험",
+      value: "150.000",
+      group: "10일",
+    },
+    {
+      purpose: "화재보험",
+      value: "300.000",
+      group: "10일",
+    },
+    {
+      purpose: "건강보험",
+      value: "250.000",
+      group: "10일",
+    },
+    {
+      purpose: "출국만기보험",
+      value: "300.000",
+      group: "11~25일",
+    },
+    {
+      purpose: "제네시스할부금",
+      value: "1.250.000",
+      group: "5일",
+    },
+    {
+      purpose: "마이너스 통장",
+      value: "12.500.000",
+      group: "5일",
+    },
+    {
+      purpose: "3.6.9.12월\n분기별 이자",
+      value: "1.800.000",
+      group: "5일",
+    },
+    {
+      purpose: "대출이자",
+      value: "1.500.000",
+      group: "5일",
+    },
+    {
+      purpose: "삼성화재",
+      value: "500.000",
+      group: "11~25일",
+    },
+    {
+      purpose: "통신비",
+      value: "50.000",
+      group: "11~25일",
+    },
+    {
+      purpose: "전기료",
+      value: "1.000.000",
+      group: "11~25일",
+    },
+    {
+      purpose: "수도세",
+      value: "200.000",
+      group: "11~25일",
+    },
+    {
+      purpose: "갑근세",
+      value: "2.500.000",
+      group: "5일",
+    },
+    {
+      purpose: "경조사비",
+      value: "500.000",
+      group: "5일",
+    },
+    {
+      purpose: "퇴직연금",
+      value: "30.000.000",
+      group: "5일",
+    },
+    {
+      purpose: "공기청정기",
+      value: "500.000",
+      group: "5일",
+    },
+    {
+      purpose: "카드값",
+      value: "5.500.000",
+      group: "카드값",
+    },
+  ],
+  deductionExpenses: [],
+  calcGroup: {
+    "카드값": 5500000,
+    "5일": 58100000,
+    "10일": 5900000,
+    "11~25일": 2050000,
+  },
+  createdAt: new Date(),
+}
+
+/** 급여대장 테스트 데이터 */
+const docData: IIntegrationDoc = {
+  payrollRegister: payrollRegisterData,
+  financialLedger: financialLedgerData,
 }
 
 export default MonthlyPurchase;

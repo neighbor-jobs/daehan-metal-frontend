@@ -13,9 +13,10 @@ import {
   companySalesSumDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
-  outstandingAmountDocDef, purchaseReceiptDocRef
+  outstandingAmountDocDef, payrollRegisterDocRef, purchaseReceiptDocRef,
+  salaryDocRef
 } from './templetes.ts';
-import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
+import {ClientManageMenuType, EmployeeMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {productStore} from './store/productStore.ts';
 
@@ -154,7 +155,7 @@ pdfMake.fonts = {
   },
 };
 
-ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType , data) => {
+ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | EmployeeMenuType , data) => {
   return new Promise((resolve, reject) => {
     let docDefinition: TDocumentDefinitions;
     switch (printType) {
@@ -178,6 +179,14 @@ ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuTy
         break;
       case PurchaseManageMenuType.MonthlyPurchase:
         docDefinition = purchaseReceiptDocRef(data)
+        break;
+      /** 임시 급여명세서 pdf 케이스 */
+      case EmployeeMenuType.Payment:
+        docDefinition = salaryDocRef(data)
+        break;
+      /** 임시 급여대장 pdf 케이스 */
+      case EmployeeMenuType.PayrollRegister:
+        docDefinition = payrollRegisterDocRef(data)
         break;
       default:
         throw new Error(`Unknown print type: ${printType}`);

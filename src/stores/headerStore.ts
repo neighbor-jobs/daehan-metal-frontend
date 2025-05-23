@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import {ClientManageMenuType, MenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../types/headerMenu.ts';
+import {ClientManageMenuType, EmployeeMenuType, MenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../types/headerMenu.ts';
 
 interface HeaderState {
   selectedType: MenuType | null;
   setSelectedType: (type: MenuType | null) => void;
-  selectedSubType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | null;
+  selectedSubType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | EmployeeMenuType | null;
   setSelectedSubType: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | null) => void;
 }
 
