@@ -133,8 +133,8 @@ const ClientOutstandingBalance = ():React.JSX.Element => {
           }}>
             <InputLabel sx={{fontSize: 'small',}}>검색일자</InputLabel>
             <DesktopDatePicker
-              views={['day']}
-              format="YYYY/MM/DD"
+              views={['month']}
+              format="YYYY/MM"
               defaultValue={dayjs()}
               onChange={(value) => setStartAt(value)}
               slotProps={{

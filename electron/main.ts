@@ -17,7 +17,7 @@ import {
 } from './templetes.ts';
 import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
-import {productStore} from './store/productStore.ts';
+import {amountStore} from './store/amountStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,14 +50,14 @@ let win: BrowserWindow | null
 function createWindow() {
   win = new BrowserWindow({
     // fullscreen: true,
+    width: 1000,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       webSecurity: false,
     },
   })
-
-  win.maximize();
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
@@ -94,7 +94,7 @@ app.on('activate', () => {
 app.whenReady().then(async () => {
   createWindow();
   await companyStore.initialize();
-  await productStore.initialize();
+  // TODO: amountStore 초기화 함수 작성 수 넣기
 });
 
 // 데이터 가져오기
@@ -133,11 +133,8 @@ ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
 * ======================== 품목 관련 ==========================
 * */
 
-ipcMain.handle('get-products', () => productStore.getProducts());
-ipcMain.handle('add-product', (_event, newProduct) => {
-  productStore.addProduct(newProduct);
-})
-ipcMain.handle('fetch-and-update-products', () => productStore.fetchAndUpdateProducts());
+// TODO: amount store 함수 들어갈거임
+ipcMain.handle('get-all', () => amountStore.getAll());
 
 /*
 * ======================== 인쇄 관련 ==========================
