@@ -1,0 +1,36 @@
+export interface PostEmployee {
+  banks?: PostBank[] | [],
+  info: {
+    name: string;
+    age: string | number;
+    countryCode: string;
+    position: string;
+    email?: string | null;
+    address?: string | null;
+    birth?: string | null;
+    phoneNumber?: string | null;
+  },
+  startWorkingAt: string;
+}
+
+interface PostBank {
+  accountNumber: string;
+  accountOwner: string;
+  bankName: string;
+}
+
+export interface PatchEmployee {
+  id: string;
+  info: {
+    name: string;
+    age: string | number;
+    countryCode: string;
+    position: string;
+    email?: string | null;
+    address?: string | null;
+    birth?: string | null;
+    phoneNumber?: string | null;
+  },
+  startWorkingAt: string;
+  retirementAt: string;
+}
