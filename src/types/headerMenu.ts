@@ -3,6 +3,7 @@ export enum MenuType {
   PurchaseManage = '매입관리',
   InventoryManage = '품목관리',
   ClientManage = '거래처관리',
+  AccountingManage = '회계관리'
 }
 
 export const menuTypeArr = Object.entries(MenuType).map(([key, value]) => ({key, value}));
@@ -36,3 +37,9 @@ export enum ClientManageMenuType {
 }
 
 export const clientManageTypeArr = Object.entries(ClientManageMenuType).map(([key, value]) => ({key, value}));
+
+export enum AccountingManageMenuType {
+  PayrollDetail = '급여대장조회',
+  PayrollRegister = '급여대장생성',
+  EmployeeManage = '근로자관리'
+}

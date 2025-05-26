@@ -7,6 +7,8 @@ import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 import ProductMain from './pages/product-manage/ProductMain.tsx';
 import PurchaseMain from './pages/purchase-manage/PurchaseMain.tsx';
 import PurchaseCompany from './pages/company-manage/PurchaseCompany.tsx';
+import EmployeeManagement from './pages/accounting-manage/EmployeeManagement.tsx';
+import PayrollLedger from './pages/accounting-manage/PayrollLedger.tsx';
 
 // lazy
 const DailySales = lazy(() => import('./pages/revenue-manage/DailySales'));
@@ -100,7 +102,25 @@ const routes = createHashRouter([
             element: <PurchaseCompany />
           }
         ]
+      },
+      {
+        path: 'account',
+        children: [
+          {
+            path: 'payroll',
+            element: <PayrollLedger />
+          },
+          {
+            path: 'payroll-new',
+            element: <></>
+          },
+          {
+            path: 'employee',
+            element: <EmployeeManagement />
+          }
+        ]
       }
+
     ]
   }
 ]);

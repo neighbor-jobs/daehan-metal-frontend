@@ -1,7 +1,13 @@
 import MainHeader from './MainHeader.tsx';
 import SubHeader from './SubHeader.tsx';
 import {Box} from '@mui/material';
-import {ClientManageMenuType, MenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../../types/headerMenu.ts';
+import {
+  AccountingManageMenuType,
+  ClientManageMenuType,
+  MenuType,
+  PurchaseManageMenuType,
+  RevenueManageMenuType
+} from '../../types/headerMenu.ts';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useHeaderStore} from '../../stores/headerStore.ts';
 import {useEffect, useState} from 'react';
@@ -9,8 +15,8 @@ import {useEffect, useState} from 'react';
 const Header = (): React.JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedType, setSelectedType, setSelectedSubType } = useHeaderStore();
-  const [ subNavIdx, setSubNavIdx ] = useState(0);
+  const {selectedType, setSelectedType, setSelectedSubType} = useHeaderStore();
+  const [subNavIdx, setSubNavIdx] = useState(0);
   const revenueManageSubMenu = Object.entries(RevenueManageMenuType).map(([key, value]) => ({
     key, value,
   }));
@@ -20,6 +26,9 @@ const Header = (): React.JSX.Element => {
   const clientManageSubMenu = Object.entries(ClientManageMenuType).map(([key, value]) => ({
     key, value,
   }));
+  const accountManageSubMenu = Object.entries(AccountingManageMenuType).map(([key, value]) => ({
+    key, value,
+  }))
 
   // handler
   const handleMainNav = (menuType: MenuType) => {
@@ -41,14 +50,19 @@ const Header = (): React.JSX.Element => {
         navigate('/client/sales');
         setSelectedSubType(ClientManageMenuType.SalesManage);
         break;
+      case MenuType.AccountingManage:
+        navigate('/account/payroll');
+        setSelectedSubType(AccountingManageMenuType.PayrollDetail);
+        break;
       default:
         navigate('/');
     }
   };
 
-  const handleSubNav = (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType) => {
+  const handleSubNav = (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | AccountingManageMenuType) => {
     setSelectedSubType(subType);
     switch (subType) {
+      /* 매출 관리 */
       case RevenueManageMenuType.SalesDetail :
         navigate('/revenue');
         setSubNavIdx(0);
@@ -77,6 +91,8 @@ const Header = (): React.JSX.Element => {
         navigate('/revenue/client-outstanding');
         setSubNavIdx(6);
         break;
+
+      /* 매입 관리 */
       case PurchaseManageMenuType.PurchaseDetail:
         navigate('/purchase');
         setSubNavIdx(0);
@@ -89,14 +105,8 @@ const Header = (): React.JSX.Element => {
         navigate('/purchase/monthly');
         setSubNavIdx(1);
         break;
-      /*case PurchaseManageMenuType.ClientPurchase:
-        navigate('/purchase/client');
-        setSubNavIdx(1);
-        break;
-      case PurchaseManageMenuType.ClientPurchaseSummary:
-        navigate('/purchase/client-summary');
-        setSubNavIdx(2);
-        break;*/
+
+      /* 거래처 관리 */
       case ClientManageMenuType.SalesManage:
         navigate('/client/sales');
         setSubNavIdx(0);
@@ -105,6 +115,21 @@ const Header = (): React.JSX.Element => {
         navigate('/client/purchase');
         setSubNavIdx(1);
         break;
+
+      /* 회계 관리 */
+      case AccountingManageMenuType.PayrollDetail:
+        navigate('account/payroll');
+        setSubNavIdx(0);
+        break;
+      case AccountingManageMenuType.PayrollRegister:
+        navigate('/account/payroll-new');
+        setSubNavIdx(1);
+        break;
+      case AccountingManageMenuType.EmployeeManage:
+        navigate('/account/employee');
+        setSubNavIdx(2);
+        break;
+
       default:
         navigate('/');
     }
@@ -137,9 +162,7 @@ const Header = (): React.JSX.Element => {
         setSelectedSubType(RevenueManageMenuType.ClientOutstandingBalance);
         setSubNavIdx(6);
       }
-    }
-
-    else if (path.startsWith('/purchase')) {
+    } else if (path.startsWith('/purchase')) {
       setSelectedType(MenuType.PurchaseManage);
       if (path === '/purchase') {
         setSelectedSubType(PurchaseManageMenuType.PurchaseDetail);
@@ -148,9 +171,7 @@ const Header = (): React.JSX.Element => {
         setSelectedSubType(PurchaseManageMenuType.MonthlyPurchase);
         setSubNavIdx(1);
       }
-    }
-
-    else if (path.startsWith('/client')) {
+    } else if (path.startsWith('/client')) {
       setSelectedType(MenuType.ClientManage);
       if (path === '/client/sales') {
         setSelectedSubType(ClientManageMenuType.SalesManage);
@@ -159,17 +180,32 @@ const Header = (): React.JSX.Element => {
         setSelectedSubType(ClientManageMenuType.SupplierManage);
         setSubNavIdx(1);
       }
+    } else if (path.startsWith('/account')) {
+      setSelectedType(MenuType.AccountingManage);
+      if (path === '/account/payroll') {
+        setSelectedSubType(AccountingManageMenuType.PayrollDetail);
+        setSubNavIdx(0);
+      } else if (path === '/account/payroll-new') {
+        setSelectedSubType(AccountingManageMenuType.PayrollRegister);
+        setSubNavIdx(1);
+      } else if (path === '/account/employee') {
+        setSelectedSubType(AccountingManageMenuType.EmployeeManage);
+        setSubNavIdx(2);
+      }
     }
   }, [location.pathname, setSelectedType, setSelectedSubType]);
-
-  // console.log('main', selectedType, 'sub', selectedSubType);
 
   return (
     <Box>
       <MainHeader handleNavigate={handleMainNav}/>
-      {selectedType === MenuType.RevenueManage && <SubHeader subMenu={revenueManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
-      {selectedType === MenuType.PurchaseManage && <SubHeader subMenu={purchaseManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
-      {selectedType === MenuType.ClientManage && <SubHeader subMenu={clientManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
+      {selectedType === MenuType.RevenueManage &&
+        <SubHeader subMenu={revenueManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
+      {selectedType === MenuType.PurchaseManage &&
+        <SubHeader subMenu={purchaseManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
+      {selectedType === MenuType.ClientManage &&
+        <SubHeader subMenu={clientManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
+      {selectedType === MenuType.AccountingManage &&
+        <SubHeader subMenu={accountManageSubMenu} handleChange={handleSubNav} idx={subNavIdx}/>}
     </Box>
   )
 }

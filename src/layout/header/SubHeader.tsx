@@ -1,10 +1,15 @@
 import {Box, Tab, Tabs} from '@mui/material';
 import {useEffect, useState} from 'react';
-import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../../types/headerMenu.ts';
+import {
+  AccountingManageMenuType,
+  ClientManageMenuType,
+  PurchaseManageMenuType,
+  RevenueManageMenuType
+} from '../../types/headerMenu.ts';
 
 interface SubHeaderProps {
-  subMenu: { key: string, value: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType }[]
-  handleChange: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType) => void
+  subMenu: { key: string, value: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | AccountingManageMenuType }[]
+  handleChange: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | AccountingManageMenuType) => void
   idx: number
 }
 

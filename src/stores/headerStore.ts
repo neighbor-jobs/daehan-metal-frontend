@@ -1,11 +1,17 @@
 import { create } from 'zustand';
-import {ClientManageMenuType, MenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../types/headerMenu.ts';
+import {
+  AccountingManageMenuType,
+  ClientManageMenuType,
+  MenuType,
+  PurchaseManageMenuType,
+  RevenueManageMenuType
+} from '../types/headerMenu.ts';
 
 interface HeaderState {
   selectedType: MenuType | null;
   setSelectedType: (type: MenuType | null) => void;
-  selectedSubType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | null;
-  setSelectedSubType: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | null) => void;
+  selectedSubType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | AccountingManageMenuType | null;
+  setSelectedSubType: (subType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType | AccountingManageMenuType | null) => void;
 }
 
 export const useHeaderStore = create<HeaderState>((set) => ({
