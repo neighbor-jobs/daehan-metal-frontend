@@ -8,7 +8,7 @@ export interface Payment {
   id: string;
   employeeName: string;
   employeePosition: string;
-  memo: string;
+  memo?: string;
   paymentDetail: PaymentDetail;
   deductionDetail: DeductionDetail[];
   salary: string;

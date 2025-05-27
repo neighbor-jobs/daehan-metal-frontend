@@ -14,30 +14,65 @@ import {
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
+import {PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
 import axiosInstance from '../../api/axios.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
+import {Payment} from '../../types/payrollRes.ts';
 
-const labels = [
-  '기본급',
-  '시급 1시간',
-  '연장 근무 시간',
-  '연장 수당',
-  '휴일 근무 시간',
-  '휴일 근무 수당',
-  '연차 수당',
-  '식대',
-  '합계',
-  '소득세',
-  '주민세',
-  '건강보험료(요양포함)',
-  '국민연금',
-  '고용보험',
-  '24년연말정산',
-  '지급액계',
-  '수령액',
+const leftRows: readonly TableColumns<PaymentTableRow>[] = [
+  {
+    id: PaymentTableRow.PAY,
+    label: '기본급',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.HOURLY_WAGE,
+    label: '시급1시간',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.EXTEND_WORKING_TIME,
+    label: '연장근무시간',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.EXTEND_WORKING_AMOUNT,
+    label: '연장수당',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.DAY_OFF_WORKING_TIME,
+    label: '휴일근무시간',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.DAY_OFF_WORKING_AMOUNT,
+    label: '휴일근무수당',
+    minWidth: 100,
+    disabled: true,
+  },
+  {
+    id: PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_AMOUNT,
+    label: '연차수당',
+    minWidth: 100,
+    disabled: true,
+  },
+  {
+    id: PaymentTableRow.MEAL_ALLOWANCE,
+    label: '식대',
+    minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.TOTAL_PAYMENT,
+    label: '합계',
+    minWidth: 100,
+    disabled: true,
+  }
 ];
 
+// 지출내역
 interface ExpenseItem {
   leftTitle?: string;
   leftNote?: string;
@@ -66,8 +101,33 @@ const expenseData: ExpenseItem[] = [
 
 const PayrollLedger = (): React.JSX.Element => {
   const navigate = useNavigate();
+  const [payrollId, setPayrollId] = useState<string>();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [standardAt, setStandardAt] = React.useState(dayjs().format('YYYY-MM-DD'));
   const employees = ['가나다', '박박박', '홍길동', '가나다', '박박박', '홍길동', '가나다', '박박박', '홍길동', '가나다', '박박박', '홍길동', '가나다', '박박박', '홍길동', '가나다', '박박박', '홍길동',];
+  const {showAlert} = useAlertStore();
 
+  const getPayroll = async () => {
+    try {
+      const res = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${standardAt}`);
+      setPayrollId(res.data.data.id);
+      setPayments(res.data.data.payments);
+    } catch {
+      showAlert('급여대장 정보 불러오기 실패', 'error');
+    }
+  }
+
+  const deletePayroll = async () => {
+    try {
+      const res = await axiosInstance.delete(`/payroll?id=${payrollId}`);
+    } catch {
+      showAlert('급여대장 삭제 실패. 다시 시도해 주세요.', 'error');
+    }
+  }
+
+  useEffect(() => {
+    getPayroll();
+  }, []);
 
   return (
     <Box>
@@ -123,14 +183,13 @@ const PayrollLedger = (): React.JSX.Element => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {labels.map((label, rowIdx) => (
+                {leftRows.map((row, rowIdx) => (
                   <TableRow key={rowIdx}>
-                    <TableCell sx={{borderRight: '1px solid lightgray'}}>{label}</TableCell>
+                    <TableCell sx={{borderRight: '1px solid lightgray'}}>{row.label}</TableCell>
                     {employees.map((emp, colIdx) => (
                       <TableCell key={colIdx} align="center"
                                  sx={{ borderRight: '1px solid lightgray'}}
                       >
-                        {/* 실제 데이터 매핑은 라벨에 따라 조절 */}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -194,13 +253,18 @@ const PayrollLedger = (): React.JSX.Element => {
       {/* 버튼들 */}
       <Box sx={{
         display: 'flex',
-        justifyContent: 'right',
+        justifyContent: 'space-between',
         gap: 2,
         my: 1,
         mx: 2
       }}
       >
-        <Button variant='contained'>급여대장 등록</Button>
+        <Button variant='contained'
+                color='error'
+                onClick={deletePayroll}
+        >
+          삭제
+        </Button>
         <Button variant='contained'>인쇄</Button>
       </Box>
     </Box>

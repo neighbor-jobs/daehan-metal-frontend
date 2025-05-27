@@ -3,7 +3,8 @@ export interface TableColumns<T> {
   label: string;
   minWidth?: number;
   align?: 'right' | 'center';
-  format?: (value: string | string[] | number, numValue?: number) => string;
+  format?: (value: string | string[] | number, numValue?: number) => string | number;
+  disabled?: boolean;
 }
 
 /*
@@ -12,13 +13,27 @@ export interface TableColumns<T> {
 export enum PaymentTableRow {
   PAY = 'pay',
   WORKING_DAY = 'workingDay',
+  HOURLY_WAGE = 'hourlyWage',
   EXTEND_WORKING_TIME = 'extendWorkingTime',
   EXTEND_WORKING_MULTI = 'extendWorkingMulti',
+  EXTEND_WORKING_AMOUNT = 'extendWorkingAmount',
   DAY_OFF_WORKING_TIME = 'dayOffWorkingTime',
   DAY_OFF_WORKING_MULTI = 'dayOffWorkingMulti',
+  DAY_OFF_WORKING_AMOUNT = 'dayOffWorkingAmount',
   ANNUAL_LEAVE_ALLOWANCE_MULTI = 'annualLeaveAllowanceMulti',
+  ANNUAL_LEAVE_ALLOWANCE_AMOUNT = 'annualLeaveAllowanceAmount',
   MEAL_ALLOWANCE = 'mealAllowance',
+  TOTAL_PAYMENT = 'totalPayment',
 }
+
+export const defaultDeductionList = [
+  '소득세',
+  '주민세',
+  '건강보험료(요양포함)',
+  '국민연금',
+  '고용보험',
+  '작년연말정산'
+]
 
 /*
 * ==================== 근무자 관리 ========================
@@ -107,6 +122,7 @@ export enum ItemSalesSummaryColumn {
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   TOTAL_SALES_AMOUNT = 'totalSalesAmount',
 }
+
 /*{
             "salesReport": {
                 "receiptId": "1e0e87b4-27db-40de-9374-08242e038888",

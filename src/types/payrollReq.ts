@@ -14,12 +14,12 @@ export interface PostPayment {
 
 export interface PostPaymentDetail {
   pay: string
-  workingDay: number;
-  extendWorkingTime: number;
-  extendWorkingMulti: number;
-  dayOffWorkingTime: number;
-  dayOffWorkingMulti: number;
-  annualLeaveAllowanceMulti: number;
+  workingDay: number | string;
+  extendWorkingTime: number | string;
+  extendWorkingMulti: number | string;
+  dayOffWorkingTime: number | string;
+  dayOffWorkingMulti: number | string;
+  annualLeaveAllowanceMulti: number | string;
   mealAllowance: string;
 }
 
