@@ -114,7 +114,6 @@ const RevenueMain = (): React.JSX.Element => {
     sales: any[],
   } | null>();
   const {showAlert} = useAlertStore();
-  console.log(formData);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {

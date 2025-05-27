@@ -77,7 +77,6 @@ const ClientSalesSummary = ():React.JSX.Element => {
     setClientSalesSumList(res.data.data);
 
     const data = res.data.data?.map((item) => {
-      // TODO: NaN 처리 추가
       const raw = Number(item.totalRawMatAmount) || 0;
       const manu = Number(item.totalManufactureAmount) || 0;
 
