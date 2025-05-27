@@ -7,6 +7,31 @@ export interface TableColumns<T> {
 }
 
 /*
+* ==================== 급여 대장 ========================
+*/
+export enum PaymentTableRow {
+  PAY = 'pay',
+  WORKING_DAY = 'workingDay',
+  EXTEND_WORKING_TIME = 'extendWorkingTime',
+  EXTEND_WORKING_MULTI = 'extendWorkingMulti',
+  DAY_OFF_WORKING_TIME = 'dayOffWorkingTime',
+  DAY_OFF_WORKING_MULTI = 'dayOffWorkingMulti',
+  ANNUAL_LEAVE_ALLOWANCE_MULTI = 'annualLeaveAllowanceMulti',
+  MEAL_ALLOWANCE = 'mealAllowance',
+}
+
+/*
+* ==================== 근무자 관리 ========================
+*/
+export enum EmployeeTableColumn {
+  HireDate = 'hireDate',
+  EMPLOYEE_NAME = 'employeeName',
+  POSITION = 'position',
+  PHONE_NUMBER = 'phoneNumber',
+}
+
+
+/*
 * ==================== 매출관리 ========================
 */
 export enum RevenueMainColumn {
