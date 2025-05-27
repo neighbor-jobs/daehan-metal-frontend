@@ -1,6 +1,7 @@
 import React from "react";
 import {Box, Button, Grid2} from "@mui/material";
 import {
+  AccountingManageMenuType,
   ClientManageMenuType,
   MenuType,
   menuTypeArr,
@@ -32,6 +33,10 @@ const Home = (): React.JSX.Element => {
         setSelectedSubType(ClientManageMenuType.SalesManage);
         navigate('/client/sales');
         break;
+      case MenuType.AccountingManage:
+        setSelectedSubType(AccountingManageMenuType.PayrollDetail);
+        navigate('/account/payroll');
+        break;
       default:
         navigate('/');
     }
@@ -51,7 +56,7 @@ const Home = (): React.JSX.Element => {
     >
       <Grid2
         container spacing={4} justifyContent="center"
-        sx={{width: 300, marginTop: 10}}
+        sx={{width: 500, marginTop: 10}}
       >
         {menuTypeArr.map((label, index) => (
           <Button
