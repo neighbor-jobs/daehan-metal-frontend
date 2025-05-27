@@ -1,0 +1,178 @@
+import React, {useEffect, useState} from 'react';
+import {
+  Box,
+  Button,
+  Grid2,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
+} from '@mui/material';
+import {EmployeeTableColumn, TableColumns} from '../../types/tableColumns.ts';
+import EmployeeForm from './EmployeeForm.tsx';
+import axiosInstance from '../../api/axios.ts';
+import {Employee} from '../../types/employeeRes.ts';
+import {PatchEmployee, PostEmployee} from '../../types/employeeReq.ts';
+import {useAlertStore} from '../../stores/alertStore.ts';
+
+const columns: readonly TableColumns<EmployeeTableColumn>[] = [
+  {
+    id: EmployeeTableColumn.HireDate,
+    label: '입사일',
+    align: 'center'
+  },
+  {
+    id: EmployeeTableColumn.EMPLOYEE_NAME,
+    label: '성명',
+    align: 'center'
+  },
+  {
+    id: EmployeeTableColumn.POSITION,
+    label: '직무',
+    align: 'center'
+  },
+  {
+    id: EmployeeTableColumn.PHONE_NUMBER,
+    label: '전화번호',
+    align: 'center'
+  }
+];
+
+const EmployeeManagement = (): React.JSX.Element => {
+  // TODO: 2. row 누르면 form type 'read' 로 바뀌고 form component 에 prevFormData 전달
+  // TODO: 3. type 'read' 면 버튼 '저장' 대신 '수정'
+  // TODO: 4. '수정' 버튼 누르면 type 'edit' 로 바꾸고 form component 에 전달
+
+  const [formType, setFormType] = useState(null);
+  const [employees, setEmployees] = useState<Employee[] | []>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<PatchEmployee | null>(null);
+  const [selectedBank, setSelectedBank] = useState(null);
+  const { showAlert } = useAlertStore();
+
+  const handleCreateClick = () => {
+    setSelectedEmployee(null);
+    setFormType('create');
+  };
+
+  const handleRowClick = async (emp: Employee) => {
+    setFormType('read');
+  };
+
+  const handleEditClick = () => {
+    setFormType('edit');
+  };
+
+  const formatSelectedBank = async (row: Employee) => {
+    if (row.bankIds.length === 0) return;
+    try {
+      const response = await axiosInstance.get(`/employee/bank?id=${row.bankIds[0]}`)
+      console.log('response', response);
+      setSelectedBank(response.data.data);
+    } catch {
+      showAlert('사원 정보 조회 실패');
+    }
+    return;
+  }
+
+  const formatSelectedEmployee = (row: Employee) => {
+    if (!row) return;
+    setSelectedEmployee({
+      id: row.id,
+      info: row.info,
+      startWorkingAt: row.startWorkingAt || null,
+      retirementAt: row.retirementAt || null,
+    })
+  }
+
+  const getEmployees = async () => {
+    const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+    setEmployees(employees.data.data);
+  }
+
+  useEffect(() => {
+    getEmployees();
+  }, []);
+
+  return (
+    <Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'right',
+        marginX: 2,
+        marginBottom: 0.5,
+      }}>
+        <Button
+          variant="outlined"
+          onClick={handleCreateClick}
+          disabled={formType === 'create'}
+        >
+          등록
+        </Button>
+      </Box>
+      <Grid2 container spacing={0.5}>
+        {/* 사원 목록 */}
+        <Grid2 size={6}>
+          <Paper sx={{
+            minHeight: '100vh',
+          }}>
+            <TableContainer>
+              <Table stickyHeader aria-label="sticky table" size='small'>
+                <TableHead>
+                  <TableRow>
+                    {columns.map((column) => (
+                      <TableCell
+                        key={column.id}
+                        align={column.align}
+                        style={{minWidth: column.minWidth}}
+                      >
+                        {column.label}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {employees && employees.map((row, idx) => (
+                    <TableRow
+                      key={idx}
+                      hover
+                      onClick={async () => {
+                        await handleRowClick(row);
+                        await formatSelectedBank(row);
+                        formatSelectedEmployee(row);
+                      }}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell align='center'>
+                        {row.startWorkingAt.split('T')[0]}
+                      </TableCell>
+                      <TableCell align='center'>{row.info.name}</TableCell>
+                      <TableCell align='center'>{row.info.position}</TableCell>
+                      <TableCell align='center'>
+                        {row.info.phoneNumber || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid2>
+
+        {/* 사원 정보 */}
+        <Grid2 size={6}>
+          <EmployeeForm type={formType}
+                        key={`${formType}-${selectedEmployee?.id ?? 'new'}`}
+                        onSuccess={getEmployees}
+                        prevBankData={selectedBank}
+                        prevEmployeeData={selectedEmployee}
+          />
+        </Grid2>
+      </Grid2>
+    </Box>
+  )
+}
+export default EmployeeManagement;

@@ -31,6 +31,13 @@ export interface PatchEmployee {
     birth?: string | null;
     phoneNumber?: string | null;
   },
-  startWorkingAt: string;
-  retirementAt: string;
+  startWorkingAt?: string | null;
+  retirementAt?: string | null;
+}
+
+export interface PatchBank {
+  id: string;
+  accountNumber: string;
+  accountOwner?: string;
+  bankName: string;
 }

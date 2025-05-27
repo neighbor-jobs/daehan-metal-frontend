@@ -3,7 +3,7 @@ export interface Employee {
   id: string;
   bankIds: string[];
   info: EmployeeInfo;
-  payments: Payment[] | [];
+  payments: any[];
   startWorkingAt?: string | null;
   retirementAt?: string | null;
 }
@@ -22,7 +22,3 @@ export interface EmployeeInfo {
 }
 
 // 은행 상세 정보
-
-// 급여/지급 내역 (예시)
-export interface Payment {
-}
