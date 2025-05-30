@@ -138,12 +138,12 @@ const EmployeeManagement = (): React.JSX.Element => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {employees && employees.map((row, idx) => (
+                  {employees && employees.map((row: Employee, idx: number) => (
                     <TableRow
                       key={idx}
                       hover
                       onClick={async () => {
-                        await handleRowClick(row);
+                        handleRowClick();
                         await formatSelectedBank(row);
                         formatSelectedEmployee(row);
                       }}
