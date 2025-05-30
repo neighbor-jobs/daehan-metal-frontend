@@ -13,16 +13,16 @@ interface EmployeeFormProps {
   prevBankData?: PatchBank | null;
   retirementAt?: string;
   onSuccess?: () => void;
+  onClickEdit?: () => void;
+  onClose?: () => void;
 }
 
 const defaultFormData: PostEmployee = {
-  banks: [
-    {
-      accountNumber: '',
-      accountOwner: '',
-      bankName: '',
-    },
-  ],
+  banks: {
+    accountNumber: '',
+    accountOwner: '',
+    bankName: '',
+  },
   info: {
     name: '',
     age: '',
@@ -40,12 +40,14 @@ const EmployeeForm = ({
                         type = null,
                         prevEmployeeData,
                         prevBankData,
-                        onSuccess
+                        onSuccess,
+                        onClickEdit,
+                        onClose
                       }: EmployeeFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState<PostEmployee>(defaultFormData);
   const [updateEmployee, setUpdateEmployee] = useState<PatchEmployee | null>(prevEmployeeData);
   const [updateBank, setUpdateBank] = useState<PatchBank | null>(prevBankData);
-  const { showAlert } = useAlertStore();
+  const {showAlert} = useAlertStore();
 
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';
@@ -62,6 +64,7 @@ const EmployeeForm = ({
   /* create 용 handler */
   const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
+
     setFormData((prev) => ({
       ...prev,
       info: {
@@ -83,48 +86,66 @@ const EmployeeForm = ({
 
   /* update 용 handler */
   const handleUpdateInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
     setUpdateEmployee(prev =>
       prev
-        ? { ...prev,
-          info: { ...prev.info, [name]: value }
+        ? {
+          ...prev,
+          info: {...prev.info, [name]: value}
         }
         : null
     );
   };
   const handleUpdateBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
     setUpdateBank(prev =>
       prev
-        ? { ...prev, [name]: value }
-        : { ...prevBankData, [name]: value }
+        ? {...prev, [name]: value}
+        : {...prevBankData, [name]: value}
     );
   };
 
   const createEmployee = async () => {
+    // 기본 정보 필드 유효성 검사
+    const requiredFields = [
+      {name: '성명', value: formData.info.name},
+      {name: '나이', value: formData.info.age},
+      {name: '직무', value: formData.info.position},
+      {name: '내/외국인', value: formData.info.countryCode},
+    ];
+
+    const missingField = requiredFields.find(field => !field.value);
+    if (missingField) {
+      showAlert(`'${missingField.name}'은(는) 필수 입력 값입니다.`, 'info');
+      return;
+    }
+
+    // 은행 정보 필드 유효성 검사
+    const bank = formData.banks;
+    const allEmpty = !bank.accountNumber && !bank.accountOwner && !bank.bankName;
+    const allFilled = bank.accountNumber && bank.accountOwner && bank.bankName;
+
+    if (!allEmpty && !allFilled) {
+      showAlert('은행 정보를 입력할 경우 모든 필드를 채워야 합니다.', 'warning');
+      return;
+    }
+
+    const banks = allEmpty ? [] : [bank];
+
     const infoPayload = {
       ...formData.info,
-      age: Number(formData.info.age)
-    };
-
-    if (infoPayload.email === '') {
-      infoPayload.email = undefined;
-    }
-    if (infoPayload.phoneNumber === '') {
-      infoPayload.phoneNumber = undefined;
-    }
-    if (infoPayload.birth === '') {
-      infoPayload.birth = undefined;
-    }
-
-    const payload: PostEmployee = {
-      info: infoPayload,
-      banks: formData.banks,
-      startWorkingAt: formData.startWorkingAt ? formData.startWorkingAt : undefined,
+      age: Number(formData.info.age),
+      email: formData.info.email || undefined,
+      phoneNumber: formData.info.phoneNumber || undefined,
+      birth: formData.info.birth || undefined,
     };
 
     try {
-      await axiosInstance.post('/employee', payload);
+      await axiosInstance.post('/employee', {
+        info: infoPayload,
+        banks,
+        startWorkingAt: formData.startWorkingAt ? formData.startWorkingAt : undefined,
+      });
       showAlert('사원 등록이 완료되었습니다.', 'success');
       if (onSuccess) onSuccess();
     } catch (error) {
@@ -133,11 +154,61 @@ const EmployeeForm = ({
     }
   };
 
+  const patchEmployee = async () => {
+    const requiredFields = [
+      {name: '성명', value: updateEmployee.info.name},
+      {name: '나이', value: updateEmployee.info.age},
+      {name: '직무', value: updateEmployee.info.position},
+      {name: '내/외국인', value: updateEmployee.info.countryCode},
+    ];
+
+    const missingField = requiredFields.find(field => !field.value);
+    if (missingField) {
+      showAlert(`'${missingField.name}'은(는) 필수 입력 값입니다.`, 'info');
+      return;
+    }
+
+    // 은행 정보 필드 유효성 검사
+    const allEmpty = !updateBank.accountNumber && !updateBank.accountOwner && !updateBank.bankName;
+    const allFilled = updateBank.accountNumber && updateBank.accountOwner && updateBank.bankName;
+
+    if (!allEmpty && !allFilled) {
+      showAlert('은행 정보를 입력할 경우 모든 필드를 채워야 합니다.', 'warning');
+      return;
+    }
+
+    const infoPayload = {
+      ...updateEmployee.info,
+      age: Number(updateEmployee.info.age),
+      email: updateEmployee.info.email || undefined,
+      phoneNumber: updateEmployee.info.phoneNumber || undefined,
+      birth: updateEmployee.info.birth || undefined,
+    };
+
+    try {
+      await axiosInstance.patch('/employee', {
+        id: updateEmployee.id,
+        info: infoPayload,
+        startWorkingAt: updateEmployee.startWorkingAt || undefined,
+        retirementAt: updateEmployee.retirementAt || undefined,
+      });
+      if (allFilled) {
+        await axiosInstance.patch('/employee/bank', updateBank)
+      }
+      showAlert('사원 정보 수정이 완료되었습니다.', 'success');
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error(error);
+      showAlert('사원 정보 수정에 실패했습니다.', 'error');
+    }
+  }
+
   const deleteEmployee = async () => {
     try {
       await axiosInstance.delete(`/employee?id=${updateEmployee.id}`);
+      if (onSuccess) onSuccess();
     } catch {
-      showAlert('사원 삭제에 실패했습니다.', 'error');
+      showAlert('사원 삭제에 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
 
@@ -168,7 +239,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.name
-                              : updateEmployee?.info.name ?? ''
+                              : updateEmployee?.info.name ?? '-'
                           }
                           onChange={
                             isCreate
@@ -190,7 +261,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.age
-                              : updateEmployee?.info.age ?? ''
+                              : updateEmployee?.info.age ?? '-'
                           }
                           onChange={
                             isCreate
@@ -200,6 +271,8 @@ const EmployeeForm = ({
                           disabled={isDisabled}
                           inputProps={{
                             'data-input-id': `age`,
+                            inputMode: 'numeric',
+                            pattern: '[0-9]*',
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
                               if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`age`);
@@ -211,7 +284,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.birth
-                              : updateEmployee?.info.birth ?? ''
+                              : updateEmployee?.info.birth ?? '-'
                           }
                           onChange={
                             isCreate
@@ -223,14 +296,15 @@ const EmployeeForm = ({
                             'data-input-id': `birth`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`birth`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('birth');                            }
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('birth');
+                            }
                           }}/>
 
-          <InputWithLabel label='핸드폰번호' labelPosition='left'
+          <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left'
                           value={
                             isCreate
                               ? formData.info.phoneNumber
-                              : updateEmployee?.info.phoneNumber ?? ''
+                              : updateEmployee?.info.phoneNumber ?? '-'
                           }
                           onChange={
                             isCreate
@@ -242,7 +316,8 @@ const EmployeeForm = ({
                             'data-input-id': `phoneNumber`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`phoneNumber`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('phoneNumber');                            }
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('phoneNumber');
+                            }
                           }}
           />
           <InputWithLabel name='hireDate' label='입사일' labelPosition='left'
@@ -251,7 +326,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.startWorkingAt
-                              : updateEmployee?.startWorkingAt ?? ''
+                              : updateEmployee?.startWorkingAt ?? '-'
                           }
                           onChange={
                             isCreate
@@ -262,7 +337,8 @@ const EmployeeForm = ({
                             'data-input-id': `hireDate`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`hireDate`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('hireDate');                            }
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('hireDate');
+                            }
                           }}
           />
           <InputWithLabel name='position' label='직무' labelPosition='left'
@@ -270,7 +346,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.position
-                              : updateEmployee?.info.position ?? ''
+                              : updateEmployee?.info.position ?? '-'
                           }
                           onChange={
                             isCreate
@@ -291,7 +367,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.email
-                              : updateEmployee?.info.email ?? ''
+                              : updateEmployee?.info.email ?? '-'
                           }
                           onChange={
                             isCreate
@@ -303,14 +379,15 @@ const EmployeeForm = ({
                             'data-input-id': `email`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`email`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('email');                            }
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('email');
+                            }
                           }}
           />
           <InputWithLabel name='countryCode' label='내/외국인' labelPosition='left'
                           value={
                             isCreate
                               ? formData.info.countryCode
-                              : updateEmployee?.info.countryCode ?? ''
+                              : updateEmployee?.info.countryCode ?? '-'
                           }
                           onChange={
                             isCreate
@@ -332,7 +409,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.address
-                              : updateEmployee?.info.address ?? ''
+                              : updateEmployee?.info.address ?? '-'
                           }
                           onChange={
                             isCreate
@@ -349,7 +426,7 @@ const EmployeeForm = ({
                             }
                           }}
           />
-          {(type === 'read' || type === 'edit') && (
+          {(type !== 'create') && (
             <InputWithLabel
               name='retirementAt'
               label='퇴사일'
@@ -376,11 +453,23 @@ const EmployeeForm = ({
           gap: 1,
           mt: 2,
         }}>
-          <Typography variant='h6'>은행 정보</Typography>
+          <Box sx={{display: 'flex', alignItems: 'end', gap: 1}}>
+            <Typography variant='h6'>은행 정보</Typography>
+            <Typography variant='caption'>* 은행 정보 입력 시 모든 필드를 입력하세요.</Typography>
+          </Box>
           <Divider/>
           <InputWithLabel name='bankName' label='은행명' labelPosition='left'
-                          onChange={handleBanksChange}
-                          value={formData.banks[0].bankName}
+                          disabled={isDisabled}
+                          value={
+                            isCreate
+                              ? formData.banks.bankName
+                              : updateBank?.bankName ?? '-'
+                          }
+                          onChange={
+                            isCreate
+                              ? handleBanksChange
+                              : handleUpdateBankChange
+                          }
                           inputProps={{
                             'data-input-id': `bankName`,
                             onKeyDown: (e) => {
@@ -391,8 +480,17 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='accountOwner' label='예금주' labelPosition='left'
-                          onChange={handleBanksChange}
-                          value={formData.banks[0].accountOwner}
+                          disabled={isDisabled}
+                          value={
+                            isCreate
+                              ? formData.banks.accountOwner
+                              : updateBank?.accountOwner ?? '-'
+                          }
+                          onChange={
+                            isCreate
+                              ? handleBanksChange
+                              : handleUpdateBankChange
+                          }
                           inputProps={{
                             'data-input-id': `accountOwner`,
                             onKeyDown: (e) => {
@@ -403,14 +501,23 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left'
-                          onChange={handleBanksChange}
-                          value={formData.banks[0].accountNumber}
+                          disabled={isDisabled}
+                          value={
+                            isCreate
+                              ? formData.banks.accountNumber
+                              : updateBank?.accountNumber ?? '-'
+                          }
+                          onChange={
+                            isCreate
+                              ? handleBanksChange
+                              : handleUpdateBankChange
+                          }
                           inputProps={{
                             'data-input-id': `accountNumber`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
-                              if (!isComposing && (e.key === 'Enter')) { /* todo patch api */}
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('accountNumber');
+                              if (!isComposing && (e.key === 'Enter')) { /* todo patch api */
+                              } else if (e.key === 'ArrowUp') moveFocusToPrevInput('accountNumber');
                             }
                           }}
           />
@@ -429,14 +536,14 @@ const EmployeeForm = ({
           )}
           {type === 'read' && (
             <>
-              <Button>수정</Button>
+              <Button onClick={onClickEdit}>수정</Button>
               <Button color='error' onClick={deleteEmployee}>삭제</Button>
             </>
           )}
           {type === 'edit' && (
             <>
-              <Button>수정</Button>
-              <Button color='error'>취소</Button>
+              <Button onClick={patchEmployee}>수정</Button>
+              <Button color='error' onClick={onClose}>취소</Button>
             </>
           )}
         </Box>

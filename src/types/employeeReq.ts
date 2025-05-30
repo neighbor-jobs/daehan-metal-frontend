@@ -1,5 +1,5 @@
 export interface PostEmployee {
-  banks?: PostBank[] | [],
+  banks?: PostBank | null;
   info: {
     name: string;
     age: string | number;

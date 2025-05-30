@@ -15,7 +15,7 @@ import {EmployeeTableColumn, TableColumns} from '../../types/tableColumns.ts';
 import EmployeeForm from './EmployeeForm.tsx';
 import axiosInstance from '../../api/axios.ts';
 import {Employee} from '../../types/employeeRes.ts';
-import {PatchEmployee, PostEmployee} from '../../types/employeeReq.ts';
+import {PatchEmployee} from '../../types/employeeReq.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 
 const columns: readonly TableColumns<EmployeeTableColumn>[] = [
@@ -43,21 +43,20 @@ const columns: readonly TableColumns<EmployeeTableColumn>[] = [
 
 const EmployeeManagement = (): React.JSX.Element => {
   // TODO: 2. row 누르면 form type 'read' 로 바뀌고 form component 에 prevFormData 전달
-  // TODO: 3. type 'read' 면 버튼 '저장' 대신 '수정'
   // TODO: 4. '수정' 버튼 누르면 type 'edit' 로 바꾸고 form component 에 전달
 
   const [formType, setFormType] = useState(null);
   const [employees, setEmployees] = useState<Employee[] | []>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<PatchEmployee | null>(null);
   const [selectedBank, setSelectedBank] = useState(null);
-  const { showAlert } = useAlertStore();
+  const {showAlert} = useAlertStore();
 
   const handleCreateClick = () => {
     setSelectedEmployee(null);
     setFormType('create');
   };
 
-  const handleRowClick = async (emp: Employee) => {
+  const handleRowClick = () => {
     setFormType('read');
   };
 
@@ -65,12 +64,16 @@ const EmployeeManagement = (): React.JSX.Element => {
     setFormType('edit');
   };
 
+  const handleCloseClick = () => {
+    setFormType(null);
+  }
+
   const formatSelectedBank = async (row: Employee) => {
-    if (row.bankIds.length === 0) return;
+    if (row.bankIds.length === 0) return [];
     try {
       const response = await axiosInstance.get(`/employee/bank?id=${row.bankIds[0]}`)
-      console.log('response', response);
-      setSelectedBank(response.data.data);
+      const { createdAt, ...bankDataWithoutCreatedAt } = response.data.data;
+      setSelectedBank(bankDataWithoutCreatedAt);
     } catch {
       showAlert('사원 정보 조회 실패');
     }
@@ -79,14 +82,14 @@ const EmployeeManagement = (): React.JSX.Element => {
 
   const formatSelectedEmployee = (row: Employee) => {
     if (!row) return;
+    const { id, ...infoWithoutId } = row.info;
     setSelectedEmployee({
       id: row.id,
-      info: row.info,
-      startWorkingAt: row.startWorkingAt || null,
+      info: infoWithoutId,
+      startWorkingAt: row.startWorkingAt.split('T')[0] || null,
       retirementAt: row.retirementAt || null,
-    })
-  }
-
+    });
+  };
   const getEmployees = async () => {
     const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
     setEmployees(employees.data.data);
@@ -144,7 +147,7 @@ const EmployeeManagement = (): React.JSX.Element => {
                         await formatSelectedBank(row);
                         formatSelectedEmployee(row);
                       }}
-                      sx={{ cursor: 'pointer' }}
+                      sx={{cursor: 'pointer'}}
                     >
                       <TableCell align='center'>
                         {row.startWorkingAt.split('T')[0]}
@@ -169,6 +172,8 @@ const EmployeeManagement = (): React.JSX.Element => {
                         onSuccess={getEmployees}
                         prevBankData={selectedBank}
                         prevEmployeeData={selectedEmployee}
+                        onClickEdit={handleEditClick}
+                        onClose={handleCloseClick}
           />
         </Grid2>
       </Grid2>
