@@ -169,7 +169,10 @@ const EmployeeManagement = (): React.JSX.Element => {
         <Grid2 size={6}>
           <EmployeeForm type={formType}
                         key={`${formType}-${selectedEmployee?.id ?? 'new'}`}
-                        onSuccess={getEmployees}
+                        onSuccess={async () => {
+                          await getEmployees();
+                          setFormType('read');
+                        }}
                         prevBankData={selectedBank}
                         prevEmployeeData={selectedEmployee}
                         onClickEdit={handleEditClick}

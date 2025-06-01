@@ -198,7 +198,6 @@ const EmployeeForm = ({
       showAlert('사원 정보 수정이 완료되었습니다.', 'success');
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error(error);
       showAlert('사원 정보 수정에 실패했습니다.', 'error');
     }
   }
@@ -246,8 +245,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `name`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -268,8 +268,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `age`,
                             inputMode: 'numeric',
                             pattern: '[0-9]*',
@@ -291,8 +292,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `birth`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`birth`);
@@ -311,8 +313,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `phoneNumber`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`phoneNumber`);
@@ -321,7 +324,6 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='hireDate' label='입사일' labelPosition='left'
-                          disabled={isDisabled}
                           placeholder='0000-00-00'
                           value={
                             isCreate
@@ -334,6 +336,8 @@ const EmployeeForm = ({
                               : (e) => setUpdateEmployee((prev) => ({...prev, startWorkingAt: e.target.value}))
                           }
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `hireDate`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`hireDate`);
@@ -353,8 +357,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `position`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -374,8 +379,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `email`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`email`);
@@ -395,8 +401,9 @@ const EmployeeForm = ({
                               : handleUpdateInfoChange
                           }
                           placeholder='필수 입력 란입니다.'
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `countryCode`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -416,8 +423,9 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          disabled={isDisabled}
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `address`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -434,8 +442,9 @@ const EmployeeForm = ({
               placeholder='0000-00-00'
               value={updateEmployee?.retirementAt || '-'}
               onChange={(e) => setUpdateEmployee((prev) => ({...prev, retirementAt: e.target.value}))}
-              disabled={isDisabled}
               inputProps={{
+                disabled: isDisabled,
+                color: 'black',
                 'data-input-id': `retirementAt`,
                 onKeyDown: (e) => {
                   if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput('retirementAt')
@@ -459,7 +468,6 @@ const EmployeeForm = ({
           </Box>
           <Divider/>
           <InputWithLabel name='bankName' label='은행명' labelPosition='left'
-                          disabled={isDisabled}
                           value={
                             isCreate
                               ? formData.banks.bankName
@@ -471,6 +479,8 @@ const EmployeeForm = ({
                               : handleUpdateBankChange
                           }
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `bankName`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -480,7 +490,6 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='accountOwner' label='예금주' labelPosition='left'
-                          disabled={isDisabled}
                           value={
                             isCreate
                               ? formData.banks.accountOwner
@@ -492,6 +501,8 @@ const EmployeeForm = ({
                               : handleUpdateBankChange
                           }
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `accountOwner`,
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
@@ -501,7 +512,6 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='accountNumber' label='계좌번호' labelPosition='left'
-                          disabled={isDisabled}
                           value={
                             isCreate
                               ? formData.banks.accountNumber
@@ -513,10 +523,14 @@ const EmployeeForm = ({
                               : handleUpdateBankChange
                           }
                           inputProps={{
+                            disabled: isDisabled,
+                            color: 'black',
                             'data-input-id': `accountNumber`,
-                            onKeyDown: (e) => {
+                            onKeyDown: async (e) => {
                               const isComposing = e.nativeEvent.isComposing;
-                              if (!isComposing && (e.key === 'Enter')) { /* todo patch api */
+                              if (!isComposing && (e.key === 'Enter')) {
+                                if (type === 'create') await createEmployee();
+                                else if (type === 'edit') await patchEmployee();
                               } else if (e.key === 'ArrowUp') moveFocusToPrevInput('accountNumber');
                             }
                           }}
