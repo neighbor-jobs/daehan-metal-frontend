@@ -1,5 +1,6 @@
-import { createHashRouter } from 'react-router-dom';
+import {createHashRouter} from 'react-router-dom';
 import {lazy} from 'react';
+
 import MainLayout from './layout/MainLayout.tsx';
 import RevenueMain from './pages/revenue-manage/RevenueMain.tsx';
 import Home from './pages/Home.tsx';
@@ -7,9 +8,6 @@ import SalesCompany from './pages/company-manage/SalesCompany.tsx';
 import ProductMain from './pages/product-manage/ProductMain.tsx';
 import PurchaseMain from './pages/purchase-manage/PurchaseMain.tsx';
 import PurchaseCompany from './pages/company-manage/PurchaseCompany.tsx';
-import EmployeeManagement from './pages/accounting-manage/EmployeeManagement.tsx';
-import PayrollLedger from './pages/accounting-manage/PayrollLedger.tsx';
-import NewPayrollLedger from './pages/accounting-manage/NewPayrollLedger.tsx';
 
 // lazy
 const DailySales = lazy(() => import('./pages/revenue-manage/DailySales'));
@@ -19,46 +17,49 @@ const ItemSales = lazy(() => import('./pages/revenue-manage/ItemSales'));
 const ItemSalesSummary = lazy(() => import('./pages/revenue-manage/ItemSalesSummary'));
 const ClientOutstandingBalance = lazy(() => import('./pages/revenue-manage/ClientOutstandingBalance'));
 const MonthlyPurchase = lazy(() => import('./pages/purchase-manage/MonthlyPurchase'));
+const EmployeeManagement = lazy(() => import('./pages/accounting-manage/EmployeeManagement.tsx'));
+const PayrollLedger = lazy(() => import('./pages/accounting-manage/PayrollLedger.tsx'));
+const NewPayrollLedger = lazy(() => import('./pages/accounting-manage/NewPayrollLedger.tsx'));
 
 const routes = createHashRouter([
   {
     path: '/',
-    element: <MainLayout />,
+    element: <MainLayout/>,
     children: [
       {
         path: '/',
-        element: <Home />
+        element: <Home/>
       },
       {
         path: 'revenue',
         children: [
           {
             index: true,
-            element: <RevenueMain />
+            element: <RevenueMain/>
           },
           {
             path: 'daily',
-            element: <DailySales />
+            element: <DailySales/>
           },
           {
             path: 'client',
-            element: <ClientSales />
+            element: <ClientSales/>
           },
           {
             path: 'client-summary',
-            element: <ClientSalesSummary />
+            element: <ClientSalesSummary/>
           },
           {
             path: 'item',
-            element: <ItemSales />
+            element: <ItemSales/>
           },
           {
             path: 'item-summary',
-            element: <ItemSalesSummary />
+            element: <ItemSalesSummary/>
           },
           {
             path: 'client-outstanding',
-            element: <ClientOutstandingBalance />
+            element: <ClientOutstandingBalance/>
           },
         ]
       },
@@ -67,7 +68,7 @@ const routes = createHashRouter([
         children: [
           {
             index: true,
-            element: <PurchaseMain />
+            element: <PurchaseMain/>
           },
           /*{
             path: 'daily',
@@ -75,7 +76,7 @@ const routes = createHashRouter([
           },*/
           {
             path: 'monthly',
-            element: <MonthlyPurchase />
+            element: <MonthlyPurchase/>
           },
           /*{
             path: 'client',
@@ -89,18 +90,18 @@ const routes = createHashRouter([
       },
       {
         path: 'item',
-        element: <ProductMain />
+        element: <ProductMain/>
       },
       {
         path: 'client',
         children: [
           {
             path: 'sales',
-            element: <SalesCompany />
+            element: <SalesCompany/>
           },
           {
             path: 'purchase',
-            element: <PurchaseCompany />
+            element: <PurchaseCompany/>
           }
         ]
       },
@@ -109,15 +110,15 @@ const routes = createHashRouter([
         children: [
           {
             path: 'payroll',
-            element: <PayrollLedger />
+            element: <PayrollLedger/>
           },
           {
             path: 'payroll-new',
-            element: <NewPayrollLedger />
+            element: <NewPayrollLedger/>
           },
           {
             path: 'employee',
-            element: <EmployeeManagement />
+            element: <EmployeeManagement/>
           }
         ]
       }
