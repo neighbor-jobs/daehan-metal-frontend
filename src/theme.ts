@@ -126,7 +126,8 @@ const theme = createTheme({
     MuiYearCalendar: {
       styleOverrides: {
         root: {
-          width: 230,
+          width: 215,
+          padding: 0,
         }
       }
     },

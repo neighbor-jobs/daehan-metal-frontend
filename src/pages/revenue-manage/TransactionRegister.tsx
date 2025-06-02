@@ -539,7 +539,8 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 1,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true), ...params.inputProps
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true),
+                                           ...params.inputProps
                                          }
                                        }}
                             />

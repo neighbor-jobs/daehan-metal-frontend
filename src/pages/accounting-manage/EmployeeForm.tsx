@@ -52,8 +52,7 @@ const EmployeeForm = ({
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';
 
-  // Reflect todo requirements on form data and disabled state
-  useEffect(() => {
+    useEffect(() => {
     if (type === 'create' || type === null) {
       setFormData(defaultFormData);
     } else if ((type === 'edit' || type === 'read') && updateEmployee) {
