@@ -59,3 +59,9 @@ export const formatVatRate = (input: string) => {
 
 /* 소수점 3자리 유효성 검사 */
 export const decimalRegex = /^\d*\.?\d{0,3}$/;
+
+/* 오직 숫자만 허용 */
+export const allowOnlyNumber = (value: string) => value.replace(/[^0-9]/g, '');
+
+/* 숫자랑 - 허용 */
+export const allowNumberAndHyphen = (value: string) => value.replace(/[^0-9-]/g, '');

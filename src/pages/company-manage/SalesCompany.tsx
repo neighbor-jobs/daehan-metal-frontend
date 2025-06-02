@@ -102,7 +102,7 @@ const SalesCompany = (): React.JSX.Element => {
   const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      'phoneNumber': formatPhoneNumber(event.target.value),
+      [event.target.name] : formatPhoneNumber(event.target.value),
     });
   };
   const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,7 +269,7 @@ const SalesCompany = (): React.JSX.Element => {
                             }
                           }}
                           placeholder='필수 입력 값입니다.' value={formData.phoneNumber}/>
-          <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
+          <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handlePhoneNumberChange}
                           inputProps={{
                             'data-input-id': `fax`,
                             onKeyDown: (e) => {
