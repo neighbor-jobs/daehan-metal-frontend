@@ -12,6 +12,16 @@ export interface PostPayment {
   memo?: string;
 }
 
+export interface PatchPayment {
+  id: string;
+  payrollRegisterId: string;
+  employeeName: string;
+  employeePosition: string;
+  paymentDetail: PostPaymentDetail,
+  deductionDetail: PostDeductionDetail[],
+  memo?: string;
+}
+
 export interface PostPaymentDetail {
   pay: string
   workingDay: number | string;
