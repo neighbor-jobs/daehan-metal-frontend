@@ -129,7 +129,6 @@ const Header = (): React.JSX.Element => {
         navigate('/account/employee');
         setSubNavIdx(2);
         break;
-
       default:
         navigate('/');
     }
@@ -192,6 +191,9 @@ const Header = (): React.JSX.Element => {
         setSelectedSubType(AccountingManageMenuType.EmployeeManage);
         setSubNavIdx(2);
       }
+    } else {
+      setSelectedType(null);
+      setSelectedSubType(null);
     }
   }, [location.pathname, setSelectedType, setSelectedSubType]);
 

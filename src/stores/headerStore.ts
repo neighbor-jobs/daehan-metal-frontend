@@ -31,7 +31,6 @@ export const useHeaderStore = create<HeaderState>((set) => ({
 if (window.ipcRenderer) {
   window.ipcRenderer.invoke('get-store', 'selectedType').then((type) => {
     useHeaderStore.setState({ selectedType: type });
-    // console.log('프로그램 진입 시 selectedType: ', type);
   });
   window.ipcRenderer.invoke('get-store', 'selectedSubType').then((subType) => {
     useHeaderStore.setState({ selectedSubType: subType });
