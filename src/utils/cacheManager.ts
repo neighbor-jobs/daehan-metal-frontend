@@ -1,3 +1,5 @@
+import {Paying} from '../types/ledger.ts';
+
 export const cacheManager = {
   /*
   * ================================ 헤더 관련 ===============================
@@ -56,4 +58,24 @@ export const cacheManager = {
   async fetchAndUpdateProducts() {
     return await window.ipcRenderer.invoke('fetch-and-update-products');
   },
+
+/*
+* ================================ 회계 관련 ===============================
+* */
+  async getLedgers() {
+      return await window.ipcRenderer.invoke('ledgers:get');
+  },
+  async addLedgers(ledger: Paying) {
+    return await window.ipcRenderer.invoke('ledgers:add', ledger);
+  },
+  async updateLedgers(index: number, data: Paying) {
+    return await window.ipcRenderer.invoke('ledgers:update',index, data);
+  },
+  async removeLedgers(index: number) {
+    return await window.ipcRenderer.invoke('ledgers:update',index);
+  }
 };
+
+export default cacheManager;
+
+

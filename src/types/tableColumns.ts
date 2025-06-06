@@ -35,25 +35,6 @@ export const defaultDeductionList = [
   '작년연말정산'
 ]
 
-export const defaultLedgerList = [
-  { purpose: '급여', value: '0', group: '5일', memo: '' },
-  { purpose: '사장님 급여', value: '0', group: '5일', memo: '' },
-  { purpose: '식대', value: '0', group: '5일', memo: '' },
-  { purpose: '용달', value: '0', group: '5일', memo: '' },
-  { purpose: '현대보험', value: '0', group: '5일', memo: '' },
-  { purpose: '국민연금', value: '0', group: '5일', memo: '' },
-  { purpose: '건강보험', value: '0', group: '5일', memo: '' },
-  { purpose: '고용산재', value: '0', group: '5일', memo: '' },
-  { purpose: '세콤', value: '0', group: '5일', memo: '' },
-  { purpose: '정수기', value: '0', group: '5일', memo: '' },
-  { purpose: 'LIG암보험', value: '0', group: '5일', memo: '' },
-  { purpose: '화재보험', value: '0', group: '5일', memo: '' },
-  { purpose: '마이너스 통장', value: '0', group: '5일', memo: '' },
-  { purpose: '출국만기보험', value: '0', group: '5일', memo: '' },
-  { purpose: '3.6.9.12월 분기별 이자', value: '0', group: '5일', memo: '' },
-  { purpose: '제네시스 할부금', value: '0', group: '5일', memo: '' },
-];
-
 /*
 * ==================== 근무자 관리 ========================
 */

@@ -23,6 +23,7 @@ import {useAlertStore} from '../../stores/alertStore.ts';
 import {Payment} from '../../types/payrollRes.ts';
 import {formatCurrency} from '../../utils/format.ts';
 import {useNavigate} from 'react-router-dom';
+import {Ledger, Paying} from '../../types/ledger.ts';
 
 const leftRows: readonly TableColumns<PaymentTableRow>[] = [
   {
@@ -78,45 +79,27 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
   }
 ];
 
-// 지출내역
-interface ExpenseItem {
-  leftTitle?: string;
-  leftNote?: string;
-  rightTitle?: string;
-  rightNote?: string;
-  result?: string;
-}
-
-/*const expenseData: ExpenseItem[] = [
-  {leftTitle: '사장님 급여', rightTitle: '대출이자'},
-  {leftTitle: '식대', rightTitle: '삼성화재'},
-  {leftTitle: '용달', rightTitle: '통신비'},
-  {leftTitle: '현대보험', rightTitle: '전기료'},
-  {leftTitle: '국민연금', rightNote: '경조사비\n24.3월부터', rightTitle: '수도세'},
-  {leftTitle: '건강보험', rightNote: '퇴직연금\n311 059245 94 001', rightTitle: '갑근세'},
-  {leftTitle: '고용산재', rightTitle: '사장님 상해보험'},
-  {leftTitle: '세콤', rightTitle: '공기청정기'},
-  {leftTitle: '정수기'},
-  {leftTitle: 'LIG암보험', rightTitle: '5일'},
-  {leftTitle: '화재보험', rightTitle: '10일'},
-  {leftTitle: '마이너스 통장', rightTitle: '11~25일'},
-  {leftTitle: '출국만기보험', rightTitle: '카드값'},
-  {leftTitle: '3.6.9.12월 분기별 이자', rightTitle: '합계'},
-  {leftTitle: '제네시스 할부금'},
-];*/
-
 const PayrollLedger = (): React.JSX.Element => {
   const [payrollId, setPayrollId] = useState<string>();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [standardAt, setStandardAt] = React.useState<string>(dayjs().format('YYYY-MM-01'));
+  const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
+  const [rightLedger, setRightLedger] = useState<Paying[]>([]);
+  const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-01'));
   const navigate = useNavigate();
   const {showAlert} = useAlertStore();
 
   const getPayroll = async () => {
     try {
-      const res = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${standardAt}`);
-      setPayrollId(res.data.data.id);
-      setPayments(res.data.data.payments);
+      const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${standardAt}`);
+      const l = await axiosInstance.get(`/ledger/monthly?standardAt=${standardAt}`);
+      setPayrollId(payroll.data.data.id);
+      setPayments(payroll.data.data.payments);
+      setLedger(l.data.data);
+      const arr = l.data.data.payingExpenses;
+      const midIndex = Math.ceil(arr.length / 2);
+      setLeftLedger(arr.slice(0, midIndex));
+      setRightLedger(arr.slice(midIndex));
     } catch {
       showAlert('해당 월 급여대장 정보가 없습니다.', 'error');
     }
@@ -130,9 +113,9 @@ const PayrollLedger = (): React.JSX.Element => {
     navigate('/account/payroll-new', {
       state: {
         payrollId,
-
         standardAt,
         payments,
+        ledger,
       },
     });
   };
@@ -140,6 +123,8 @@ const PayrollLedger = (): React.JSX.Element => {
   const deletePayroll = async () => {
     try {
       await axiosInstance.delete(`/payroll?id=${payrollId}`);
+      await axiosInstance.delete(`/ledger?id=${ledger.id}`)
+      showAlert('삭제 완료', 'success');
     } catch {
       showAlert('급여대장 삭제 실패. 다시 시도해 주세요.', 'error');
     }
@@ -147,6 +132,7 @@ const PayrollLedger = (): React.JSX.Element => {
 
   // debug
   // console.log(payments);
+  // console.log('ledger: ', ledger, ', 왼: ', leftLedger, ', 오: ', rightLedger);
 
   return (
     <Box>
@@ -224,6 +210,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                value={row.format ? row.format(payment.paymentDetail[row.id]) : payment.paymentDetail[row.id]}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                                inputProps={{
+                                 disabled: true,
                                  color: 'black'
                                }}
                         >
@@ -238,54 +225,124 @@ const PayrollLedger = (): React.JSX.Element => {
         </Box>
 
         {/* 지출 내역 */}
-        {/*<Box sx={{mt: 2}}>
+        <Box sx={{ mt: 2 }}>
           <Typography variant='h6'>지출 내역</Typography>
-          <TableContainer
-            component={Box}
-            sx={{
-              border: '1px solid',
-              borderColor: 'lightgray',
-              borderRadius: 1,
-              mt: 1
-            }}
-          >
-            <Table size="small">
-              <TableBody>
-                {expenseData.map((item, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell sx={{
-                      whiteSpace: 'pre-line',
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      {item.leftTitle || ''}
-                      <Typography sx={{m: 0, fontSize: 10, whiteSpace: 'pre-line'}}>
-                        {item.leftNote && `${item.leftNote}`}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center" sx={{
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      -
-                    </TableCell>
-                    <TableCell sx={{
-                      whiteSpace: 'pre-line',
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      {item.rightTitle || ''}
-                      <Typography sx={{m: 0, fontSize: 10, whiteSpace: 'pre-line'}}>
-                        {item.rightNote && item.rightNote || ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{width: 50}} align="center">-</TableCell>
+          <Box sx={{ display: 'flex', mt: 1 }}>
+            {/* 왼쪽 table */}
+            <TableContainer
+              component={Box}
+              sx={{
+                border: '1px solid',
+                borderColor: 'lightgray',
+                flex: 1,
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>항목</TableCell>
+                    <TableCell align="right">금액</TableCell>
+                    <TableCell align='center'>지출일</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>*/}
+                </TableHead>
+                <TableBody>
+                  {leftLedger.map((item, idx) => (
+                    <TableRow key={`left-${idx}`}>
+                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               value={(item as any).purpose || String(item)}
+                               sx={{py: 0, my: 0,}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               value={(item as any).value ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               value={(item as any).group ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* 오른쪽 table */}
+            <TableContainer
+              component={Box}
+              sx={{
+                border: '1px solid',
+                borderColor: 'lightgray',
+                flex: 1,
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>항목</TableCell>
+                    <TableCell align="right">금액</TableCell>
+                    <TableCell align='center'>지출일</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rightLedger.map((item, idx) => (
+                    <TableRow key={`right-${idx}`}>
+                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               value={(item as any).purpose || String(item)}
+                               sx={{py: 0, my: 0,}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="right"
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               value={(item as any).value ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               value={(item as any).group ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </Box>
       </Paper>
 
       {/* 버튼들 */}

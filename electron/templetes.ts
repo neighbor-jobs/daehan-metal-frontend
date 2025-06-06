@@ -480,7 +480,7 @@ const basicInvoiceTable = (data, index) => {
 */
   // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.sales.length > 12 ? 25 : 12;
+  const totalRowsNum = data.sales.length > 15 ? 25 : 15;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
   const sum = data.sales.map((item) => (Number(item.rawMatAmount) + Number(item.manufactureAmount)) * item.quantity)
   const [firstRowNames, secondRowNames] =
@@ -613,6 +613,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
+    pageMargins: [40, 10, 40, 20],
     content: [
       ...basicInvoiceTable(data, 0),
       ...(totalRowsNum !== 25
@@ -626,7 +627,7 @@ export const invoiceDocDef = (data: any) => {
                 dash: {length: 2, space: 2}
               }
             ],
-            margin: [0, 15, 0, 15]
+            margin: [0, 5, 0, 5]
           } as any]
           : []
       ),

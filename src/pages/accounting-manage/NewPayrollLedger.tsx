@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {Fragment, useEffect, useMemo, useState} from 'react';
 import {
   Box,
   Button,
@@ -24,6 +24,8 @@ import {useAlertStore} from '../../stores/alertStore.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 import {useLocation} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
+import {PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
+import {cacheManager} from '../../utils/cacheManager.ts';
 
 const defaultPayment: PostPaymentDetail = {
   // 기본값
@@ -104,8 +106,6 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
 ]
 
 const NewPayrollLedger = (): React.JSX.Element => {
-  // TODO: 공제 항목 추가/삭제할 수 있도록 UI 추가
-  // TODO: 입력 시 number 만 받을 수 있도록 입력 제한 추가
   const location = useLocation();
   const {showAlert} = useAlertStore();
   const [formData, setFormData] = useState<PostPayment[] | PatchPayment[]>([]);
@@ -116,50 +116,50 @@ const NewPayrollLedger = (): React.JSX.Element => {
       value: '0',
     }))
   );
-  const {payrollId, standardAt, payments: initialPayments} = location.state || {};
-  const [mode, setMode] = useState<'create' | 'edit'>(
-    initialPayments ? 'edit' : 'create'
-  );
+  const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-DD'));
+  const {payrollId, payments: initialPayments, ledger: initialLedger} = location.state || {};
+  const [mode, setMode] = useState<'create' | 'edit'>(initialPayments ? 'edit' : 'create');
   const listToPaymentRender = mode === 'create' ? employees : formData;
+  const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
+  const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
+  const [rightLedger, setRightLedger] = useState<Paying[]>([]);
+
+  const {sumByDate, ledgerSum} = useMemo(() => {
+    const allLedger = [...(leftLedger ?? []), ...(rightLedger ?? [])];
+    let totalSum = 0;
+
+    const dateSum = allLedger.reduce((acc, item) => {
+      const date = item.group?.toString() || '-';
+      const value = Number(item.value) || 0;
+
+      acc[date] = (acc[date] || 0) + value;
+      totalSum += value;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {sumByDate: dateSum, ledgerSum: totalSum};
+  }, [leftLedger, rightLedger]);
 
   const handlePaymentInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     id: string
   ) => {
     const {name, value} = e.target;
-
-    // 숫자로 저장할 필드 목록
-    /*
-        const numericFields: PaymentTableRow[] = [
-          PaymentTableRow.WORKING_DAY,
-          PaymentTableRow.EXTEND_WORKING_TIME,
-          PaymentTableRow.EXTEND_WORKING_MULTI,
-          PaymentTableRow.DAY_OFF_WORKING_TIME,
-          PaymentTableRow.DAY_OFF_WORKING_MULTI,
-          PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE,
-        ];
-    */
-
-    /*
-        const parsedValue = value === ''
-          ? ''
-          : numericFields.includes(name as PaymentTableRow)
-            ? Number(value)
-            : value;
-    */
-
+    let onlyNums = value.replace(/[^0-9]/g, '');
+    if (onlyNums.length > 0) {
+      onlyNums = String(Number(onlyNums));
+    }
     setFormData(prev =>
       prev.map(item => {
         const key = mode === 'create' ? item.employeeId : item.id;
-        return (key === id
-            ? {
-              ...item,
-              paymentDetail: {
-                ...item.paymentDetail,
-                [name]: value,
-              },
-            }
-            : item
+        return (
+          key === id ? {
+            ...item,
+            paymentDetail: {
+              ...item.paymentDetail,
+              [name]: onlyNums,
+            },
+          } : item
         )
       })
     );
@@ -170,20 +170,49 @@ const NewPayrollLedger = (): React.JSX.Element => {
     id: string
   ) => {
     const {name, value} = e.target;
+    let onlyNums = value.replace(/[^0-9]/g, '');
+    if (onlyNums.length > 0) {
+      onlyNums = String(Number(onlyNums));
+    }
     setFormData(prev =>
       prev.map((item) => {
         const key = mode === 'create' ? item.employeeId : item.id
         return (
-          key === id
-          ? {
+          key === id ? {
             ...item,
             deductionDetail: item.deductionDetail.map((d) =>
-              d.purpose === name ? {...d, value} : d
+              d.purpose === name ? {...d, onlyNums} : d
             ),
-          }
-          : item
-)}      )
+          } : item
+        )
+      })
     );
+  };
+
+  const handleLedgerInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    side: 'left' | 'right',
+    idx: number
+  ) => {
+    const name = e.target.name;
+    let value = e.target.value;
+    if (name === 'value') {
+      value = value.replace(/[^0-9]/g, '');
+      value = value.length > 0 ? String(Number(value)) : ''
+    }
+    if (side === 'left') {
+      setLeftLedger(prev =>
+        prev.map((item, i) =>
+          i === idx ? {...item, [name]: value} : item
+        )
+      );
+    } else {
+      setRightLedger(prev =>
+        prev.map((item, i) =>
+          i === idx ? {...item, [name]: value} : item
+        )
+      );
+    }
   };
 
   const submitPayroll = async () => {
@@ -201,11 +230,20 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }))
     try {
       if (mode === 'create') {
-        await axiosInstance.post('/payroll', {payments: data})
+        await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
+        await axiosInstance.post('/ledger', {
+          paying: [...leftLedger, ...rightLedger],
+          deduction: [],
+          createdAt: standardAt
+        });
       } else {
         data.map(async (p) => {
           await axiosInstance.patch('/payroll/payment', p);
-        })
+        });
+        await axiosInstance.patch('/ledger', {
+          ...ledger,
+          paying: [...leftLedger, ...rightLedger],
+        });
       }
     } catch {
       showAlert('payroll 등록 실패', 'error');
@@ -223,7 +261,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
           employeePosition: employee.info.position,
           paymentDetail: defaultPayment,
           deductionDetail: deduction,
-          memo: ''
+          memo: '',
         })));
       } catch {
         showAlert('사원 정보를 불러오지 못했습니다. 새로고침 해주세요.', 'error');
@@ -232,13 +270,23 @@ const NewPayrollLedger = (): React.JSX.Element => {
     if (mode === 'create') {
       setMode('create');
       getEmployees();
+      cacheManager.getLedgers().then((ledgers) => {
+        const mid = Math.ceil(ledgers.length / 2);
+        setLedger({
+          paying: ledgers,
+          deduction: [],
+          createdAt: standardAt,
+        });
+        setLeftLedger(ledgers.slice(0, mid));
+        setRightLedger(ledgers.slice(mid));
+      });
     } else {
       setMode('edit');
       const prevData: PatchPayment[] = initialPayments.map((payment: Payment) => {
         const detail = payment.paymentDetail;
         return ({
-          id: detail.id,
-          payrollRegisterId: payrollId,
+          id: payment.id,
+          payrollRegisterId: undefined,
           employeeName: payment.employeeName,
           employeePosition: payment.employeePosition,
           paymentDetail: {
@@ -247,7 +295,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
             extendWorkingTime: detail.extendWorkingTime,
             dayOffWorkingTime: detail.dayOffWorkingTime,
             extendWorkingMulti: detail.extendWorkingTime === 0 ? 0 : Number(detail.extendWokringWage) / (Number(detail.hourlyWage) * detail.extendWorkingTime),
-            dayOffWorkingMulti: detail.dayOffWorkingTime === 0 ? 0 :Number(detail.dayOffWorkingWage) / (Number(detail.hourlyWage) * detail.dayOffWorkingTime),
+            dayOffWorkingMulti: detail.dayOffWorkingTime === 0 ? 0 : Number(detail.dayOffWorkingWage) / (Number(detail.hourlyWage) * detail.dayOffWorkingTime),
             annualLeaveAllowanceMulti: Number(detail.annualLeaveAllowance) / (Number(detail.hourlyWage) * 8),
             mealAllowance: detail.mealAllowance
           },
@@ -257,11 +305,22 @@ const NewPayrollLedger = (): React.JSX.Element => {
       });
       setFormData(prevData);
       setDeduction(initialPayments[0].deductionDetail);
+
+      const prevLedger: PatchLedger = {
+        id: initialLedger?.id,
+        paying: initialLedger?.payingExpenses,
+        deduction: [],
+      }
+      const arr = initialLedger?.payingExpenses;
+      const midIndex = Math.ceil(arr?.length / 2) || 0;
+      setLedger(prevLedger);
+      setLeftLedger(arr?.slice(0, midIndex) || []);
+      setRightLedger(arr?.slice(midIndex) || []);
     }
-  }, [showAlert, deduction, mode, initialPayments, payrollId]);
+  }, [showAlert, deduction, mode, initialPayments, payrollId, initialLedger]);
 
   // debug
-  console.log('mode: ', mode, ', formData: ', formData);
+  // console.log(ledger);
 
   return (
     <Box>
@@ -273,21 +332,25 @@ const NewPayrollLedger = (): React.JSX.Element => {
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Box sx={{
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
             gap: 2,
           }}>
-            <InputLabel sx={{fontSize: 'small',}}>작성월</InputLabel>
-            <DesktopDatePicker
-              views={['day']}
-              format="YYYY/MM"
-              defaultValue={dayjs()}
-              // value={dayjs(formData.startAt)}
-              // onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
-              slotProps={{
-                textField: {size: 'small'},
-                calendarHeader: {format: 'YYYY/MM'},
-              }}
-            />
+            <Box sx={{display: 'flex', gap: 2, alignItems: 'center'}}>
+              <InputLabel sx={{fontSize: 'small',}}>작성월</InputLabel>
+              <DesktopDatePicker
+                views={['day']}
+                format="YYYY/MM/DD"
+                defaultValue={dayjs()}
+                value={dayjs(standardAt)}
+                onChange={(value) => setStandardAt(value.format('YYYY-MM-DD'))}
+                slotProps={{
+                  textField: {size: 'small'},
+                  calendarHeader: {format: 'YYYY/MM'},
+                }}
+              />
+            </Box>
+            <Button variant='outlined'>공제 항목 관리</Button>
           </Box>
         </LocalizationProvider>
       </Box>
@@ -307,9 +370,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
               <TableHead>
                 <TableRow>
                   <TableCell
-                    sx={{
-                      borderRight: '1px solid lightgray',
-                    }}/>
+                    sx={{borderRight: '1px solid lightgray',}}
+                  />
                   {mode === 'create' ? employees.map((employee) => (
                     <TableCell align='center'
                                key={employee.id}
@@ -359,7 +421,13 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  name={row.id}
                                  value={formData[colIdx]?.paymentDetail[row.id] ?? ''}
                                  onChange={(e) => handlePaymentInput(e, item.id)}
-                                 sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                                 sx={{
+                                   py: 0,
+                                   my: 0,
+                                   '& input': {
+                                     textAlign: 'right',
+                                   }
+                                 }}
                                  inputProps={{
                                    'data-col-index': colIdx,
                                    'data-row-index': row.disabled ? undefined : rowIdx + delta,
@@ -367,7 +435,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                      arrowNavAtRegister(e, employees.length - 1, false)
                                    }
                                  }}
-                          ></Input>
+                          />
                         </TableCell>
                       )
                     })}
@@ -449,54 +517,216 @@ const NewPayrollLedger = (): React.JSX.Element => {
         </Box>
 
         {/* 지출 내역 */}
-        {/*<Box sx={{mt: 2}}>
+        <Box sx={{mt: 2}}>
           <Typography variant='h6'>지출 내역</Typography>
-          <TableContainer
-            component={Box}
-            sx={{
-              border: '1px solid',
-              borderColor: 'lightgray',
-              borderRadius: 1,
-              mt: 1
-            }}
-          >
-            <Table size="small">
-              <TableBody>
-                {expenseData.map((item, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell sx={{
-                      whiteSpace: 'pre-line',
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      {item.leftTitle || ''}
-                      <Typography sx={{m: 0, fontSize: 10, whiteSpace: 'pre-line'}}>
-                        {item.leftNote && `${item.leftNote}`}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center" sx={{
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      -
-                    </TableCell>
-                    <TableCell sx={{
-                      whiteSpace: 'pre-line',
-                      borderRight: '1px solid lightgray',
-                      width: 1 / 4
-                    }}>
-                      {item.rightTitle || ''}
-                      <Typography sx={{m: 0, fontSize: 10, whiteSpace: 'pre-line'}}>
-                        {item.rightNote && item.rightNote || ''}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{width: 50}} align="center">-</TableCell>
+          <Box sx={{display: 'flex', mt: 1}}>
+            {/* 왼쪽 table */}
+            <TableContainer
+              component={Box}
+              sx={{
+                border: '1px solid',
+                borderColor: 'lightgray',
+                flex: 1,
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>항목</TableCell>
+                    <TableCell align="right">금액</TableCell>
+                    <TableCell align='center'>지출일</TableCell>
+                    <TableCell align='center'>메모</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>*/}
+                </TableHead>
+                <TableBody>
+                  {leftLedger?.map((item, idx) => (
+                    <TableRow key={`left-${idx}`}>
+                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0,}}>
+                        <Input disableUnderline
+                               name='purpose'
+                               value={(item).purpose || ''}
+                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               sx={{
+                                 py: 0, my: 0,
+                                 width: 130,
+                                 '& input': {color: 'black'},
+                               }}
+                               inputProps={{
+                                 'data-col-index': 0,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               name='value'
+                               value={(item).value ?? '-'}
+                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                               inputProps={{
+                                 'data-col-index': 1,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               name='group'
+                               value={(item).group ?? '-'}
+                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 'data-col-index': 2,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               name='memo'
+                               value={(item).memo ?? '-'}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 'data-col-index': 3,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* 오른쪽 table */}
+            <TableContainer
+              component={Box}
+              sx={{
+                border: '1px solid',
+                borderColor: 'lightgray',
+                flex: 1,
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>항목</TableCell>
+                    <TableCell align="right">금액</TableCell>
+                    <TableCell align='center'>지출일</TableCell>
+                    <TableCell align='center'>메모</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rightLedger?.map((item, idx) => (
+                    <TableRow key={`right-${idx}`}>
+                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               name='purpose'
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                               value={(item).purpose || ""}
+                               sx={{py: 0, my: 0, width: 130}}
+                               inputProps={{
+                                 'data-col-index': 4,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="right"
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}
+                      >
+                        <Input disableUnderline
+                               name='value'
+                               value={(item).value ?? '-'}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                               inputProps={{
+                                 'data-col-index': 5,
+                                 'data-row-index': 100 + idx,
+
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               name='group'
+                               value={(item).group ?? '-'}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 'data-col-index': 6,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               name='memo'
+                               value={(item).memo ?? ''}
+                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
+                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 'data-col-index': 7,
+                                 'data-row-index': 100 + idx,
+                               }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+          <Box sx={{mt: 1}}>
+            <TableContainer sx={{border: '1px solid lightgray'}}>
+              <Table size="small" sx={{tableLayout: 'fixed', width: '100%'}}>
+                <TableBody>
+                  <TableRow>
+                    {Object.entries(sumByDate).map(([date, total]) => (
+                      <Fragment key={`${date}-${total}`}>
+                        <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
+                                   align="center"
+                        >
+                          {date}
+                        </TableCell>
+                        <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
+                                   align="right"
+                        >
+                          {total.toLocaleString()}
+                        </TableCell>
+                      </Fragment>
+                    ))}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={Object.keys(sumByDate).length * 2} sx={{py: 0}} align='right'>
+                      합산: {ledgerSum.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </Box>
+
       </Paper>
 
       {/* 버튼들 */}

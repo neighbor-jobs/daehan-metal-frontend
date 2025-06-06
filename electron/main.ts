@@ -18,6 +18,7 @@ import {
 import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {amountStore} from './store/amountStore.ts';
+import {addLedgers, getLedgers, removeLedgers, updateLedgers} from './store/ledgerStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -135,6 +136,24 @@ ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
 
 // TODO: amount store 함수 들어갈거임
 ipcMain.handle('get-all', () => amountStore.getAll());
+
+/*
+* ======================== 회계 관련 ==========================
+* */
+
+ipcMain.handle('ledgers:get', () => getLedgers());
+ipcMain.handle('ledgers:add', (_event, ledger) => {
+  addLedgers(ledger);
+  return { success: true };
+});
+ipcMain.handle('ledgers:update', (_event, index, data) => {
+  updateLedgers(index, data);
+  return { success: true };
+});
+ipcMain.handle('ledgers:remove', (_event, index) => {
+  removeLedgers(index);
+  return { success: true };
+});
 
 /*
 * ======================== 인쇄 관련 ==========================
