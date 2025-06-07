@@ -19,6 +19,14 @@ import {
 import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {addLedgers, getLedgers, Ledger, removeLedgers, replaceLedgers, updateLedgers} from './store/ledgerStore.ts';
+import {
+  addProduct,
+  addScale, getProducts,
+  initializeProducts, Product, removeProduct,
+  removeScale, updateProduct,
+  updateScale,
+  validateProductsAgainstAPI
+} from './store/amountStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -94,8 +102,7 @@ app.on('activate', () => {
 
 app.whenReady().then(async () => {
   createWindow();
-  await companyStore.initialize();
-  // TODO: amountStore 초기화 함수 작성 수 넣기
+  await initializeProducts();
 });
 
 // 데이터 가져오기
@@ -134,7 +141,41 @@ ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
 * ======================== 품목 관련 ==========================
 * */
 
-// TODO: amount store 함수 들어갈거임
+// products CRUD
+ipcMain.handle('products:get', () => getProducts());
+ipcMain.handle('products:add', (_event, product: Product) => {
+  addProduct(product);
+  return { success: true };
+});
+ipcMain.handle('products:update', (_event, index: number, newData: Partial<Product>) => {
+  updateProduct(index, newData);
+  return { success: true };
+});
+ipcMain.handle('products:remove', (_event, index: number) => {
+  removeProduct(index);
+  return { success: true };
+});
+
+// 데이터 정합성 검사
+ipcMain.handle('products:validate', async (_event, options) => {
+  return await validateProductsAgainstAPI(options);
+});
+
+// scale CRUD
+ipcMain.handle('scales:add', (_event, productId, scale) => {
+  addScale(productId, scale);
+  return { success: true };
+});
+
+ipcMain.handle('scales:update', (_event, productId, scaleName, newData) => {
+  updateScale(productId, scaleName, newData);
+  return { success: true };
+});
+
+ipcMain.handle('scales:remove', (_event, productId, scaleName) => {
+  removeScale(productId, scaleName);
+  return { success: true };
+});
 
 /*
 * ======================== 회계 관련 ==========================
