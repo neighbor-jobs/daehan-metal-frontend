@@ -1,6 +1,7 @@
 
 export interface PostPayrollReq {
   payments: PostPayment[];
+  standardAt: string;
 }
 
 export interface PostPayment {
