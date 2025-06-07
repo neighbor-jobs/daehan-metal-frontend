@@ -71,11 +71,14 @@ export const cacheManager = {
   async updateLedgers(index: number, data: Paying) {
     return await window.ipcRenderer.invoke('ledgers:update',index, data);
   },
+
+  async replaceLedgers(newLedgers: Paying[]) {
+    return await window.ipcRenderer.invoke('ledgers:replace', newLedgers);
+  },
+
   async removeLedgers(index: number) {
     return await window.ipcRenderer.invoke('ledgers:update',index);
   }
 };
 
 export default cacheManager;
-
-

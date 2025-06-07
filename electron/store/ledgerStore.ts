@@ -79,6 +79,19 @@ export const updateLedgers = (index: number, newData: Partial<Ledger>) => {
   ledgerStore.set('ledgers', current);
 };
 
+// 전체 데이터 교체(덮어쓰기)
+export const replaceLedgers = (newLedgers: Ledger[]) => {
+  let ledgers = [...newLedgers];
+  if (ledgers.length < 30) {
+    for (let i = ledgers.length; i < 30; i++) {
+      ledgers.push({purpose: '', value: '', group: '', memo: ''});
+    }
+  } else if (ledgers.length > 30) {
+    ledgers = ledgers.slice(0, 30);
+  }
+  ledgerStore.set('ledgers', ledgers);
+};
+
 // 데이터 삭제
 export const removeLedgers = (index: number) => {
   const current = getLedgers();
