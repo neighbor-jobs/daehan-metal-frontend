@@ -250,7 +250,7 @@ const PayrollLedger = (): React.JSX.Element => {
                     <TableRow key={`left-${idx}`}>
                       <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
-                               value={(item as any).purpose || String(item)}
+                               value={(item).purpose}
                                sx={{py: 0, my: 0,}}
                                inputProps={{
                                  disabled: true,
@@ -259,7 +259,7 @@ const PayrollLedger = (): React.JSX.Element => {
                       </TableCell>
                       <TableCell align="right" sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
-                               value={(item as any).value ?? '-'}
+                               value={formatCurrency((item).value) ?? '-'}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                                inputProps={{
                                  disabled: true,
@@ -271,7 +271,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                  sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
-                               value={(item as any).group ?? '-'}
+                               value={(item).group ?? '-'}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
                                inputProps={{
                                  disabled: true,
@@ -307,7 +307,7 @@ const PayrollLedger = (): React.JSX.Element => {
                       <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
-                               value={(item as any).purpose || String(item)}
+                               value={(item as any).purpose}
                                sx={{py: 0, my: 0,}}
                                inputProps={{
                                  disabled: true,
@@ -318,7 +318,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                  sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
-                               value={(item as any).value ?? '-'}
+                               value={formatCurrency((item).value) ?? '-'}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                                inputProps={{
                                  disabled: true,
@@ -338,6 +338,37 @@ const PayrollLedger = (): React.JSX.Element => {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+          <Box sx={{mt: 1}}>
+            <TableContainer sx={{border: '1px solid lightgray'}}>
+              <Table size="small" sx={{tableLayout: 'fixed', width: '100%'}}>
+                <TableBody>
+                  <TableRow>
+{/*
+                    {Object.entries(sumByDate).map(([date, total]) => (
+                      <Fragment key={`${date}-${total}`}>
+                        <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
+                                   align="center"
+                        >
+                          {date}
+                        </TableCell>
+                        <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
+                                   align="right"
+                        >
+                          {total.toLocaleString()}
+                        </TableCell>
+                      </Fragment>
+                    ))}
+*/}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{py: 0}} align='right'>
+                      {/* 합산 */}
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>

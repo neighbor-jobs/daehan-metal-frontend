@@ -26,6 +26,7 @@ import {useLocation} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
 import {PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
 import {cacheManager} from '../../utils/cacheManager.ts';
+import {formatCurrency} from '../../utils/format.ts';
 
 const defaultPayment: PostPaymentDetail = {
   // 기본값
@@ -123,6 +124,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
+  const [calculatedWages, setCalculatedWages] = useState({});
 
   const {sumByDate, ledgerSum} = useMemo(() => {
     const allLedger = [...(leftLedger ?? []), ...(rightLedger ?? [])];
@@ -181,7 +183,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
           key === id ? {
             ...item,
             deductionDetail: item.deductionDetail.map((d) =>
-              d.purpose === name ? {...d, onlyNums} : d
+              d.purpose === name ? {...d, value: onlyNums} : d
             ),
           } : item
         )
@@ -245,10 +247,28 @@ const NewPayrollLedger = (): React.JSX.Element => {
           paying: [...leftLedger, ...rightLedger],
         });
       }
+      await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
     } catch {
       showAlert('payroll 등록 실패', 'error');
     }
   }
+
+  useEffect(() => {
+    if (mode === 'create') {
+      const newWages = {};
+      formData.forEach((item, idx) => {
+        console.log(item)
+        const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay);
+        newWages[idx] = {
+          hourlyWage: hw,
+          extendWokringWage: hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime),
+          dayOffWorkingWage: hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.extendWorkingTime),
+          annualLeaveAllowance: hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti,
+        };
+      });
+      setCalculatedWages(newWages);
+    }
+  }, [formData]);
 
   useEffect(() => {
     const getEmployees = async () => {
@@ -282,6 +302,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       });
     } else {
       setMode('edit');
+      /* form data setting */
       const prevData: PatchPayment[] = initialPayments.map((payment: Payment) => {
         const detail = payment.paymentDetail;
         return ({
@@ -294,9 +315,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
             workingDay: detail.workingDay,
             extendWorkingTime: detail.extendWorkingTime,
             dayOffWorkingTime: detail.dayOffWorkingTime,
-            extendWorkingMulti: detail.extendWorkingTime === 0 ? 0 : Number(detail.extendWokringWage) / (Number(detail.hourlyWage) * detail.extendWorkingTime),
-            dayOffWorkingMulti: detail.dayOffWorkingTime === 0 ? 0 : Number(detail.dayOffWorkingWage) / (Number(detail.hourlyWage) * detail.dayOffWorkingTime),
-            annualLeaveAllowanceMulti: Number(detail.annualLeaveAllowance) / (Number(detail.hourlyWage) * 8),
+            extendWorkingMulti: detail.multis.extendWorkingMulti,
+            dayOffWorkingMulti: detail.multis.dayOffWorkingMulti,
+            annualLeaveAllowanceMulti: detail.multis.annualLeaveAllowanceMulti,
             mealAllowance: detail.mealAllowance
           },
           deductionDetail: payment.deductionDetail,
@@ -306,6 +327,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       setFormData(prevData);
       setDeduction(initialPayments[0].deductionDetail);
 
+      /* ledger setting */
       const prevLedger: PatchLedger = {
         id: initialLedger?.id,
         paying: initialLedger?.payingExpenses,
@@ -320,7 +342,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }, [showAlert, deduction, mode, initialPayments, payrollId, initialLedger]);
 
   // debug
-  // console.log(ledger);
 
   return (
     <Box>
@@ -409,9 +430,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     </TableCell>
                     {listToPaymentRender.map((item, colIdx) => {
                       let delta = 0
+                      let value = formData[colIdx]?.paymentDetail[row.id];
                       if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -1
                       else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -2
                       else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -3
+
+                      if (row.id === PaymentTableRow.EXTEND_WORKING_WAGE
+                        || row.id === PaymentTableRow.DAY_OFF_WORKING_WAGE
+                        || row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE
+                      ) {
+                        value = calculatedWages[colIdx]?.[row.id];
+                      }
                       return (
                         <TableCell key={`${item.id}-${colIdx}`} align="right"
                                    sx={{borderRight: '1px solid lightgray', py: 0}}
@@ -419,7 +448,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                           <Input disableUnderline
                                  disabled={row.disabled || false}
                                  name={row.id}
-                                 value={formData[colIdx]?.paymentDetail[row.id] ?? ''}
+                                 value={value ?? ''}
                                  onChange={(e) => handlePaymentInput(e, item.id)}
                                  sx={{
                                    py: 0,
@@ -561,7 +590,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       <TableCell align="right" sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
                                name='value'
-                               value={(item).value ?? '-'}
+                               value={formatCurrency((item).value) ?? '-'}
                                onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
@@ -649,7 +678,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       >
                         <Input disableUnderline
                                name='value'
-                               value={(item).value ?? '-'}
+                               value={formatCurrency((item).value) ?? '-'}
                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
                                onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
