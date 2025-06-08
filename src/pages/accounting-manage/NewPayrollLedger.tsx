@@ -257,7 +257,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
     if (mode === 'create') {
       const newWages = {};
       formData.forEach((item, idx) => {
-        console.log(item)
         const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay);
         newWages[idx] = {
           hourlyWage: hw,

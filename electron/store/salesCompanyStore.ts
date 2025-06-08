@@ -59,7 +59,6 @@ class CompanyStore {
         `http://localhost:3000/company?orderBy=desc`
       );
       this.replaceCache(response.data.data);
-      // console.log("✅ 거래처 리스트 업데이트 완료");
     } catch (error) {
       console.error("❌ 거래처 리스트 업데이트 실패:", error);
     }
