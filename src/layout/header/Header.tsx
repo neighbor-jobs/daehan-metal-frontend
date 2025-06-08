@@ -10,13 +10,19 @@ import {
 } from '../../types/headerMenu.ts';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useHeaderStore} from '../../stores/headerStore.ts';
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 
 const Header = (): React.JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {selectedType, setSelectedType, setSelectedSubType} = useHeaderStore();
-  const [subNavIdx, setSubNavIdx] = useState(0);
+  const {
+    selectedType,
+    setSelectedType,
+    setSelectedSubType,
+    subNavIdx,
+    setSubNavIdx,
+    setHeaderByPath
+  } = useHeaderStore();
   const revenueManageSubMenu = Object.entries(RevenueManageMenuType).map(([key, value]) => ({
     key, value,
   }));
@@ -136,66 +142,8 @@ const Header = (): React.JSX.Element => {
 
   useEffect(() => {
     const path = location.pathname;
-
-    if (path.startsWith('/revenue')) {
-      setSelectedType(MenuType.RevenueManage);
-      if (path === '/revenue') {
-        setSelectedSubType(RevenueManageMenuType.SalesDetail);
-        setSubNavIdx(0);
-      } else if (path === '/revenue/daily') {
-        setSelectedSubType(RevenueManageMenuType.DailySales);
-        setSubNavIdx(1);
-      } else if (path === '/revenue/client') {
-        setSelectedSubType(RevenueManageMenuType.ClientSales);
-        setSubNavIdx(2);
-      } else if (path === '/revenue/client-summary') {
-        setSelectedSubType(RevenueManageMenuType.ClientSalesSummary);
-        setSubNavIdx(3);
-      } else if (path === '/revenue/item') {
-        setSelectedSubType(RevenueManageMenuType.ItemSales);
-        setSubNavIdx(4);
-      } else if (path === '/revenue/item-summary') {
-        setSelectedSubType(RevenueManageMenuType.ItemSalesSummary);
-        setSubNavIdx(5);
-      } else if (path === '/revenue/client-outstanding') {
-        setSelectedSubType(RevenueManageMenuType.ClientOutstandingBalance);
-        setSubNavIdx(6);
-      }
-    } else if (path.startsWith('/purchase')) {
-      setSelectedType(MenuType.PurchaseManage);
-      if (path === '/purchase') {
-        setSelectedSubType(PurchaseManageMenuType.PurchaseDetail);
-        setSubNavIdx(0);
-      } else if (path === '/purchase/monthly') {
-        setSelectedSubType(PurchaseManageMenuType.MonthlyPurchase);
-        setSubNavIdx(1);
-      }
-    } else if (path.startsWith('/client')) {
-      setSelectedType(MenuType.ClientManage);
-      if (path === '/client/sales') {
-        setSelectedSubType(ClientManageMenuType.SalesManage);
-        setSubNavIdx(0);
-      } else if (path === '/client/purchase') {
-        setSelectedSubType(ClientManageMenuType.SupplierManage);
-        setSubNavIdx(1);
-      }
-    } else if (path.startsWith('/account')) {
-      setSelectedType(MenuType.AccountingManage);
-      if (path === '/account/payroll') {
-        setSelectedSubType(AccountingManageMenuType.PayrollDetail);
-        setSubNavIdx(0);
-      } else if (path === '/account/payroll-new') {
-        setSelectedSubType(AccountingManageMenuType.PayrollRegister);
-        setSubNavIdx(1);
-      } else if (path === '/account/employee') {
-        setSelectedSubType(AccountingManageMenuType.EmployeeManage);
-        setSubNavIdx(2);
-      }
-    } else {
-      setSelectedType(null);
-      setSelectedSubType(null);
-    }
-  }, [location.pathname, setSelectedType, setSelectedSubType]);
+    setHeaderByPath(path);
+  }, [location.pathname, setHeaderByPath, setSelectedType, setSelectedSubType]);
 
   return (
     <Box>

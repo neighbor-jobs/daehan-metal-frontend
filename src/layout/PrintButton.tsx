@@ -1,5 +1,7 @@
 import {Box, Button} from '@mui/material';
 import {useHeaderStore} from '../stores/headerStore.ts';
+import {useLocation} from 'react-router-dom';
+import {useEffect} from 'react';
 
 interface FooterProps {
   printData: any,
@@ -10,10 +12,14 @@ interface FooterProps {
 }
 
 const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
-  const {selectedSubType} = useHeaderStore();
+  const {selectedSubType, setHeaderByPath} = useHeaderStore();
+  const location = useLocation();
 
-  // TODO: selectedSubType이 null이면 경로에 따라 변수 재정의하고 넘겨주기
-  // console.log('print type: ', selectedSubType);
+  useEffect(() => {
+    if (!selectedSubType) {
+      setHeaderByPath(location.pathname);
+    }
+  }, [location.pathname, selectedSubType, setHeaderByPath]);
 
   // handler
   const handlePrint = async () => {
