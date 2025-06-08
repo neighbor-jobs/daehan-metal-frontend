@@ -17,7 +17,7 @@ export interface Product {
 export interface Scale {
   scaleName: string;
   prevRawMatAmount?: string;
-  prevManufacturerAmount?: string;
+  prevManufactureAmount?: string;
 }
 
 const schema = {
@@ -35,7 +35,7 @@ const schema = {
             properties: {
               scaleName: {type: 'string'},
               prevRawMatAmount: {type: ['string', 'null'], default: '0'},
-              prevManufacturerAmount: {type: ['string', 'null'], default: 0},
+              prevManufactureAmount: {type: ['string', 'null'], default: 0},
             },
             required: ['scaleName'],
             additionalProperties: false
@@ -82,6 +82,14 @@ export const removeProduct = (index: number): void => {
   amountStore.set('products', current.filter((_, i) => i !== index));
 };
 
+// scale 조회
+export const getScale = (productId: string, scaleName: string): Scale | undefined => {
+  const products: Product[] = getProducts();
+  const product: Product = products.find(p => p.prodId === productId);
+  if (!product || !product.scales) return undefined;
+  return product.scales.find(s => s.scaleName === scaleName);
+}
+
 // scale 추가
 export const addScale = (productId: string, scale: Scale): void => {
   const products = getProducts();
@@ -94,12 +102,12 @@ export const addScale = (productId: string, scale: Scale): void => {
 
 // scale 수정
 export const updateScale = (
-  productId: string,
+  prodName: string,
   scaleName: string,
   newData: Partial<Scale>
 ): void => {
   const products = getProducts();
-  const productIdx = products.findIndex(p => p.prodId === productId);
+  const productIdx = products.findIndex(p => p.prodName === prodName);
   if (productIdx === -1) return;
 
   const scaleIdx = products[productIdx].scales?.findIndex(s => s.scaleName === scaleName);
@@ -335,7 +343,7 @@ export const transformApiProduct = (apiProduct: ApiProduct): Product => ({
   scales: apiProduct.scales?.map((scaleName: string): Scale => ({
     scaleName,
     prevRawMatAmount: '0',
-    prevManufacturerAmount: '0',
+    prevManufactureAmount: '0',
   })) || []
 });
 
@@ -361,6 +369,7 @@ export const validateProductsAgainstAPI = async (options: {
     if (!apiProd) {
       if (options.removeOrphaned) {
         removeProduct(storedProducts.indexOf(storedProd));
+        console.log('삭제한 고아 cache data: ', storedProducts.indexOf(storedProd))
       }
       continue;
     }
@@ -378,6 +387,10 @@ export const validateProductsAgainstAPI = async (options: {
         updateProduct(storedProducts.indexOf(storedProd), {
           prodName: apiProd.name
         });
+        console.log('api-cache data 에서 불일치한 prodName: ',
+          storedProducts.indexOf(storedProd), {
+          prodName: apiProd.name
+        })
       }
     }
 
@@ -399,8 +412,13 @@ export const validateProductsAgainstAPI = async (options: {
           addScale(storedProd.prodId, {
             scaleName,
             prevRawMatAmount: '0',
-            prevManufacturerAmount: '0'
+            prevManufactureAmount: '0'
           });
+          console.log(storedProd.prodName, '의 누락된 scale 추가: ', {
+            scaleName,
+            prevRawMatAmount: '0',
+            prevManufactureAmount: '0'
+          })
         }
       }
     }
@@ -409,6 +427,7 @@ export const validateProductsAgainstAPI = async (options: {
     for (const scaleName of storedScaleNames) {
       if (!apiScaleNames.has(scaleName) && options.autoFix) {
         removeScale(storedProd.prodId, scaleName);
+        console.log('삭제된 scale: ', storedProd.prodName, '의 ', scaleName);
       }
     }
   }
@@ -418,9 +437,9 @@ export const validateProductsAgainstAPI = async (options: {
     for (const apiProd of apiProducts) {
       if (!storedProducts.some(p => p.prodId === apiProd.id)) {
         addProduct(transformApiProduct(apiProd));
+        console.log('신규 product 추가: ', transformApiProduct(apiProd));
       }
     }
   }
-
   return { mismatches };
 };

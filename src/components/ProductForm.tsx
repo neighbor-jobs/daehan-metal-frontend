@@ -6,6 +6,7 @@ import {ProductDialogType} from '../types/dialogTypes.ts';
 import axiosInstance from '../api/axios.ts';
 import {moveFocusToNextInput, moveFocusToPrevInput} from '../utils/focus.ts';
 import {Product} from '../types/productRes.ts';
+import cacheManager from '../utils/cacheManager.ts';
 
 interface ProductFormProps {
   dialogType: ProductDialogType;
@@ -27,6 +28,7 @@ const ProductForm = ({
                        onClose,
                        onSuccess,
                      }: ProductFormProps): React.JSX.Element => {
+  // TODO: amount 관련 add 로직도 붙이기
   const [formData, setFormData] = useState({
     name: '',
     scales: ['', '', '', ''],
@@ -62,28 +64,35 @@ const ProductForm = ({
   }
 
   const handleSubmit = async () => {
+    // 품목 등록
     if (dialogType === ProductDialogType.CREATE) {
-      if (!formData.name) {
+      if (!formData.name.trim()) {
         showAlert('품명은 필수 입력 값입니다.', 'info');
         return;
       }
-      const validScales = formData.scales.filter(s => s && s.trim() !== '');
+      // name 중복검사
+      let isDupName: boolean = false;
+      // 이전 scale[]과 새 scale[]
+      const prevScales = productList
+        .find((product) => {
+          const result = product.name === formData.name.trim();
+          if (result) isDupName = true;
+          return result;
+        })?.scales || [];
+      const validScales = formData.scales?.filter(s => s && s.trim() !== '').map(s => s.trim());
 
-      // 중복 규격 검사 및 알림
-      const duplicateScales = productList
-        .find((product) => product.name === formData.name)
-        ?.scales.filter((existingScale) => validScales.includes(existingScale)) || [];
-
+      // 중복 scale 검사
+      const duplicateScales: string[] = prevScales?.filter((existingScale) =>
+        validScales.includes(existingScale)) || [];
       if (duplicateScales.length > 0) {
         const dupMsg = duplicateScales.join(', ');
         showAlert(`"${formData.name}" 품목에 이미 등록된 규격: ${dupMsg}`, 'warning');
         return;
       }
-
       try {
-        await axiosInstance.post('/product', {
-          name: formData.name,
-          scales: validScales,
+        const res = await axiosInstance.post('/product', {
+          name: formData.name.trim(),
+          scales: [...prevScales, ...validScales],
         });
         showAlert('등록이 완료되었습니다.', 'success');
         setFormData({
@@ -92,10 +101,32 @@ const ProductForm = ({
         })
         if (onSuccess) onSuccess();
         onClose();
+        if (isDupName) {
+          res.data.data.scales?.forEach((scale: string) => {
+            cacheManager.addScale(res.data.data.id, {
+              scaleName: scale,
+              prevRawMatAmount: '0',
+              prevManufactureAmount: '0'
+            })
+          })
+        } else {
+          const scaleList = res.data.data.scales?.map((scale: string) => ({
+            scaleName: scale,
+            prevRawMatAmount: '0',
+            prevManufactureAmount: '0'
+          }));
+          await cacheManager.addProduct({
+            prodId: res.data.data.id,
+            prodName: res.data.data.name,
+            scales: scaleList || [],
+          })
+        }
       } catch (err) {
         showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'error');
       }
     } else {
+      // 품목 수정
+      // TODO: update scale cache data 추가
       if (updateScaleName.newName.length === 0) {
         showAlert('새 규격명이 빈칸입니다.', 'info');
         return;

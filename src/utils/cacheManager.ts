@@ -48,15 +48,32 @@ export const cacheManager = {
 * ================================ 품목 관련 ===============================
 * */
   async getProducts() {
-    return await window.ipcRenderer.invoke('get-products');
+    return await window.ipcRenderer.invoke('products:get');
   },
   async addProduct(product: any) {
-    return await window.ipcRenderer.invoke('add-product', product);
+    return await window.ipcRenderer.invoke('products:add', product);
+  },
+  async updateProduct(index, newData) {
+    return await window.ipcRenderer.invoke('products:update', index, newData);
+  },
+  async removeProduct(index) {
+    return await window.ipcRenderer.invoke('products:remove', index);
   },
 
-  /** 갱신 */
-  async fetchAndUpdateProducts() {
-    return await window.ipcRenderer.invoke('fetch-and-update-products');
+  async getScale(productId: string, scaleName: string) {
+    return await window.ipcRenderer.invoke('scales:get', productId, scaleName);
+  },
+  async addScale(productId: string, scale) {
+    return await window.ipcRenderer.invoke('scales:add', productId, scale);
+  },
+  async updateScale(prodName: string, scaleName: string, newData) {
+    return await window.ipcRenderer.invoke('scales:update', prodName, scaleName, newData);
+  },
+  async validateProductsAgainstAPI(autoFix: boolean, removeOrphaned: boolean) {
+    return await window.ipcRenderer.invoke('products:validate', {
+      autoFix: autoFix,
+      removeOrphaned: removeOrphaned,
+    })
   },
 
 /*

@@ -21,9 +21,14 @@ import {companyStore} from './store/salesCompanyStore.ts';
 import {addLedgers, getLedgers, Ledger, removeLedgers, replaceLedgers, updateLedgers} from './store/ledgerStore.ts';
 import {
   addProduct,
-  addScale, getProducts,
-  initializeProducts, Product, removeProduct,
-  removeScale, updateProduct,
+  addScale,
+  getProducts,
+  getScale,
+  initializeProducts,
+  Product,
+  removeProduct,
+  removeScale,
+  updateProduct,
   updateScale,
   validateProductsAgainstAPI
 } from './store/amountStore.ts';
@@ -103,6 +108,10 @@ app.on('activate', () => {
 app.whenReady().then(async () => {
   createWindow();
   await initializeProducts();
+  await validateProductsAgainstAPI({
+    autoFix: true,
+    removeOrphaned: true
+  });
 });
 
 // 데이터 가져오기
@@ -162,6 +171,10 @@ ipcMain.handle('products:validate', async (_event, options) => {
 });
 
 // scale CRUD
+ipcMain.handle('scales:get', (_event, productId: string, scaleName: string) => {
+  return getScale(productId, scaleName);
+})
+
 ipcMain.handle('scales:add', (_event, productId, scale) => {
   addScale(productId, scale);
   return { success: true };

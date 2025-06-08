@@ -38,6 +38,7 @@ import {ProductDialogType} from '../../types/dialogTypes.ts';
 import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts';
 import {Product} from '../../types/productRes.ts';
 import {moveFocusToNextInput} from '../../utils/focus.ts';
+import cacheManager from '../../utils/cacheManager.ts';
 
 interface TransactionRegisterProps {
   dialogType: 'create' | 'edit';
@@ -151,9 +152,8 @@ const TransactionRegister = ({
     productListState.forEach((p) => {
       map[p.name] = getUniqueScalesByProductName(productListState, p.name);
     });
-    // console.log(map);
     return map;
-  }, [productListState, productList]);
+  }, [productListState]);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -193,12 +193,27 @@ const TransactionRegister = ({
       if (product.name === prodName) {
         const matchedScale = product.scales?.find(s => s === newValue);
         if (matchedScale) {
-          setChoices((prevChoices) =>
-            prevChoices.map((choice, i) => (i === index ? {
-              ...choice,
-              scale: newValue || '',
-            } : choice))
-          );
+          cacheManager.getScale(product.id, matchedScale)
+            .then((scale) => {
+              console.log('get scale cache: ', scale);
+              setChoices((prevChoices) =>
+                prevChoices.map((choice, i) => (i === index ? {
+                  ...choice,
+                  scale: newValue || '',
+                  rawMatAmount: scale?.prevRawMatAmount || '0',
+                  manufactureAmount: scale?.prevManufactureAmount || '0',
+                } : choice))
+              )
+            })
+            .catch((err) => {
+              setChoices((prevChoices) =>
+                prevChoices.map((choice, i) => (i === index ? {
+                  ...choice,
+                  scale: newValue || '',
+                } : choice))
+              )
+              console.error(err)
+            });
         }
       }
     }
@@ -213,9 +228,17 @@ const TransactionRegister = ({
     const isValidNumberInput = /^(\d+)?(\.\d*)?$/.test(value);
     if (!isValidNumberInput && value !== '') return;
 
+    // 앞자리 0 제거 (단, '0', '0.'은 허용)
+    let newValue = value;
+    if (newValue && newValue !== '0' && !newValue.startsWith('0.')) {
+      newValue = newValue.replace(/^0+/, '');
+      // 빈 문자열이 되면 '0'으로 대체
+      if (newValue === '') newValue = '0';
+    }
+
     setChoices((prevChoices) =>
       prevChoices.map((choice, idx) =>
-        idx === rowIndex ? {...choice, [name]: value} : choice
+        idx === rowIndex ? {...choice, [name]: newValue} : choice
       )
     );
   };
@@ -247,7 +270,7 @@ const TransactionRegister = ({
       sequence: dialogType === 'create'
         ? (endSeq !== null ? endSeq + 1 : 1)
         : prevFormData.sequence,
-      };
+    };
 
     // choices 복사본 생성
     const updatedChoices = choices.map((c) => ({
@@ -293,6 +316,21 @@ const TransactionRegister = ({
         return;
       }
       if (onSuccess) onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
+
+      // scale cache data update
+      updatedChoices.map((c: Choice) => {
+        if (c.scale) {
+          cacheManager.updateScale(c.productName, c.scale, {
+            prevRawMatAmount: c.rawMatAmount,
+            prevManufactureAmount: c.manufactureAmount,
+          })
+          console.log({
+            prevRawMatAmount: c.rawMatAmount,
+            prevManufactureAmount: c.manufactureAmount,
+          });
+        }
+      })
+
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
         companyId: '',
@@ -337,7 +375,8 @@ const TransactionRegister = ({
   useEffect(() => {
     if (dialogType === 'edit' && prevFormData) {
       setFormData(prevFormData);
-    } else if (dialogType === 'create') {
+    }
+    /*else if (dialogType === 'create') {
       setFormData({
         companyId: '',
         locationName: [] as string[],
@@ -346,12 +385,10 @@ const TransactionRegister = ({
         sequence: 1,
         createdAt: dayjs().format('YYYY-MM-DD'),
       });
-    }
+    }*/
   }, [dialogType, prevFormData]);
 
   // debug
-  // console.log(dialogType);
-  // console.log('formData: ', formData, 'choices: ', choices);
   return (
     <>
       {/* 거래 등록 Dialog */}
@@ -614,7 +651,8 @@ const TransactionRegister = ({
                                    } else {
                                      arrowNavAtRegister(e, 4);
                                    }
-                                 }                               }}
+                                 }
+                               }}
                                value={`${choice.manufactureAmount}`}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                name='manufactureAmount'/>

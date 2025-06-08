@@ -33,6 +33,8 @@ const columns: readonly ProductMainColumn[] = [
 ]
 
 const ProductMain = (): React.JSX.Element => {
+  // TODO: 규격이 있는 품목이라도 품명 없는 순정 규격 하나 넣어두기
+  // TODO: amount 관련 update & delete 로직도 붙이기
   const [open, setOpen] = useState(false);
   const [dialogType, setDialogType] = useState<ProductDialogType>(ProductDialogType.CREATE);
   const [productList, setProductList] = useState([]);
@@ -103,12 +105,14 @@ const ProductMain = (): React.JSX.Element => {
   const delProduct = async (id: string, scale: string, name: string) => {
     console.log(scale);
     try {
+      // TODO: delete scale cache data
       if (scale) {
         await axiosInstance.patch(`/product/scale/remove`, {
           name: name,
           scale: scale,
         })
       } else {
+        // TODO: delete product cache data
         await axiosInstance.delete(`/product?id=${id}`);
       }
       showAlert('삭제 완료', 'success');
@@ -127,7 +131,6 @@ const ProductMain = (): React.JSX.Element => {
 
   // debug
   // console.log(formatProdList);
-  console.log(page.totalPages);
 
   return (
     <Box>
