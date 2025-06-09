@@ -189,6 +189,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                key={p.id}
                     >
                       {p.employeeName}
+                      <Typography sx={{m: 0, fontSize: 11}}>{p.employeePosition}</Typography>
                     </TableCell>
                   ))}
                 </TableRow>
