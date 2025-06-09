@@ -56,8 +56,8 @@ export const cacheManager = {
   async updateProduct(index, newData) {
     return await window.ipcRenderer.invoke('products:update', index, newData);
   },
-  async removeProduct(index) {
-    return await window.ipcRenderer.invoke('products:remove', index);
+  async removeProduct(prodId: string) {
+    return await window.ipcRenderer.invoke('products:remove', prodId);
   },
 
   async getScale(productId: string, scaleName: string) {
@@ -69,6 +69,10 @@ export const cacheManager = {
   async updateScale(prodName: string, scaleName: string, newData) {
     return await window.ipcRenderer.invoke('scales:update', prodName, scaleName, newData);
   },
+  async removeScale(productId: string, scaleName: string) {
+    return await window.ipcRenderer.invoke('scales:remove', productId, scaleName);
+  },
+
   async validateProductsAgainstAPI(autoFix: boolean, removeOrphaned: boolean) {
     return await window.ipcRenderer.invoke('products:validate', {
       autoFix: autoFix,

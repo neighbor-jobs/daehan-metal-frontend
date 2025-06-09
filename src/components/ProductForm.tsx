@@ -28,7 +28,6 @@ const ProductForm = ({
                        onClose,
                        onSuccess,
                      }: ProductFormProps): React.JSX.Element => {
-  // TODO: amount 관련 add 로직도 붙이기
   const [formData, setFormData] = useState({
     name: '',
     scales: ['', '', '', ''],

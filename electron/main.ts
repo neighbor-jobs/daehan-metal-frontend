@@ -160,8 +160,8 @@ ipcMain.handle('products:update', (_event, index: number, newData: Partial<Produ
   updateProduct(index, newData);
   return { success: true };
 });
-ipcMain.handle('products:remove', (_event, index: number) => {
-  removeProduct(index);
+ipcMain.handle('products:remove', (_event, prodId: string) => {
+  removeProduct(prodId);
   return { success: true };
 });
 

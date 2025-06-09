@@ -1,7 +1,8 @@
 import {
   Box,
   Button,
-  IconButton, Pagination,
+  IconButton,
+  Pagination,
   Paper,
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {ProductDialogType} from '../../types/dialogTypes.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import ProductForm from '../../components/ProductForm.tsx';
 import EditIcon from '@mui/icons-material/Edit';
+import cacheManager from '../../utils/cacheManager.ts';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -33,8 +35,6 @@ const columns: readonly ProductMainColumn[] = [
 ]
 
 const ProductMain = (): React.JSX.Element => {
-  // TODO: 규격이 있는 품목이라도 품명 없는 순정 규격 하나 넣어두기
-  // TODO: amount 관련 update & delete 로직도 붙이기
   const [open, setOpen] = useState(false);
   const [dialogType, setDialogType] = useState<ProductDialogType>(ProductDialogType.CREATE);
   const [productList, setProductList] = useState([]);
@@ -104,25 +104,31 @@ const ProductMain = (): React.JSX.Element => {
 
   const delProduct = async (id: string, scale: string, name: string) => {
     console.log(scale);
-    try {
-      // TODO: delete scale cache data
-      if (scale) {
+    if (scale) {
+      // 규격 삭제
+      try {
         await axiosInstance.patch(`/product/scale/remove`, {
           name: name,
           scale: scale,
-        })
-      } else {
-        // TODO: delete product cache data
-        await axiosInstance.delete(`/product?id=${id}`);
+        });
+      } catch {
+        showAlert('규격 삭제에 실패했습니다. 재시도 해주세요.', 'error');
       }
-      showAlert('삭제 완료', 'success');
-      const res= await getProductList(page.page);
-
-      // 삭제 후에 (전체 페이지 < 현재 페이지) 면 마지막 페이지 불러오기
-      if (res.totalPages < page.page) await getProductList(page.totalPages);
-    } catch {
-      showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
+      await cacheManager.removeScale(id, scale);
+    } else {
+      // 품목 삭제
+      try {
+        await axiosInstance.delete(`/product?id=${id}`);
+      } catch {
+        showAlert('품목 삭제에 실패했습니다. 재시도 해주세요.', 'error')
+      }
+      await cacheManager.removeProduct(id);
     }
+    showAlert('삭제 완료', 'success');
+    const res = await getProductList(page.page);
+
+    // 삭제 후에 (전체 페이지 < 현재 페이지) 면 마지막 페이지 불러오기
+    if (res.totalPages < page.page) await getProductList(page.totalPages);
   }
 
   useEffect(() => {
@@ -130,7 +136,6 @@ const ProductMain = (): React.JSX.Element => {
   }, []);
 
   // debug
-  // console.log(formatProdList);
 
   return (
     <Box>

@@ -77,9 +77,9 @@ export const updateProduct = (index: number, newData: Partial<Product>): void =>
 };
 
 // 제품 삭제
-export const removeProduct = (index: number): void => {
+export const removeProduct = (prodId: string): void => {
   const current = getProducts();
-  amountStore.set('products', current.filter((_, i) => i !== index));
+  amountStore.set('products', current.filter((p) => p.prodId !== prodId));
 };
 
 // scale 조회
@@ -87,7 +87,7 @@ export const getScale = (productId: string, scaleName: string): Scale | undefine
   const products: Product[] = getProducts();
   const product: Product = products.find(p => p.prodId === productId);
   if (!product || !product.scales) return undefined;
-  return product.scales.find(s => s.scaleName === scaleName);
+  return product.scales?.find((s: Scale) => s.scaleName === scaleName);
 }
 
 // scale 추가
@@ -110,7 +110,7 @@ export const updateScale = (
   const productIdx = products.findIndex(p => p.prodName === prodName);
   if (productIdx === -1) return;
 
-  const scaleIdx = products[productIdx].scales?.findIndex(s => s.scaleName === scaleName);
+  const scaleIdx = products[productIdx].scales?.findIndex((s: Scale) => s.scaleName === scaleName);
   if (scaleIdx === -1) return;
 
   products[productIdx].scales[scaleIdx] = {
@@ -127,7 +127,7 @@ export const removeScale = (productId: string, scaleName: string): void => {
   if (productIdx === -1) return;
 
   products[productIdx].scales = products[productIdx].scales?.filter(
-    s => s.scaleName !== scaleName
+    (s: Scale) => s.scaleName !== scaleName
   );
   amountStore.set('products', products);
 };
@@ -368,7 +368,7 @@ export const validateProductsAgainstAPI = async (options: {
 
     if (!apiProd) {
       if (options.removeOrphaned) {
-        removeProduct(storedProducts.indexOf(storedProd));
+        removeProduct(storedProd.prodId);
         console.log('삭제한 고아 cache data: ', storedProducts.indexOf(storedProd))
       }
       continue;
