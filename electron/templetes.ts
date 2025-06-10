@@ -1,9 +1,10 @@
 import {TDocumentDefinitions} from 'pdfmake/interfaces';
-import {formatDecimal, formatCurrency} from '../src/utils/format.ts';
+import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts';
+import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
 /**
-* 거래처별 매출현황
-*/
+ * 거래처별 매출현황
+ */
 export const companySalesDocDef = (companySalesData) => {
   console.log('printData: ', companySalesData);
   const today = new Date();
@@ -228,8 +229,8 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
 };
 
 /**
-* 거래처별 매출집계
-*/
+ * 거래처별 매출집계
+ */
 export const companySalesSumDocDef = (companySalesSumData) => {
   // console.log(companySalesSumData)
   const today = new Date();
@@ -290,9 +291,9 @@ export const companySalesSumDocDef = (companySalesSumData) => {
   return docDef;
 }
 
-/*
-* 품목별 매출집계
-*/
+/**
+ * 품목별 매출집계
+ */
 export const itemSalesSumDocDef = (itemSalesSumData) => {
   const today = new Date();
   const docDef: TDocumentDefinitions = {
@@ -354,9 +355,9 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
   return docDef;
 }
 
-/*
-* 미수금 현황
-*/
+/**
+ * 미수금 현황
+ */
 /*
 {
   data: [
@@ -446,9 +447,8 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
 }
 
 /**
-* 거래명세서
-*/
-
+ * 거래명세서
+ */
 const basicInvoiceTable = (data, index) => {
   /* data 형식 */
   /*
@@ -536,7 +536,7 @@ const basicInvoiceTable = (data, index) => {
           ],
         ],
       },
-      ...(shouldPageBreak ? { pageBreak: 'before' } : {}),
+      ...(shouldPageBreak ? {pageBreak: 'before'} : {}),
     },
     {
       table: {
@@ -648,6 +648,420 @@ export const invoiceDocDef = (data: any) => {
   };
   return docDef;
 };
+
+/**
+ * payment 생성
+ */
+const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
+  const [year, month, day]: string[] = (payrollRegisterData.createdAt).split("-");
+  const payments = payrollRegisterData.payments
+  const widths = Array.from({length: payments.length + 1}, () => '*')
+  const spacer = Array.from({length: widths.length}, () => ({text: ''}))
+  widths[0] = '15%'
+
+  const headers: any[][] = [[{text: "작성일자", style: 'subheader'}], [{
+    text: `${year}-${month}-${day}`,
+    style: 'subheader'
+  }]]
+  const employees: any[] = [{text: "성명", style: 'subheader'}]
+  const salaryDetails: object = {
+    '기본급': [{text: "기본급", style: 'subheader'}],
+    '시급': [{text: "시급", style: 'subheader'}],
+    '연장 근무시간': [{text: "연장 근무시간", style: 'subheader'}],
+    '연장수당': [{text: "연장수당", style: 'subheader'}],
+    '휴일 근무시간': [{text: "휴일 근무시간", style: 'subheader'}],
+    '휴일 근무수당': [{text: "휴일 근무수당", style: 'subheader'}],
+    '연차수당': [{text: "연차수당", style: 'subheader'}],
+    '식대': [{text: "식대", style: 'subheader'}],
+  }
+  const deductionDetails: object = {}
+  const deductions: any[] = [{text: "공제액계", style: 'subheader', alignment: 'center'}]
+  const salarys: any[] = [{text: "수령액계", style: 'subheader', alignment: 'center'}]
+  const totalSalarys: any[] = [{text: "실수령액", style: 'subheader', alignment: 'center'}]
+
+  for (let i = 0; i < payments[0].deductionDetail.length; ++i) {
+    deductionDetails[`${payments[0].deductionDetail[i]['purpose']}`] = [{
+      text: payments[0].deductionDetail[i]['purpose'],
+      style: 'subheader'
+    }]
+  }
+
+  for (let i = 0; i < payments.length; ++i) {
+    const payment = payments[i]
+    headers[0].push({text: payment.memo, style: 'cell', alignment: 'center'})
+    headers[1].push({text: payment.employeePosition, style: 'cell', alignment: 'center'})
+    employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
+
+    salaryDetails['기본급'].push({text: `${formatCurrency(payment.paymentDetail.pay)} 원`, style: 'cell', alignment: 'center'})
+    salaryDetails['시급'].push({text: `${formatCurrency(payment.paymentDetail.hourlyWage)} 원`, style: 'cell', alignment: 'center'})
+    salaryDetails['연장 근무시간'].push({
+      text: `${payment.paymentDetail.extendWorkingTime}시간`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['연장수당'].push({
+      text: `${formatCurrency(payment.paymentDetail.extendWokringWage)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['휴일 근무시간'].push({
+      text: `${payment.paymentDetail.dayOffWorkingTime}시간`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['휴일 근무수당'].push({
+      text: `${formatCurrency(payment.paymentDetail.dayOffWorkingWage)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['연차수당'].push({
+      text: `${formatCurrency(payment.paymentDetail.annualLeaveAllowance)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['식대'].push({text: `${formatCurrency(payment.paymentDetail.mealAllowance)} 원`, style: 'cell', alignment: 'center'})
+    deductions.push({text: `${formatCurrency(payment.deduction)} 원`, style: 'cell', alignment: 'center'})
+    salarys.push({text: `${formatCurrency(payment.salary)} 원`, style: 'cell', alignment: 'center'})
+    totalSalarys.push({text: `${formatCurrency(payment.totalSalary)} 원`, style: 'cell', alignment: 'center'})
+
+    for (let j = 0; j < payment.deductionDetail.length; ++j) {
+      deductionDetails[payment.deductionDetail[j]['purpose']].push({
+        text: `${formatCurrency(payment.deductionDetail[j]['value'])} 원`,
+        style: 'cell',
+        alignment: 'center'
+      })
+    }
+  }
+
+  return [
+    {
+      text: `${year}년 ${month}월 급여대장`,
+      style: 'header',
+      alignment: 'center',
+      margin: [0, 0, 0, 10],
+      fontSize: 15,
+    },
+    {
+      table: {
+        widths,
+        body: [
+          headers[0],
+          headers[1],
+          employees,
+          // spacer,
+          ...Object.keys(salaryDetails).map((key) => salaryDetails[key]),
+          salarys,
+          // spacer,
+          ...Object.keys(deductionDetails).map((key) => deductionDetails[key]),
+          deductions,
+          // spacer,
+          totalSalarys,
+          spacer,
+        ],
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+  ]
+}
+
+/**
+ * ledger 생성
+ */
+const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
+  const payingExpensesData: any[][] = []
+  let data: any[][] = [[], []]
+
+  for (let i = 0; i < financialLedgerData.payingExpenses.length; ++i) {
+    const payingExpenses = financialLedgerData.payingExpenses[i]
+    data[0].push({text: payingExpenses['purpose'], style: 'subheader', alignment: 'center'})
+    data[1].push({text: `${formatCurrency(payingExpenses['value'])} 원`, style: 'cell', alignment: 'center'})
+
+    if (data[0].length > 7) {
+      payingExpensesData.push(data)
+      data = [[], []]
+    }
+  }
+
+  if (data[0].length > 0 && data[0].length < 8) {
+    for (let i = 0; i < 8; ++i) {
+      if (!data[0][i]) {
+        data[0][i] = {}
+        data[1][i] = ''
+      }
+    }
+    payingExpensesData.push(data)
+  }
+
+  const paymentsColumns = [...payingExpensesData.flatMap((data) => [data[0], data[1]])]
+
+  const groups = Object.keys(financialLedgerData.calcGroups)
+  const groupCalcs = [[], []]
+  for (let i = 0; i < groups.length; ++i) {
+    const group = groups[i]
+    groupCalcs[0].push({text: group, style: 'subheader'})
+    groupCalcs[1].push({
+      text: `${formatCurrency(String(financialLedgerData.calcGroups[group]))} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+  }
+
+  if (groupCalcs[0].length > 0 && groupCalcs[0].length < 8) {
+    for (let i = 0; i < 8; ++i) {
+      if (!groupCalcs[0][i]) {
+        groupCalcs[0][i] = {}
+        groupCalcs[1][i] = ''
+      }
+    }
+  }
+
+  return [
+    {
+      text: `지출내역`,
+      style: 'header',
+      alignment: 'center',
+      margin: [0, 0, 0, 10],
+      fontSize: 12,
+    },
+    {
+      table: {
+        widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
+        body: paymentsColumns,
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+    {
+      table: {
+        widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
+        body: groupCalcs,
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+    {
+      text: `합계: ${formatCurrency(String(groupCalcs[1].reduce((acc, curr) => typeof curr === "object" && curr['text'] ? acc + Number(curr['text'].replace(/,/g, "").split(" ")[0]) : acc, 0)))} 원`,
+      style: 'header',
+      alignment: 'right',
+    }
+  ]
+}
+
+/**
+ * 급여대장
+ */
+export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitions => {
+  const payrollRegisterContent = createPayrollRegisterContent(data.payrollRegister)
+  const financialLedger = createFinancialLedgerContent(data.financialLedger)
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [20, 20, 20, 20],
+    content: [
+      // 급여대장
+      ...payrollRegisterContent,
+      // 지출내역
+      ...financialLedger,
+    ],
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 7,
+    },
+    styles: {
+      header: {fontSize: 12},
+      subheader: {fontSize: 8, alignment: 'center', margin: [0, 2, 0, 2]},
+      cell: {fontSize: 7, margin: [0, 2, 0, 2]},
+      footer: {fontSize: 7, marginTop: 10},
+    },
+  };
+}
+
+/**
+ * 급여명세서(1개)
+ * */
+const getSalaryContent = (data: Payment): any[]  => {
+  const [year, month] = data.createdAt.split('-');
+  const today = formatDate(new Date());
+  let deductions: any[][] = []
+  let deduction:
+    any[][] = [[], []]
+
+  for (let i = 0; i < data.deductionDetail.length; ++i) {
+    const deductionDetail = data.deductionDetail[i];
+    if (deductionDetail.purpose.length === 0) continue;
+
+    deduction[0].push({text: deductionDetail['purpose'], style: 'cell'})
+    deduction[1].push(`${deductionDetail['value']} 원`)
+
+    if (deduction[0].length > 2) {
+      deductions.push(deduction)
+      deduction = [[], []]
+    }
+  }
+
+  if (deduction[0].length >= 0) {
+    if (deduction[0].length < 3) {
+      for (let i = 0; i < 3; ++i) {
+        if (!deduction[0][i]) {
+          deduction[0][i] = {}
+          deduction[1][i] = ''
+        }
+      }
+    }
+    deductions.push(deduction)
+  }
+  deductions = deductions.flatMap((deduction) => [deduction[0], deduction[1]])
+  console.log(deductions)
+  // content만 반환
+  return [
+    {
+      text: `대한금속ENG(주) ${year}년 ${month} 급여명세서 ${today}`,
+      style: 'header',
+      alignment: 'center',
+      margin: [0, 0, 0, 10],
+    },
+    {
+      columns: [
+        {width: "20%", text: `${data.employeeName} 님`, style: 'subheader', fontSize: 12},
+        {width: "20%", text: `총 근무일: ${data.paymentDetail.workingDay} 일`, style: 'subheader'},
+        {width: "60%", text: `사번 ${data.id}`, alignment: 'right', style: 'subheader'},
+      ],
+      margin: [0, 0, 0, 10],
+    },
+    {
+      text: '수령액',
+      style: 'header',
+      alignment: "left",
+      fontSize: 10,
+    },
+    {
+      table: {
+        widths: ['*', '*', '*'],
+        body: [
+          [
+            {text: '기본급', style: 'cell'},
+            {text: '시급', style: 'cell'},
+            {text: '식대', style: 'cell'}
+          ],
+          [
+            `${data.paymentDetail.pay} 원`,
+            `${data.paymentDetail.hourlyWage} 원`,
+            `${data.paymentDetail.mealAllowance} 원`,
+          ],
+          [
+            {text: '연장 근무시간', style: 'cell'},
+            {text: '연장 근무수당', style: 'cell'},
+            {}
+          ],
+          [
+            `${data.paymentDetail.extendWorkingTime} 시간`,
+            `${data.paymentDetail.extendWokringWage} 원`,
+            ''
+          ],
+          [
+            {text: '휴일 근무시간', style: 'cell'},
+            {text: '휴일 근무수당', style: 'cell'},
+            {}
+          ],
+          [
+            `${data.paymentDetail.dayOffWorkingTime} 시간`,
+            `${data.paymentDetail.dayOffWorkingWage} 원`,
+            '',
+          ],
+          [
+            {text: '연차수당 (연차+월차)', style: 'cell'},
+            {},
+            {},
+          ],
+          [
+            `${data.paymentDetail.annualLeaveAllowance} 원`,
+            '',
+            '',
+          ]
+        ]
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+    {text: "\n"},
+    {
+      text: '공제액',
+      style: 'header',
+      alignment: "left",
+      fontSize: 10,
+    },
+    {
+      table: {
+        widths: ['*', '*', '*'],
+        body: deductions,
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+    {
+      table: {
+        widths: ['*', '*', '*'],
+        body: [
+          [
+            {text: '수령액계', style: 'cell'},
+            {text: '공제액계', style: 'cell'},
+            {text: '실수령액', style: 'cell'},
+          ],
+          [
+            `${data.salary} 원`,
+            `${data.deduction} 원`,
+            `${data.totalSalary} 원`,
+          ],
+        ]
+      },
+      layout: 'lightHorizontalLines',
+      margin: [0, 0, 0, 10],
+    },
+    {
+      text: '귀하의 노고에 감사드립니다.',
+      alignment: 'center',
+      style: 'footer',
+    },
+    // 마지막에 pageBreak 추가
+    { text: '', pageBreak: 'after' }
+  ];
+}
+
+/**
+ * 급여명세서(summary)
+ * */
+export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
+  // 각 사원별 content를 합침
+  const allContents: any[] = [];
+  datas.forEach((data, idx) => {
+    const content = getSalaryContent(data);
+    // 마지막 사원은 pageBreak 제거
+    if (idx === datas.length - 1) {
+      if (content[content.length - 1]?.pageBreak) {
+        content.pop();
+      }
+    }
+    allContents.push(...content);
+  });
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [40, 40, 40, 30],
+    content: allContents,
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 9,
+    },
+    styles: {
+      header: { fontSize: 14 },
+      subheader: { fontSize: 10, marginBottom: 5 },
+      cell: { fontSize: 9, margin: [0, 5, 0, 5] },
+      footer: { fontSize: 9, marginTop: 10 },
+    }
+  };
+};
+
 
 /**
  * 긴 문자열을 일정 길이에서 자르고 "..."을 붙여주는 함수

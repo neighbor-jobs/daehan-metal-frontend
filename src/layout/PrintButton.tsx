@@ -6,13 +6,15 @@ import {useEffect} from 'react';
 interface FooterProps {
   printData: any,
   companyName?: string,
+  propType?: string,
   startAt?: string,
   endAt?: string,
   value?: string,
 }
 
-const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
+const PrintButton = ({printData, value, propType}: FooterProps): React.JSX.Element => {
   const {selectedSubType, setHeaderByPath} = useHeaderStore();
+  const type = propType ? propType : selectedSubType;
   const location = useLocation();
 
   useEffect(() => {
@@ -24,7 +26,7 @@ const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
   // handler
   const handlePrint = async () => {
     if (window.ipcRenderer) {
-      await window.ipcRenderer.invoke('generate-and-open-pdf', selectedSubType, printData);
+      await window.ipcRenderer.invoke('generate-and-open-pdf', type, printData);
     }
   }
 
@@ -35,7 +37,7 @@ const PrintButton = ({printData, value}: FooterProps): React.JSX.Element => {
         width: '100%',
         display: 'flex',
         justifyContent: 'flex-end',
-        padding: 1, // 버튼을 테이블과 분리할 여백 추가
+        whiteSpace: 'nowrap',
       }}
     >
       <Button

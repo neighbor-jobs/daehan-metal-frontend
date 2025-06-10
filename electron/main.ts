@@ -13,10 +13,16 @@ import {
   companySalesSumDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
-  outstandingAmountDocDef,
-  purchaseReceiptDocRef
+  outstandingAmountDocDef, payrollRegisterDocRef,
+  purchaseReceiptDocRef,
+  salaryDocsRef
 } from './templetes.ts';
-import {ClientManageMenuType, PurchaseManageMenuType, RevenueManageMenuType} from '../src/types/headerMenu.ts';
+import {
+  AccountingManageMenuType,
+  ClientManageMenuType,
+  PurchaseManageMenuType,
+  RevenueManageMenuType
+} from '../src/types/headerMenu.ts';
 import {companyStore} from './store/salesCompanyStore.ts';
 import {addLedgers, getLedgers, Ledger, removeLedgers, replaceLedgers, updateLedgers} from './store/ledgerStore.ts';
 import {
@@ -131,7 +137,7 @@ ipcMain.handle('set-store', (_, key, value) => {
 ipcMain.handle('get-sales-companies', () => companyStore.getSalesCompanies());
 ipcMain.handle('add-sales-company', (_event, company) => {
   companyStore.addSalesCompany(company);
-  return { success: true };
+  return {success: true};
 });
 ipcMain.handle('fetch-and-update-companies', () => companyStore.fetchAndUpdateCompanies())
 // 특정 회사의 location 리스트 가져오기
@@ -139,9 +145,9 @@ ipcMain.handle('get-locations-list', (_event, companyId) => {
   return companyStore.getLocations(companyId);
 })
 // 특정 회사에 location 추가
-ipcMain.handle('add-location', (_event, { companyId, location }) => {
+ipcMain.handle('add-location', (_event, {companyId, location}) => {
   companyStore.addLocation(companyId, location);
-  return { success: true };
+  return {success: true};
 });
 // sales-company-store clear
 ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
@@ -154,15 +160,15 @@ ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
 ipcMain.handle('products:get', () => getProducts());
 ipcMain.handle('products:add', (_event, product: Product) => {
   addProduct(product);
-  return { success: true };
+  return {success: true};
 });
 ipcMain.handle('products:update', (_event, index: number, newData: Partial<Product>) => {
   updateProduct(index, newData);
-  return { success: true };
+  return {success: true};
 });
 ipcMain.handle('products:remove', (_event, prodId: string) => {
   removeProduct(prodId);
-  return { success: true };
+  return {success: true};
 });
 
 // 데이터 정합성 검사
@@ -177,17 +183,17 @@ ipcMain.handle('scales:get', (_event, productId: string, scaleName: string) => {
 
 ipcMain.handle('scales:add', (_event, productId, scale) => {
   addScale(productId, scale);
-  return { success: true };
+  return {success: true};
 });
 
 ipcMain.handle('scales:update', (_event, productId, scaleName, newData) => {
   updateScale(productId, scaleName, newData);
-  return { success: true };
+  return {success: true};
 });
 
 ipcMain.handle('scales:remove', (_event, productId, scaleName) => {
   removeScale(productId, scaleName);
-  return { success: true };
+  return {success: true};
 });
 
 /*
@@ -198,21 +204,21 @@ ipcMain.handle('ledgers:get', () => getLedgers());
 
 ipcMain.handle('ledgers:add', (_event, ledger) => {
   addLedgers(ledger);
-  return { success: true };
+  return {success: true};
 });
 ipcMain.handle('ledgers:update', (_event, index, data) => {
   updateLedgers(index, data);
-  return { success: true };
+  return {success: true};
 });
 
 ipcMain.handle('ledgers:replace', (_event, newLedgers: Ledger[]) => {
   replaceLedgers(newLedgers);
-  return { success: true };
+  return {success: true};
 });
 
 ipcMain.handle('ledgers:remove', (_event, index) => {
   removeLedgers(index);
-  return { success: true };
+  return {success: true};
 });
 
 /*
@@ -230,48 +236,61 @@ pdfMake.fonts = {
   },
 };
 
-ipcMain.handle('generate-and-open-pdf', async (_, printType: RevenueManageMenuType | PurchaseManageMenuType | ClientManageMenuType , data) => {
-  return new Promise((resolve, reject) => {
-    let docDefinition: TDocumentDefinitions;
-    switch (printType) {
-      case RevenueManageMenuType.SalesDetail:
-        docDefinition = invoiceDocDef(data);
-        break;
-      case RevenueManageMenuType.ClientSalesSummary:
-        docDefinition = companySalesSumDocDef(data);
-        break;
-      case RevenueManageMenuType.ClientSales:
-        docDefinition = companySalesDocDef(data);
-        break;
-      case RevenueManageMenuType.ClientOutstandingBalance:
-        docDefinition = outstandingAmountDocDef(data);
-        break;
-      case RevenueManageMenuType.ItemSalesSummary:
-        docDefinition = itemSalesSumDocDef(data);
-        break;
-      case ClientManageMenuType.SalesManage:
-        docDefinition = companyListDocRef(data)
-        break;
-      case PurchaseManageMenuType.MonthlyPurchase:
-        docDefinition = purchaseReceiptDocRef(data)
-        break;
-      default:
-        throw new Error(`Unknown print type: ${printType}`);
-    }
+ipcMain.handle('generate-and-open-pdf',
+  async (_, printType: RevenueManageMenuType
+           | PurchaseManageMenuType
+           | ClientManageMenuType
+           | AccountingManageMenuType,
+         data) => {
+    return new Promise((resolve, reject) => {
+      let docDefinition: TDocumentDefinitions;
+      switch (printType) {
+        case RevenueManageMenuType.SalesDetail:
+          docDefinition = invoiceDocDef(data);
+          break;
+        case RevenueManageMenuType.ClientSalesSummary:
+          docDefinition = companySalesSumDocDef(data);
+          break;
+        case RevenueManageMenuType.ClientSales:
+          docDefinition = companySalesDocDef(data);
+          break;
+        case RevenueManageMenuType.ClientOutstandingBalance:
+          docDefinition = outstandingAmountDocDef(data);
+          break;
+        case RevenueManageMenuType.ItemSalesSummary:
+          docDefinition = itemSalesSumDocDef(data);
+          break;
+        case ClientManageMenuType.SalesManage:
+          docDefinition = companyListDocRef(data)
+          break;
+        case PurchaseManageMenuType.MonthlyPurchase:
+          docDefinition = purchaseReceiptDocRef(data)
+          break;
+        /* 직원별 급여명세서 */
+        case AccountingManageMenuType.EmployeeManage:
+          docDefinition = salaryDocsRef(data);
+          break;
+        /* 급여대장 */
+        case AccountingManageMenuType.PayrollDetail:
+          docDefinition = payrollRegisterDocRef(data);
+          break;
+        default:
+          throw new Error(`Unknown print type: ${printType}`);
+      }
 
-    if (!docDefinition) {
-      throw new Error('Document definition is missing');
-    }
+      if (!docDefinition) {
+        throw new Error('Document definition is missing');
+      }
 
-    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-    pdfDocGenerator.getBuffer((buffer) => {
-      const previewPath = path.join(app.getPath('temp'), 'preview.pdf');
-      fs.writeFileSync(previewPath, buffer);
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      pdfDocGenerator.getBuffer((buffer) => {
+        const previewPath = path.join(app.getPath('temp'), 'preview.pdf');
+        fs.writeFileSync(previewPath, buffer);
 
-      // 시스템 기본 PDF 뷰어에서 열기
-      shell.openPath(previewPath)
-        .then(() => resolve(previewPath))
-        .catch((error) => reject(error));
+        // 시스템 기본 PDF 뷰어에서 열기
+        shell.openPath(previewPath)
+          .then(() => resolve(previewPath))
+          .catch((error) => reject(error));
+      });
     });
   });
-});
