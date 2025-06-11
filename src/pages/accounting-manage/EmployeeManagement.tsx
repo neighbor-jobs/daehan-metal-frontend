@@ -42,9 +42,6 @@ const columns: readonly TableColumns<EmployeeTableColumn>[] = [
 ];
 
 const EmployeeManagement = (): React.JSX.Element => {
-  // TODO: 2. row 누르면 form type 'read' 로 바뀌고 form component 에 prevFormData 전달
-  // TODO: 4. '수정' 버튼 누르면 type 'edit' 로 바꾸고 form component 에 전달
-
   const [formType, setFormType] = useState(null);
   const [employees, setEmployees] = useState<Employee[] | []>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<PatchEmployee | null>(null);
@@ -69,7 +66,10 @@ const EmployeeManagement = (): React.JSX.Element => {
   }
 
   const formatSelectedBank = async (row: Employee) => {
-    if (row.bankIds.length === 0) return [];
+    if (row.bankIds.length === 0) {
+      setSelectedBank(null);
+      return [];
+    }
     try {
       const response = await axiosInstance.get(`/employee/bank?id=${row.bankIds[0]}`)
       const { createdAt, ...bankDataWithoutCreatedAt } = response.data.data;
@@ -85,11 +85,15 @@ const EmployeeManagement = (): React.JSX.Element => {
     const { id, ...infoWithoutId } = row.info;
     setSelectedEmployee({
       id: row.id,
-      info: infoWithoutId,
+      info: {
+        ...infoWithoutId,
+        birth: infoWithoutId.birth?.split('T')[0] || '-'
+      },
       startWorkingAt: row.startWorkingAt.split('T')[0] || null,
       retirementAt: row.retirementAt || null,
     });
   };
+
   const getEmployees = async () => {
     const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
     setEmployees(employees.data.data);
@@ -153,7 +157,9 @@ const EmployeeManagement = (): React.JSX.Element => {
                         {row.startWorkingAt.split('T')[0]}
                       </TableCell>
                       <TableCell align='center'>{row.info.name}</TableCell>
-                      <TableCell align='center'>{row.info.position}</TableCell>
+                      <TableCell align='center'>
+                        {row.info.position}
+                      </TableCell>
                       <TableCell align='center'>
                         {row.info.phoneNumber || '-'}
                       </TableCell>
@@ -171,7 +177,17 @@ const EmployeeManagement = (): React.JSX.Element => {
                         key={`${formType}-${selectedEmployee?.id ?? 'new'}`}
                         onSuccess={async () => {
                           await getEmployees();
+                          if (selectedBank) {
+                            const response = await axiosInstance.get(`/employee/bank?id=${selectedBank.id}`);
+                            setSelectedBank(response.data.data);
+                          }
                           setFormType('read');
+                        }}
+                        onDeleteSuccess={async () => {
+                          await getEmployees();
+                          setFormType('read');
+                          setSelectedEmployee(null);
+                          selectedBank(null);
                         }}
                         prevBankData={selectedBank}
                         prevEmployeeData={selectedEmployee}

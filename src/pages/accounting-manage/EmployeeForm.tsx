@@ -6,6 +6,8 @@ import {useAlertStore} from '../../stores/alertStore.ts';
 import {PatchBank, PatchEmployee, PostEmployee} from '../../types/employeeReq.ts';
 import dayjs from 'dayjs';
 import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
+import {formatAccountNumber, formatPhoneNumber, formatStringDate} from '../../utils/format.ts';
+import {Bank} from '../../types/vendorRes.ts';
 
 interface EmployeeFormProps {
   type: 'create' | 'edit' | 'read' | null;
@@ -13,6 +15,7 @@ interface EmployeeFormProps {
   prevBankData?: PatchBank | null;
   retirementAt?: string;
   onSuccess?: () => void;
+  onDeleteSuccess?: () => void;
   onClickEdit?: () => void;
   onClose?: () => void;
 }
@@ -41,18 +44,21 @@ const EmployeeForm = ({
                         prevEmployeeData,
                         prevBankData,
                         onSuccess,
+                        onDeleteSuccess,
                         onClickEdit,
                         onClose
                       }: EmployeeFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState<PostEmployee>(defaultFormData);
   const [updateEmployee, setUpdateEmployee] = useState<PatchEmployee | null>(prevEmployeeData);
-  const [updateBank, setUpdateBank] = useState<PatchBank | null>(prevBankData);
+  const [updateBank, setUpdateBank] = useState<PatchBank | Bank | null>(prevBankData);
   const {showAlert} = useAlertStore();
+
+  console.log('prev bank data: ', prevBankData)
 
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';
 
-    useEffect(() => {
+  useEffect(() => {
     if (type === 'create' || type === null) {
       setFormData(defaultFormData);
     } else if ((type === 'edit' || type === 'read') && updateEmployee) {
@@ -62,7 +68,13 @@ const EmployeeForm = ({
 
   /* create 용 handler */
   const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = e.target;
+    const name = e.target.name;
+    let value = e.target.value;
+
+    if (name === 'phoneNumber') value = formatPhoneNumber(value);
+    else if (name === 'birth'
+      || name === 'retirementAt'
+    ) value = formatStringDate(value);
 
     setFormData((prev) => ({
       ...prev,
@@ -78,7 +90,7 @@ const EmployeeForm = ({
       ...prev,
       banks: {
         ...prev.banks,
-        [name]: value,
+        [name]: name === 'accountNumber' ? formatAccountNumber(value) : value,
       }
     }));
   }
@@ -146,6 +158,7 @@ const EmployeeForm = ({
         startWorkingAt: formData.startWorkingAt ? formData.startWorkingAt : undefined,
       });
       showAlert('사원 등록이 완료되었습니다.', 'success');
+      setFormData(defaultFormData);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
@@ -192,7 +205,7 @@ const EmployeeForm = ({
         retirementAt: updateEmployee.retirementAt || undefined,
       });
       if (allFilled) {
-        await axiosInstance.patch('/employee/bank', updateBank)
+        await axiosInstance.patch('/employee/bank', updateBank);
       }
       showAlert('사원 정보 수정이 완료되었습니다.', 'success');
       if (onSuccess) onSuccess();
@@ -204,15 +217,14 @@ const EmployeeForm = ({
   const deleteEmployee = async () => {
     try {
       await axiosInstance.delete(`/employee?id=${updateEmployee.id}`);
-      if (onSuccess) onSuccess();
+      if (onDeleteSuccess) onDeleteSuccess();
     } catch {
-      showAlert('사원 삭제에 실패했습니다. 재시도 해주세요.', 'error');
+      showAlert('사원 삭제에 실패했습니다. 재시도   해주세요.', 'error');
     }
   }
 
   // debug
   // console.log(formData);
-  console.log('patch: ', updateEmployee, updateBank);
 
   return (
     <Paper sx={{
@@ -267,16 +279,21 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
+                          type='number'
                           inputProps={{
                             disabled: isDisabled,
                             color: 'black',
                             'data-input-id': `age`,
-                            inputMode: 'numeric',
                             pattern: '[0-9]*',
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
-                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) moveFocusToNextInput(`age`);
-                              else if (!isComposing && e.key === 'ArrowUp') moveFocusToPrevInput('age')
+                              if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) {
+                                e.preventDefault();
+                                moveFocusToNextInput(`age`);
+                              } else if (!isComposing && e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                moveFocusToPrevInput('age')
+                              }
                             }
                           }}/>
           <InputWithLabel name='birth' label='생년월일' labelPosition='left'
@@ -300,7 +317,6 @@ const EmployeeForm = ({
                               else if (e.key === 'ArrowUp') moveFocusToPrevInput('birth');
                             }
                           }}/>
-
           <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left'
                           value={
                             isCreate
@@ -312,6 +328,7 @@ const EmployeeForm = ({
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
+                          placeholder='000-0000-0000'
                           inputProps={{
                             disabled: isDisabled,
                             color: 'black',
@@ -331,7 +348,7 @@ const EmployeeForm = ({
                           }
                           onChange={
                             isCreate
-                              ? (e) => setFormData((prev) => ({...prev, startWorkingAt: e.target.value}))
+                              ? (e) => setFormData((prev) => ({...prev, startWorkingAt: formatStringDate(e.target.value)}))
                               : (e) => setUpdateEmployee((prev) => ({...prev, startWorkingAt: e.target.value}))
                           }
                           inputProps={{
