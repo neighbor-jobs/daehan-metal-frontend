@@ -274,6 +274,7 @@ const ClientSales = (): React.JSX.Element => {
         <DateRangePicker onChange={handleDateChange} startAt={date.startAt} endAt={date.endAt}/>
         <Autocomplete
           freeSolo
+          sx={{width : 200}}
           options={salesCompanyList.map((option) => option.companyName)}
           value={companyName}
           onChange={handleCompanyChange}

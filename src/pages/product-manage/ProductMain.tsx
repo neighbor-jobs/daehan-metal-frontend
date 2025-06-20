@@ -72,6 +72,10 @@ const ProductMain = (): React.JSX.Element => {
   }
 
   const handleEditProdName = (prodName: string, prevScaleName: string) => {
+    if (!prevScaleName) {
+      showAlert('규격이 없는 항목은 규격명을 수정할 수 없습니다.');
+      return;
+    }
     setEditScale({
       prodName: prodName,
       prevScaleName: prevScaleName,
@@ -103,7 +107,7 @@ const ProductMain = (): React.JSX.Element => {
   }
 
   const delProduct = async (id: string, scale: string, name: string) => {
-    console.log(scale);
+    // console.log(scale);
     if (scale) {
       // 규격 삭제
       try {

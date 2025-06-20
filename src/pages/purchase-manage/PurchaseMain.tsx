@@ -1,7 +1,8 @@
 import {
   Autocomplete,
   Box,
-  Button, Checkbox, IconButton,
+  Button,
+  IconButton,
   Input,
   InputLabel,
   Paper,
@@ -10,7 +11,8 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow, TextField,
+  TableRow,
+  TextField,
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -18,11 +20,12 @@ import dayjs from 'dayjs';
 import React, {useCallback, useEffect, useState} from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal, formatVatRate} from '../../utils/format.ts';
+import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts';
+import PurchaseCompanyForm from '../company-manage/PurchaseCompanyForm.tsx';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
@@ -52,31 +55,43 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     format: formatCurrency,
   },
   {
+    id: PurchaseRegisterColumn.VAT_AMOUNT,
+    label: '매입세액',
+    minWidth: 100,
+    align: 'right',
+  },
+  {
+    id: PurchaseRegisterColumn.TOTAL_AMOUNT,
+    label: '합계',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
     id: PurchaseRegisterColumn.PRODUCT_PRICE,
     label: '입금액',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
-  {
-    id: PurchaseRegisterColumn.VAT,
-    label: '세금',
-    minWidth: 70,
-    align: 'center',
-  },
-  {
+  /*  {
+      id: PurchaseRegisterColumn.VAT,
+      label: '세금',
+      minWidth: 70,
+      align: 'center',
+    },*/
+  /*{
     id: PurchaseRegisterColumn.VAT_RATE,
     label: '세금비율',
     minWidth: 30,
     align: 'right',
-    format: formatVatRate,
-  },
-  {
+  },*/
+  /*{
     id: PurchaseRegisterColumn.IS_PAYING,
     label: '입금',
     minWidth: 30,
     align: 'center',
-  },
+  },*/
 ];
 const defaultReceipt = {
   vendorId: '',
@@ -101,6 +116,7 @@ const PurchaseMain = (): React.JSX.Element => {
     companyName: '',
     vendorId: '',
   });
+  const [openDialog, setOpenDialog] = useState(false);
   const {showAlert} = useAlertStore();
 
   // handler
@@ -139,7 +155,7 @@ const PurchaseMain = (): React.JSX.Element => {
       const numericValue = value.replace(/[^0-9.]/g, ''); // 소수점 허용
       setReceipts((prev) =>
         prev.map((item, i) =>
-          i === rowIndex ? { ...item, [name]: numericValue } : item
+          i === rowIndex ? {...item, [name]: numericValue} : item
         )
       );
     } else {
@@ -152,14 +168,6 @@ const PurchaseMain = (): React.JSX.Element => {
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, rowIndex: number) => {
-    setReceipts((prev) =>
-      prev.map((item, i) =>
-        i === rowIndex ? {...item, [e.target.name]: e.target.checked} : item
-      )
-    );
-  };
-
   const handleDeleteRow = (index: number) => {
     setReceipts((prev) => prev.filter((_, i) => i !== index));
   };
@@ -170,31 +178,36 @@ const PurchaseMain = (): React.JSX.Element => {
       return;
     }
 
-    const transformedReceipts = receipts.map((item) => {
-      for (let i = 0; i < receipts.length; i++) {
-        const item = receipts[i];
+    const transformedReceipts = receipts.map((item) => ({
+      ...item,
+      isPaying: item.productPrice && item.productPrice.trim() !== ''
+    }));
 
-        // 입금일 때, 입금액 필수
-        if (item.isPaying) {
-          if (!item.productPrice || item.productPrice.trim() === '') {
-            showAlert(`입금 항목의 입금액은 필수입니다. (행 ${i + 1})`, 'info');
-            return;
-          }
-        } else {
-          // 매입일 때, 품명, 재료단가 or 가공단가 중 하나는 필수
-          if (!item.productName || item.productName.trim() === '') {
-            showAlert(`매입 항목의 품명은 필수입니다. (행 ${i + 1})`, 'info');
-            return;
-          }
-          const hasRaw = item.rawMatAmount && item.rawMatAmount.trim() !== '';
-          const hasManufacture = item.manufactureAmount && item.manufactureAmount.trim() !== '';
-          if (!hasRaw && !hasManufacture) {
-            showAlert(`매입 항목에는 재료단가 또는 가공단가가 필요합니다. (행 ${i + 1})`, 'info');
-            return;
-          }
+    for (let i = 0; i < receipts.length; i++) {
+      const item = transformedReceipts[i];
+
+      // 입금일 때, 입금액 필수
+      if (item.isPaying) {
+        if (!item.productPrice || item.productPrice.trim() === '') {
+          showAlert(`입금 항목의 입금액은 필수입니다. (행 ${i + 1})`, 'info');
+          return;
+        }
+      } else {
+        // 매입일 때, 품명, 재료단가 or 가공단가 중 하나는 필수
+        if (!item.productName || item.productName.trim() === '') {
+          showAlert(`매입 항목의 품명은 필수입니다. (행 ${i + 1})`, 'info');
+          return;
+        }
+        const hasRaw = item.rawMatAmount && item.rawMatAmount.trim() !== '';
+        const hasManufacture = item.manufactureAmount && item.manufactureAmount.trim() !== '';
+        if (!hasRaw && !hasManufacture) {
+          showAlert(`매입 항목에는 재료단가 또는 가공단가가 필요합니다. (행 ${i + 1})`, 'info');
+          return;
         }
       }
+    }
 
+    const apiReceipts = transformedReceipts.map((item) => {
       if (item.isPaying) {
         return {
           ...item,
@@ -220,7 +233,7 @@ const PurchaseMain = (): React.JSX.Element => {
 
     for (let i = 0; i < receipts.length; i++) {
       try {
-        await axiosInstance.post('/vendor/receipt', transformedReceipts[i]);
+        await axiosInstance.post('/vendor/receipt', apiReceipts[i]);
       } catch (error) {
         showAlert('거래를 다시 등록해주세요', 'error');
       }
@@ -243,7 +256,7 @@ const PurchaseMain = (): React.JSX.Element => {
       }
     }
     fetch();
-  }, [])
+  }, [showAlert])
 
   return (
     <Box sx={{
@@ -283,6 +296,7 @@ const PurchaseMain = (): React.JSX.Element => {
             <InputLabel sx={{fontSize: 'small',}}>매입처명</InputLabel>
             <Autocomplete
               freeSolo
+              sx={{width: 180}}
               options={purchaseCompanyList.map((item) => item.name)}
               onChange={handleCompanyChange}
               value={header?.companyName || ''}
@@ -294,8 +308,21 @@ const PurchaseMain = (): React.JSX.Element => {
               }
             />
           </Box>
+          <Box sx={{ml: 'auto'}}/>
+          <Button variant='outlined'
+                  onClick={() => setOpenDialog(true)}
+          >
+            매입처등록
+          </Button>
         </LocalizationProvider>
       </Box>
+
+      {/* 매입처 등록 dialog */}
+      <PurchaseCompanyForm isOpen={openDialog}
+                           isEditing={false}
+                           onClose={() => setOpenDialog(false)}
+      />
+
       <Paper sx={{
         width: '100%',
         overflow: 'hidden',
@@ -323,154 +350,134 @@ const PurchaseMain = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {receipts && receipts.map((row, rowIndex) => (
-                <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                  {/* 품명 */}
-                  <TableCell>
-                    <Input size='small'
-                           fullWidth
-                           value={row.productName}
-                           name='productName'
-                           inputProps={{
-                             'data-row-index': rowIndex,
-                             'data-col-index': 0,
-                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
-                           }}
-                           onChange={(e) => handleInputChange(e, rowIndex)}
-                    />
-                  </TableCell>
-                  {/* 수량 */}
-                  <TableCell>
-                    <Input size='small'
-                           fullWidth
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                             'data-row-index': rowIndex,
-                             'data-col-index': 1,
-                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
-                           }}
-                           value={row.quantity}
-                           name='quantity'
-                           onChange={(e) => handleInputChange(e, rowIndex)}
-                           />
-                  </TableCell>
-                  <TableCell>
-                    {/* 단가 */}
-                    <Input size='small'
-                           disableUnderline={row.isPaying}
-                           disabled={row.isPaying}
-                           fullWidth
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                             'data-row-index': rowIndex,
-                             'data-col-index': 2,
-                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                               if (e.key === 'Enter') {
-                                 const nextRowIndex = receipts.length; // 새로 추가될 행 index
-                                 addRow();
-                                 setTimeout(() => {
-                                   focusByCell(nextRowIndex, 0);
-                                 }, 0);
-                                 e.preventDefault();
-                               } else {
-                                 arrowNavAtRegister(e, 4);
+              {receipts && receipts.map((row, rowIndex) => {
+                const price = (parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0);
+                const vatAmount = price * row.vatRate;
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
+                    {/* 품명 */}
+                    <TableCell>
+                      <Input size='small'
+                             fullWidth
+                             value={row.productName}
+                             name='productName'
+                             inputProps={{
+                               'data-row-index': rowIndex,
+                               'data-col-index': 0,
+                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
+                             }}
+                             onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                    </TableCell>
+                    {/* 수량 */}
+                    <TableCell>
+                      <Input size='small'
+                             fullWidth
+                             inputProps={{
+                               sx: {textAlign: 'right'},
+                               'data-row-index': rowIndex,
+                               'data-col-index': 1,
+                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
+                             }}
+                             value={row.quantity}
+                             name='quantity'
+                             onChange={(e) => handleInputChange(e, rowIndex)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {/* 단가 */}
+                      <Input size='small'
+                             disableUnderline={row.isPaying}
+                             disabled={row.isPaying}
+                             fullWidth
+                             inputProps={{
+                               sx: {textAlign: 'right'},
+                               'data-row-index': rowIndex,
+                               'data-col-index': 2,
+                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                 arrowNavAtRegister(e, 4)
                                }
-                             }
-                           }}
-                           name='rawMatAmount'
-                           value={row.rawMatAmount}
-                           onChange={(event) => handleInputChange(event, rowIndex)}
-                           data-table-input/>
-                  </TableCell>
-                  <TableCell>
+                             }}
+                             name='rawMatAmount'
+                             value={row.rawMatAmount}
+                             onChange={(event) => handleInputChange(event, rowIndex)}
+                             data-table-input/>
+                    </TableCell>
                     {/* 매입금액 */}
-                    <Input size='small'
-                           disableUnderline
-                           disabled
-                           fullWidth
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                             'data-input-id': `totalRawMatAmount-${rowIndex}`,
-                           }}
-                           name='totalRawMatAmount'
-                           value={(Math.round((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0))).toLocaleString()}
-                           data-table-input/>
-                  </TableCell>
-                  {/* 입금액 */}
-                  <TableCell align='right'>
-                    <Input size='small'
-                           disabled={!row.isPaying}
-                           disableUnderline={!row.isPaying}
-                           inputProps={{
-                             'data-row-index': rowIndex,
-                             'data-col-index': 3,
-                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                               if (e.key === 'Enter') {
-                                 const nextRowIndex = receipts.length; // 새로 추가될 행 index
-                                 addRow();
+                    <TableCell>
+                      <Input size='small'
+                             disableUnderline
+                             disabled
+                             fullWidth
+                             inputProps={{
+                               sx: {textAlign: 'right'},
+                               'data-input-id': `totalRawMatAmount-${rowIndex}`,
+                             }}
+                             name='totalRawMatAmount'
+                             value={price.toLocaleString()}
+                             data-table-input/>
+                    </TableCell>
+                    {/* 매입세액 */}
+                    <TableCell align='right'>
+                      <Input size='small'
+                             disabled
+                             disableUnderline
+                             value={vatAmount.toLocaleString()}
+                             inputProps={{
+                               sx: {textAlign: 'right'}
+                             }}
+                      />
+                    </TableCell>
+                    {/* 합계 */}
+                    <TableCell align='right'>
+                      <Input size='small'
+                             disabled
+                             disableUnderline
+                             value={(vatAmount + price).toLocaleString()}
+                             inputProps={{
+                               sx: {textAlign: 'right'}
+                             }}
+                      />
+                    </TableCell>
+                    {/* 입금액 */}
+                    <TableCell align='right'>
+                      <Input size='small'
+                             inputProps={{
+                               'data-row-index': rowIndex,
+                               'data-col-index': 3,
+                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                 if (e.key === 'Enter') {
+                                   const nextRowIndex = receipts.length; // 새로 추가될 행 index
+                                   addRow();
 
-                                 setTimeout(() => {
-                                   focusByCell(nextRowIndex, 0);
-                                 }, 0);
+                                   setTimeout(() => {
+                                     focusByCell(nextRowIndex, 0);
+                                   }, 0);
 
-                                 e.preventDefault();
-                               } else {
-                                 arrowNavAtRegister(e, 4);
-                               }
-                             },
-                             sx: {textAlign: 'right'},
-                           }}
-                           name='productPrice'
-                           onChange={(e) => handleInputChange(e, rowIndex)}
-                           value={row.productPrice}
-                           />
-                  </TableCell>
-                  {/* 세금 */}
-                  <TableCell align='center'>
-                    <Checkbox size='small'
-                              onChange={(e) => handleCheckboxChange(e, rowIndex)}
-                              name='vat'
-                              disabled={row.isPaying}
-                              checked={row.vat}
-                    />
-                  </TableCell>
-                  {/* 세금 비율 */}
-                  <TableCell>
-                    <Input size='small'
-                           disableUnderline
-                           disabled={!row.vat || row.isPaying}
-                           fullWidth
-                           value={row.vatRate}
-                           inputProps={{
-                             'data-row-index': {rowIndex},
-                             'data-col-index': 4,
-                             sx: {textAlign: 'right'},
-                           }}
-                           name='vatRate'
-                           onChange={(e) => {
-                             handleInputChange(e, rowIndex);
-                           }}
-                           data-table-input/>
-                  </TableCell>
-                  {/* 입금 여부 */}
-                  <TableCell align='center'>
-                    <Checkbox size='small'
-                              onChange={(e) => handleCheckboxChange(e, rowIndex)}
-                              name='isPaying'
-                              data-row-index={rowIndex}
-                              data-col-index={6}
-                    />
-                  </TableCell>
-                  {/* 행 삭제 */}
-                  <TableCell>
-                    <IconButton size='small' onClick={() => {
-                      handleDeleteRow(rowIndex)
-                    }}>
-                      <CloseIcon fontSize='small'/>
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+                                   e.preventDefault();
+                                 } else {
+                                   arrowNavAtRegister(e, 4);
+                                 }
+                               },
+                               sx: {textAlign: 'right'},
+                             }}
+                             name='productPrice'
+                             onChange={(e) => handleInputChange(e, rowIndex)}
+                             value={row.productPrice}
+                      />
+                    </TableCell>
+
+                    {/* 행 삭제 */}
+                    <TableCell>
+                      <IconButton size='small' onClick={() => {
+                        handleDeleteRow(rowIndex)
+                      }}>
+                        <CloseIcon fontSize='small'/>
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
               <TableRow>
                 <TableCell colSpan={10} align="center">
                   <Button

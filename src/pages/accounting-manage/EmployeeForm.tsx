@@ -53,7 +53,7 @@ const EmployeeForm = ({
   const [updateBank, setUpdateBank] = useState<PatchBank | Bank | null>(prevBankData);
   const {showAlert} = useAlertStore();
 
-  console.log('prev bank data: ', prevBankData)
+  // console.log('prev bank data: ', prevBankData)
 
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';

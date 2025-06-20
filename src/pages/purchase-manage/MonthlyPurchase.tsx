@@ -221,6 +221,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
           options={purchaseCompanyList.map((option) => option.name)}
           onChange={handleCompanyChange}
           value={formData.companyName}
+          sx={{width: 200}}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='거래처명' size='small'

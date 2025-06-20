@@ -159,6 +159,7 @@ const ItemSales = (): React.JSX.Element => {
         <Autocomplete
           freeSolo
           options={productList.map((option) => option.name)}
+          sx={{width: 180}}
           value={formData.productName}
           onInputChange={(_, newInputValue) => {
             setFormData(() => ({
@@ -176,6 +177,7 @@ const ItemSales = (): React.JSX.Element => {
         <Autocomplete
           // freeSolo
           options={uniqueScaleOptions}
+          sx={{width: 200}}
           filterOptions={(options, state) => filter(options, state)}
           value={formData.scale}
           onInputChange={(_, newInputValue) => {

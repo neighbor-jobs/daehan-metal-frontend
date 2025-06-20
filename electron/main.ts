@@ -70,7 +70,7 @@ let win: BrowserWindow | null
 function createWindow() {
   win = new BrowserWindow({
     // fullscreen: true,
-    width: 1000,
+    width: 1100,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),

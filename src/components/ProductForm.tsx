@@ -125,7 +125,6 @@ const ProductForm = ({
       }
     } else {
       // 품목 수정
-      // TODO: update scale cache data 추가
       if (updateScaleName.newName.length === 0) {
         showAlert('새 규격명이 빈칸입니다.', 'info');
         return;
@@ -140,17 +139,32 @@ const ProductForm = ({
         const updatedScales = prevScales?.map((scale) =>
           scale === updateScaleName.prevName ? updateScaleName.newName : scale
         );
-
-        await axiosInstance.put('/product/scale', {
+        await axiosInstance.patch('/product/scale', {
           name: productName,
           scales: updatedScales,
         });
 
         showAlert('수정이 완료되었습니다.', 'success');
+        setUpdateScaleName({
+          prevName: prevScaleName ?? '',
+          newName: ''
+        })
+
         if (onSuccess) onSuccess();
         onClose();
       } catch {
         showAlert('규격명 수정에 실패했습니다. 다시 시도해주세요.', 'error');
+      }
+
+      try {
+        await cacheManager.updateScale(
+          productName,
+          updateScaleName.prevName,
+          {scaleName: updateScaleName.newName}
+        )
+      }
+      catch (err) {
+        // console.log(err);
       }
     }
   }

@@ -174,7 +174,7 @@ const UpdateReceipt = ({
     });
   }, [isOpen, prevFormData]);
 
-  console.log('formData: ', formData);
+  // console.log('formData: ', formData);
 
   return (
     <Dialog open={isOpen}
