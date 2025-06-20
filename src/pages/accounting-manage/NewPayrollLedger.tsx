@@ -130,7 +130,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
-  const [calculatedWages, setCalculatedWages] = useState({});
+  // TODO: calculatedWages type 정의
+  const [calculatedWages, setCalculatedWages] = useState<any>({});
+
+  const totalPaymentSum = Object.values(calculatedWages).reduce(
+    (acc, cur) => acc + (cur?.totalPayment || 0), 0
+  );
+  const totalDeductionSum = Object.values(calculatedWages).reduce(
+    (acc, cur) => acc + (cur?.totalDeductions || 0), 0
+  );
+  const totalSalarySum = Object.values(calculatedWages).reduce(
+    (acc, cur) => acc + (cur?.totalSalary || 0), 0
+  );
 
   const {sumByDate, ledgerSum} = useMemo(() => {
     const allLedger = [...(leftLedger ?? []), ...(rightLedger ?? [])];
@@ -265,39 +276,43 @@ const NewPayrollLedger = (): React.JSX.Element => {
           paying: [...leftLedger, ...rightLedger],
         });
       }
+      showAlert('등록 성공', 'success');
       await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
+
+      // 성공 후 입력필드 초기화
+      setStandardAt(dayjs().format('YYYY-MM-DD'));
+      setDeduction(defaultDeductionList.map((item) => ({
+        purpose: item,
+        value: '0',
+      })));
+      // formData 초기화
+      const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+      setEmployees(employeesRes.data.data);
+      setFormData(employeesRes.data.data.map((employee) => ({
+        employeeId: employee.id,
+        employeeName: employee.info.name,
+        employeePosition: employee.info.position,
+        paymentDetail: defaultPayment,
+        deductionDetail: defaultDeductionList.map((item) => ({
+          purpose: item,
+          value: '0',
+        })),
+        memo: '',
+      })));
+      // ledger(지출내역)도 다시 불러와서 초기화
+      const ledgers = await cacheManager.getLedgers();
+      const mid = Math.ceil(ledgers.length / 2);
+      setLedger({
+        paying: ledgers,
+        deduction: [],
+        createdAt: dayjs().format('YYYY-MM-DD'),
+      });
+      setLeftLedger(ledgers.slice(0, mid));
+      setRightLedger(ledgers.slice(mid));
     } catch {
-      showAlert('payroll 등록 실패', 'error');
+      showAlert('등록 실패', 'error');
     }
   }
-
-  useEffect(() => {
-    if (mode === 'create') {
-      const newWages = {};
-      formData.forEach((item, idx) => {
-        // payments calc
-        const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay);
-        const ew = hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime);
-        const dw = hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime);
-        const al = hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti;
-        const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
-
-        // deductions calc
-        const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
-
-        newWages[idx] = {
-          hourlyWage: hw,
-          extendWokringWage: ew,
-          dayOffWorkingWage: dw,
-          annualLeaveAllowance: al,
-          totalPayment: totalPayments,
-          totalDeductions: totalDeductions,
-          totalSalary: totalPayments - totalDeductions
-        };
-      });
-      setCalculatedWages(newWages);
-    }
-  }, [formData, mode]);
 
   useEffect(() => {
     const getEmployees = async () => {
@@ -342,8 +357,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
           paymentDetail: {
             pay: detail.pay,
             workingDay: detail.workingDay,
-            extendWorkingTime: detail.extendWorkingTime,
-            dayOffWorkingTime: detail.dayOffWorkingTime,
+            extendWorkingTime: String(detail.extendWorkingTime),
+            dayOffWorkingTime: String(detail.dayOffWorkingTime),
             extendWorkingMulti: detail.multis.extendWorkingMulti,
             dayOffWorkingMulti: detail.multis.dayOffWorkingMulti,
             annualLeaveAllowanceMulti: detail.multis.annualLeaveAllowanceMulti,
@@ -370,7 +385,34 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   }, [showAlert, deduction, mode, initialPayments, payrollId, initialLedger, standardAt]);
 
+  useEffect(() => {
+    const newWages = {};
+    formData.forEach((item, idx) => {
+      // payments calc
+      const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
+      const ew = hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime);
+      const dw = hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime);
+      const al = hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti;
+      const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
+
+      // deductions calc
+      const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+
+      newWages[idx] = {
+        hourlyWage: hw,
+        extendWokringWage: ew,
+        dayOffWorkingWage: dw,
+        annualLeaveAllowance: al,
+        totalPayment: totalPayments,
+        totalDeductions: totalDeductions,
+        totalSalary: totalPayments - totalDeductions
+      };
+    });
+    setCalculatedWages(newWages);
+  }, [formData]);
+
   // debug
+  // console.log(formData);
 
   return (
     <Box>
@@ -387,7 +429,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
             gap: 2,
           }}>
             <Box sx={{display: 'flex', gap: 2, alignItems: 'center'}}>
-              <InputLabel sx={{fontSize: 'small',}}>작성월</InputLabel>
+              <InputLabel sx={{fontSize: 'small',}}>작성일</InputLabel>
               <DesktopDatePicker
                 views={['day']}
                 format="YYYY/MM/DD"
@@ -400,7 +442,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 }}
               />
             </Box>
-            <Button variant='outlined'>공제 항목 관리</Button>
           </Box>
         </LocalizationProvider>
       </Box>
@@ -523,7 +564,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  }
                                }}
                                onChange={(e) => handleDeductionChange(e, item.id)}
-                               value={formData[colIdx]?.deductionDetail[decIdx]?.value ?? ''}
+                               value={formatCurrency(formData[colIdx]?.deductionDetail[decIdx]?.value) ?? ''}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                         ></Input>
                       </TableCell>
@@ -544,7 +585,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       <Input fullWidth
                              disableUnderline
                              disabled
-                             value={calculatedWages[colIdx]?.totalDeductions || '0'}
+                             value={calculatedWages[colIdx]?.totalDeductions.toLocaleString() || '0'}
                              sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                       >
 
@@ -567,12 +608,33 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       <Input fullWidth
                              disableUnderline
                              disabled
-                             value={calculatedWages[colIdx]?.totalSalary || '0'}
+                             value={calculatedWages[colIdx]?.totalSalary.toLocaleString() || '0'}
                              sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                       >
                       </Input>
                     </TableCell>
                   ))}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+
+        {/* 합산 */}
+        <Box sx={{mt: 1}}>
+          <TableContainer sx={{border: '1px solid lightgray'}}>
+            <Table size="small" sx={{tableLayout: 'fixed', width: '100%'}}>
+              <TableBody>
+                <TableRow>
+                  <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}>
+                    지급액 합계: {totalPaymentSum.toLocaleString() || '0'}
+                  </TableCell>
+                  <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}>
+                    공제액 합계: {totalDeductionSum.toLocaleString() || '0'}
+                  </TableCell>
+                  <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}>
+                    수령액 합계: {totalSalarySum.toLocaleString() || '0'}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -804,9 +866,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
         <Button variant='contained'
                 onClick={submitPayroll}
         >
-          등록
+          {mode === 'create' ? '등록' : '수정'}
         </Button>
-        <Button variant='contained'>인쇄</Button>
       </Box>
     </Box>
   )

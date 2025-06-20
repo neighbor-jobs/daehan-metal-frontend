@@ -24,6 +24,19 @@ export enum PaymentTableRow {
   ANNUAL_LEAVE_ALLOWANCE = 'annualLeaveAllowance',
   MEAL_ALLOWANCE = 'mealAllowance',
   TOTAL_PAYMENT = 'totalPayment',
+  SALARY = 'salary',
+  // DEDUCTION = 'deduction',
+  TOTAL_SALARY = 'totalSalary',
+}
+
+export enum DeductionTableRow {
+  INCOME_TAX = '소득세',
+  RESIDENT_TAX = '주민세',
+  HEALTH_INSURANCE = '건강보험료(요양포함)',
+  NATIONAL_PENSION = '국민연금',
+  EMPLOYMENT_INSURANCE = '고용보험',
+  YEAR_END_ADJUSTMENT = '작년연말정산',
+  DEDUCTION = 'deduction',
 }
 
 export const defaultDeductionList = [
@@ -234,13 +247,15 @@ export enum ClientPurchasesSummaryColumn {
 
 export enum PurchaseRegisterColumn {
   PRODUCT_NAME = 'productName',
-  PRODUCT_PRICE = 'productPrice',
+  PRODUCT_PRICE = 'productPrice',   // 입금액으로 사용
   QUANTITY = 'quantity',
   MANUFACTURE_AMOUNT = "manufactureAmount",
   TOTAL_MANUFACTURE_AMOUNT = "totalManufactureAmount",
   RAW_MAT_AMOUNT = "rawMatAmount",
   TOTAL_RAW_MAT_AMOUNT = "totalRawMatAmount",
   VAT = 'vat',
+  VAT_AMOUNT = 'vatAmount',        // 매입세액
   VAT_RATE = 'vatRate',
-  IS_PAYING = 'isPaying'
+  IS_PAYING = 'isPaying',
+  TOTAL_AMOUNT = 'totalAmount'
 }

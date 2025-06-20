@@ -149,7 +149,7 @@ const TransactionRegister = ({
 
   const productScaleMap = useMemo(() => {
     const map: Record<string, string[]> = {};
-    productListState.forEach((p) => {
+    productListState.forEach((p: Product) => {
       map[p.name] = getUniqueScalesByProductName(productListState, p.name);
     });
     return map;
@@ -195,7 +195,7 @@ const TransactionRegister = ({
         if (matchedScale) {
           cacheManager.getScale(product.id, matchedScale)
             .then((scale) => {
-              console.log('get scale cache: ', scale);
+              // console.log('get scale cache: ', scale);
               setChoices((prevChoices) =>
                 prevChoices.map((choice, i) => (i === index ? {
                   ...choice,
@@ -324,10 +324,6 @@ const TransactionRegister = ({
             prevRawMatAmount: c.rawMatAmount,
             prevManufactureAmount: c.manufactureAmount,
           })
-          console.log({
-            prevRawMatAmount: c.rawMatAmount,
-            prevManufactureAmount: c.manufactureAmount,
-          });
         }
       })
 
@@ -398,7 +394,6 @@ const TransactionRegister = ({
               disableEscapeKeyDown={openAlert}
         // disableAutoFocus
               disableEnforceFocus
-
       >
         <IconButton onClick={onClose} size='small'
                     sx={{
@@ -451,6 +446,7 @@ const TransactionRegister = ({
                         options={salesCompanyList.map((option) => option.companyName)}
                         onChange={handleCompanyChange}
                         value={formData.companyName}
+                        sx={{width : 200}}
                         renderInput={(params) =>
                           <TextField {...params}
                                      sx={{minWidth: 150}}

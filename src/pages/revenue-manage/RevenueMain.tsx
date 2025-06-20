@@ -251,6 +251,7 @@ const RevenueMain = (): React.JSX.Element => {
         </LocalizationProvider>
         <Autocomplete
           freeSolo
+          sx={{ width: 200 }}
           options={salesCompanyList.map((option) => option.companyName)}
           onChange={handleCompanyChange}
           value={formData.companyName}
@@ -370,7 +371,9 @@ const RevenueMain = (): React.JSX.Element => {
         >
           등록
         </Button>
-        <PrintButton printData={printData} value='인쇄'/>
+        <Box sx={{my: 1}}>
+          <PrintButton printData={printData} value='인쇄'/>
+        </Box>
       </Box>
       <TransactionRegister isOpen={openDialog} onClose={() => setOpenDialog(false)}
                            dialogType={dialogType}

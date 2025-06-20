@@ -6,7 +6,7 @@ import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
  * 거래처별 매출현황
  */
 export const companySalesDocDef = (companySalesData) => {
-  console.log('printData: ', companySalesData);
+  // console.log('printData: ', companySalesData);
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
@@ -379,7 +379,7 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
 */
 export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
-  console.log(outstandingAmount);
+  // console.log(outstandingAmount);
   const docDef: TDocumentDefinitions = {
     header: (currentPage, pageCount) => ({
       columns: [
@@ -653,7 +653,7 @@ export const invoiceDocDef = (data: any) => {
  * payment 생성
  */
 const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
-  const [year, month, day]: string[] = (payrollRegisterData.createdAt).split("-");
+  const [year, month, day]: string[] = (payrollRegisterData.createdAt).split('T')[0]?.split("-");
   const payments = payrollRegisterData.payments
   const widths = Array.from({length: payments.length + 1}, () => '*')
   const spacer = Array.from({length: widths.length}, () => ({text: ''}))

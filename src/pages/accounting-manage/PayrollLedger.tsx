@@ -16,16 +16,18 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/ko';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import React, {useState} from 'react';
-import {PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
+import React, {Fragment, useState} from 'react';
+import {DeductionTableRow, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {Payment} from '../../types/payrollRes.ts';
 import {formatCurrency} from '../../utils/format.ts';
 import {useNavigate} from 'react-router-dom';
 import {Ledger, Paying} from '../../types/ledger.ts';
+import PrintButton from '../../layout/PrintButton.tsx';
+import {AccountingManageMenuType} from '../../types/headerMenu.ts';
 
-const leftRows: readonly TableColumns<PaymentTableRow>[] = [
+const leftRows: readonly TableColumns<PaymentTableRow | DeductionTableRow>[] = [
   {
     id: PaymentTableRow.PAY,
     label: '기본급',
@@ -73,14 +75,63 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
     format: formatCurrency
   },
   {
-    id: PaymentTableRow.TOTAL_PAYMENT,
+    id: PaymentTableRow.SALARY,
     label: '합계',
     minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.INCOME_TAX,
+    label: '소득세',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.RESIDENT_TAX,
+    label: '주민세',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.HEALTH_INSURANCE,
+    label: '건강보험료(요양포함)',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.NATIONAL_PENSION,
+    label: '국민연금',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.EMPLOYMENT_INSURANCE,
+    label: '고용보험',
+    minWidth: 100,
+    format: formatCurrency
+  }, {
+    id: DeductionTableRow.YEAR_END_ADJUSTMENT,
+    label: '작년연말정산',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: DeductionTableRow.DEDUCTION,
+    label: '지급액계',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: PaymentTableRow.TOTAL_SALARY,
+    label: '수령액',
+    minWidth: 100,
+    format: formatCurrency
   }
 ];
 
 const PayrollLedger = (): React.JSX.Element => {
   const [payrollId, setPayrollId] = useState<string>();
+  const [createdAtPayroll, setCreatedAtPayroll] = useState<string>('');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
@@ -89,11 +140,16 @@ const PayrollLedger = (): React.JSX.Element => {
   const navigate = useNavigate();
   const {showAlert} = useAlertStore();
 
+  const isDeductionRowId = (id: string | number): id is DeductionTableRow => {
+    return Object.values(DeductionTableRow).includes(id as DeductionTableRow);
+  };
+
   const getPayroll = async () => {
     try {
       const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${standardAt}`);
       const l = await axiosInstance.get(`/ledger/monthly?standardAt=${standardAt}`);
       setPayrollId(payroll.data.data.id);
+      setCreatedAtPayroll(payroll.data.data.createdAt);
       setPayments(payroll.data.data.payments);
       setLedger(l.data.data);
       const arr = l.data.data.payingExpenses;
@@ -140,6 +196,8 @@ const PayrollLedger = (): React.JSX.Element => {
       <Box sx={{
         mx: 3,
         my: 1,
+        display: 'flex',
+        justifyContent: 'space-between',
       }}>
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale='ko'>
           <Box sx={{
@@ -165,12 +223,17 @@ const PayrollLedger = (): React.JSX.Element => {
             </Button>
           </Box>
         </LocalizationProvider>
+        {/* TODO: payment add&pop
+        <Button variant='outlined'>
+          급여명세 관리
+        </Button>
+        */}
       </Box>
 
       <Paper sx={{paddingBottom: 1, px: 2}}>
         {/* 급여대장 */}
         <Box sx={{mt: 1}}>
-          <Typography>작성일자:</Typography>
+          <Typography>작성일자: {createdAtPayroll ? createdAtPayroll.split('T')[0] : ''}</Typography>
           <TableContainer
             component={Box}
             sx={{
@@ -203,21 +266,32 @@ const PayrollLedger = (): React.JSX.Element => {
                     >
                       {row.label}
                     </TableCell>
-                    {payments.map((payment, colIdx) => (
-                      <TableCell key={`${payment.id}-${colIdx}`} align="right"
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               value={row.format ? row.format(payment.paymentDetail[row.id]) : payment.paymentDetail[row.id]}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                               inputProps={{
-                                 disabled: true,
-                                 color: 'black'
-                               }}
+                    {/* payment */}
+                    {payments.map((payment, colIdx) => {
+                      let value = payment.paymentDetail[row.id];
+                      if (row.id === PaymentTableRow.SALARY
+                        || row.id === PaymentTableRow.TOTAL_SALARY
+                        || row.id === DeductionTableRow.DEDUCTION
+                      ) value = payment[row.id];
+                      else if (isDeductionRowId(row.id)) {
+                        value = payment.deductionDetail[rowIdx-9]?.['value'];
+                      }
+                      return (
+                        <TableCell key={`${payment.id}-${colIdx}`} align="right"
+                                   sx={{borderRight: '1px solid lightgray', py: 0}}
                         >
-                        </Input>
-                      </TableCell>
-                    ))}
+                          <Input disableUnderline
+                                 value={row.format ? row.format(value) : value}
+                                 sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
+                                 inputProps={{
+                                   disabled: true,
+                                   color: 'black'
+                                 }}
+                          >
+                          </Input>
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
@@ -226,9 +300,9 @@ const PayrollLedger = (): React.JSX.Element => {
         </Box>
 
         {/* 지출 내역 */}
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{mt: 2}}>
           <Typography variant='h6'>지출 내역</Typography>
-          <Box sx={{ display: 'flex', mt: 1 }}>
+          <Box sx={{display: 'flex', mt: 1}}>
             {/* 왼쪽 table */}
             <TableContainer
               component={Box}
@@ -348,13 +422,12 @@ const PayrollLedger = (): React.JSX.Element => {
               <Table size="small" sx={{tableLayout: 'fixed', width: '100%'}}>
                 <TableBody>
                   <TableRow>
-{/*
-                    {Object.entries(sumByDate).map(([date, total]) => (
+                    {ledger?.calcGroups && Object.entries(ledger?.calcGroups).map(([date, total]) => (
                       <Fragment key={`${date}-${total}`}>
                         <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
                                    align="center"
                         >
-                          {date}
+                          {date || '-'}
                         </TableCell>
                         <TableCell sx={{py: 0, borderRight: '1px solid lightgray'}}
                                    align="right"
@@ -363,7 +436,7 @@ const PayrollLedger = (): React.JSX.Element => {
                         </TableCell>
                       </Fragment>
                     ))}
-*/}
+
                   </TableRow>
                   <TableRow>
                     <TableCell sx={{py: 0}} align='right'>
@@ -386,20 +459,37 @@ const PayrollLedger = (): React.JSX.Element => {
         mx: 2
       }}
       >
-        <Button variant='contained'
-                color='error'
-                onClick={deletePayroll}
-        >
-          삭제
-        </Button>
         <Box>
           <Button variant='contained'
+                  color='error'
+                  onClick={deletePayroll}
+                  sx={{mr: 2}}
+          >
+            삭제
+          </Button>
+          <Button variant='contained'
                   onClick={handleEditPayroll}
-                  sx={{marginRight: 2}}
           >
             수정
           </Button>
-          <Button variant='contained'>인쇄</Button>
+        </Box>
+        <Box sx={{display: 'flex', gap: 2}}>
+          <PrintButton printData={payments}
+                       value='급여명세서 인쇄'
+                       propType={AccountingManageMenuType.EmployeeManage}
+          />
+          <PrintButton
+            printData={{
+              payrollRegister: {
+                id: payrollId,
+                payments: payments,
+                createdAt: createdAtPayroll
+              },
+              financialLedger: ledger,
+            }}
+            propType={AccountingManageMenuType.PayrollDetail}
+            value='급여대장 인쇄'
+          />
         </Box>
       </Box>
     </Box>
