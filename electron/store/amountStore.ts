@@ -369,7 +369,7 @@ export const validateProductsAgainstAPI = async (options: {
     if (!apiProd) {
       if (options.removeOrphaned) {
         removeProduct(storedProd.prodId);
-        console.log('삭제한 고아 cache data: ', storedProducts.indexOf(storedProd))
+        // console.log('삭제한 고아 cache data: ', storedProducts.indexOf(storedProd))
       }
       continue;
     }
@@ -387,10 +387,12 @@ export const validateProductsAgainstAPI = async (options: {
         updateProduct(storedProducts.indexOf(storedProd), {
           prodName: apiProd.name
         });
+/*
         console.log('api-cache data 에서 불일치한 prodName: ',
           storedProducts.indexOf(storedProd), {
           prodName: apiProd.name
         })
+*/
       }
     }
 
@@ -414,11 +416,13 @@ export const validateProductsAgainstAPI = async (options: {
             prevRawMatAmount: '0',
             prevManufactureAmount: '0'
           });
+/*
           console.log(storedProd.prodName, '의 누락된 scale 추가: ', {
             scaleName,
             prevRawMatAmount: '0',
             prevManufactureAmount: '0'
           })
+*/
         }
       }
     }
@@ -427,7 +431,7 @@ export const validateProductsAgainstAPI = async (options: {
     for (const scaleName of storedScaleNames) {
       if (!apiScaleNames.has(scaleName) && options.autoFix) {
         removeScale(storedProd.prodId, scaleName);
-        console.log('삭제된 scale: ', storedProd.prodName, '의 ', scaleName);
+        // console.log('삭제된 scale: ', storedProd.prodName, '의 ', scaleName);
       }
     }
   }
@@ -437,7 +441,7 @@ export const validateProductsAgainstAPI = async (options: {
     for (const apiProd of apiProducts) {
       if (!storedProducts.some(p => p.prodId === apiProd.id)) {
         addProduct(transformApiProduct(apiProd));
-        console.log('신규 product 추가: ', transformApiProduct(apiProd));
+        // console.log('신규 product 추가: ', transformApiProduct(apiProd));
       }
     }
   }
