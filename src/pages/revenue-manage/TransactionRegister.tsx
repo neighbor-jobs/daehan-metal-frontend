@@ -372,16 +372,6 @@ const TransactionRegister = ({
     if (dialogType === 'edit' && prevFormData) {
       setFormData(prevFormData);
     }
-    /*else if (dialogType === 'create') {
-      setFormData({
-        companyId: '',
-        locationName: [] as string[],
-        companyName: '',
-        payingAmount: '0',
-        sequence: 1,
-        createdAt: dayjs().format('YYYY-MM-DD'),
-      });
-    }*/
   }, [dialogType, prevFormData]);
 
   // debug

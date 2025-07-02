@@ -2,13 +2,13 @@ import {
   Box,
   Button,
   IconButton,
-  Paper,
+  Paper, Popover,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow, Typography
 } from '@mui/material';
 import {SalesCompanyColumn} from '../../types/tableColumns.ts';
 import React, {useEffect, useState} from 'react';
@@ -35,11 +35,6 @@ const columns: readonly SalesCompanyColumn[] = [
     label: '전화번호',
     minWidth: 80,
   },
-  /*{
-    id: 'locationNames',
-    label: '현장명',
-    format: formatStringList,
-  },*/
   {
     id: 'fax',
     label: '팩스번호',
@@ -54,23 +49,24 @@ const columns: readonly SalesCompanyColumn[] = [
     id: 'businessType',
     label: '업태',
     minWidth: 50,
-
   },
   {
     id: 'businessCategory',
     label: '종목',
     minWidth: 50,
   },
-  {
+/*  {
     id: 'address',
     label: '주소',
     minWidth: 200,
-  },
+  }*/
 ];
 
 const SalesCompany = (): React.JSX.Element => {
+  // TODO: pop over 안돌아가는거 고쳐놓기
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     companyName: '',
@@ -173,18 +169,49 @@ const SalesCompany = (): React.JSX.Element => {
             <TableBody>
               {salesCompanyList
                 .map((row, rowIndex) => {
+                  const isPopoverOpen = anchorEl === rowIndex;
+
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                       {columns.map((column) => {
                         const value = row[column.id];
                         return (
                           <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
+                            {column.format ? column.format(value) : value}
                           </TableCell>
                         );
                       })}
+                      {/* 주소 */}
+                      <TableCell>
+                        <Typography variant='body2'
+                                    aria-owns={isPopoverOpen ? `popover-${row.address}` : undefined}
+                                    aria-haspopup="true"
+                                    onMouseEnter={() => setAnchorEl(rowIndex)}
+                                    onMouseLeave={() => setAnchorEl(null)}
+                        >
+                          {row.address}
+                        </Typography>
+                        <Popover
+                          id={`popover-${row.address}`}
+                          sx={{ pointerEvents: 'none' }}
+                          open={isPopoverOpen}
+                          anchorEl={anchorEl}
+                          anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                          }}
+                          transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'left',
+                          }}
+                          onClose={() => setAnchorEl(null)}
+                          disableRestoreFocus
+                        >
+                          <Typography sx={{ p: 1 }}>{row.address}</Typography>
+                        </Popover>
+                      </TableCell>
+
+                      {/* 수정 & 삭제 버튼 */}
                       <TableCell sx={{padding: 0}}>
                         <IconButton size='small'
                                     onClick={() => handleEdit(row)}

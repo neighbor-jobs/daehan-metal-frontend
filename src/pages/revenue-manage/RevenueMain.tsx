@@ -88,6 +88,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
 const RevenueMain = (): React.JSX.Element => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [dialogType, setDialogType] = useState<'create' | 'edit'>('create');
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [productList, setProductList] = useState([]);
   const [formData, setFormData] = useState({
@@ -137,15 +138,6 @@ const RevenueMain = (): React.JSX.Element => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=desc&startAt=${startAt}&sequence=${sequence}`);
 
     if (res.data.statusCode === 204) {
-      /*setReport([]);
-      setReportId('');
-      setAmount({
-        totalPayingAmount: "0",
-        totalSalesAmount: "0",
-        carryoverAmount: "0"
-      });
-      setPrintData(null);
-      setEndSeq(1);*/
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
@@ -250,22 +242,38 @@ const RevenueMain = (): React.JSX.Element => {
           </Box>
         </LocalizationProvider>
         <Autocomplete
-          freeSolo
           sx={{ width: 200 }}
           options={salesCompanyList.map((option) => option.companyName)}
           onChange={handleCompanyChange}
+          onOpen={() => setIsAutocompleteOpen(true)}
+          onClose={() => setIsAutocompleteOpen(false)}
           value={formData.companyName}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='거래처명' size='small'
                        sx={{minWidth: 150}}
+                       slotProps={{
+                         htmlInput: {
+                           onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>) => {
+                             if (e.key === 'Enter') {
+                               if (!isAutocompleteOpen) {
+                                 setTimeout(async () => {
+                                   await getReceipt(formData.companyName, formData.startAt, formData.sequence);
+                                   setDialogType('create');
+                                 }, 0);
+                               }
+                             }
+                           },
+                           ...params.inputProps
+                         }
+                       }}
             />
           }
         />
         <Button
           variant="outlined"
-          onClick={() => {
-            getReceipt(formData.companyName, formData.startAt, formData.sequence);
+          onClick={async () => {
+            await getReceipt(formData.companyName, formData.startAt, formData.sequence);
             setDialogType('create');
           }}
         >

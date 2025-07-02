@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
 import PrintButton from '../../layout/PrintButton.tsx';
-import {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import dayjs from 'dayjs';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
@@ -61,26 +61,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     align: 'right',
     format: (value: number) => value.toLocaleString(),
   },
-  /*{
-    id: 'total-amount',
-    label: '금액',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
-    id: 'received-amount',
-    label: '수금액',
-    minWidth: 100,
-    align: 'right',
-  },
-  {
-    id: 'remaining-amount',
-    label: '잔액',
-    minWidth: 100,
-    align: 'right',
-  }*/
 ];
-
 
 const ClientSales = (): React.JSX.Element => {
   const [salesCompanyList, setSalesCompanyList] = useState([]);
@@ -101,7 +82,7 @@ const ClientSales = (): React.JSX.Element => {
     startAt: string;
     endAt: string;
   } | null>(null);
-
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
   const { showAlert } = useAlertStore();
 
   // handler
@@ -186,65 +167,6 @@ const ClientSales = (): React.JSX.Element => {
       startAt: date.startAt.format('YYYY-MM-DD'),
       endAt: date.endAt.format('YYYY-MM-DD'),
     })
-    /*
-    * {
-    "data": [
-        {
-            "createdAt": "2025-05-13",
-            "productName": "0",
-            "scale": "1",
-            "quantity": 2,
-            "rawMatAmount": "2,000",
-            "manufactureAmount": "400",
-            "amount": 2400,
-            "remainingAmount": 86944
-        },
-        {
-            "createdAt": "2025-05-13",
-            "productName": "0",
-            "scale": "2",
-            "quantity": 2.5,
-            "rawMatAmount": "7,500",
-            "manufactureAmount": "10,000",
-            "amount": 17500,
-            "remainingAmount": 104444
-        },
-        {
-            "createdAt": "2025-05-13",
-            "productName": "0",
-            "scale": "1",
-            "quantity": 2,
-            "rawMatAmount": "20",
-            "manufactureAmount": "0",
-            "amount": 20,
-            "remainingAmount": 104464
-        },
-        {
-            "createdAt": "2025-05-13",
-            "productName": "0",
-            "scale": "3",
-            "quantity": 2,
-            "rawMatAmount": "2,224",
-            "manufactureAmount": "0",
-            "amount": 2224,
-            "remainingAmount": 106688
-        },
-        {
-            "createdAt": "2025-05-13",
-            "productName": "0000",
-            "scale": "11",
-            "quantity": 2,
-            "rawMatAmount": "400",
-            "manufactureAmount": "0",
-            "amount": 400,
-            "remainingAmount": 107088
-        }
-    ],
-    "companyName": "(가)거래처",
-    "startAt": "2025-05-13",
-    "endAt": "2025-05-13"
-}
-    * */
   }
 
   useEffect(() => {
@@ -278,10 +200,26 @@ const ClientSales = (): React.JSX.Element => {
           options={salesCompanyList.map((option) => option.companyName)}
           value={companyName}
           onChange={handleCompanyChange}
+          onOpen={() => setIsAutocompleteOpen(true)}
+          onClose={() => setIsAutocompleteOpen(false)}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='거래처명' size='small'
                        sx={{minWidth: 150}}
+                       slotProps={{
+                         htmlInput: {
+                           onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>) => {
+                             if (e.key === 'Enter') {
+                               if (!isAutocompleteOpen) {
+                                 setTimeout(() => {
+                                   getClientSales();
+                                 }, 0);
+                               }
+                             }
+                           },
+                           ...params.inputProps
+                         }
+                       }}
             />
           }
         />
