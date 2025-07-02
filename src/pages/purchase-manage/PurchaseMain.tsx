@@ -180,7 +180,7 @@ const PurchaseMain = (): React.JSX.Element => {
 
     const transformedReceipts = receipts.map((item) => ({
       ...item,
-      isPaying: item.productPrice && item.productPrice.trim() !== ''
+      isPaying: !!item.productPrice
     }));
 
     for (let i = 0; i < receipts.length; i++) {
@@ -246,17 +246,18 @@ const PurchaseMain = (): React.JSX.Element => {
     })
   }
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await axiosInstance.get('/vendor/many?orderBy=asc');
-        setPurchaseCompanyList(res.data.data);
-      } catch (error) {
-        showAlert('새로고침 요망', 'info');
-      }
+  const getPurchaseCompanyList = useCallback(async () => {
+    try {
+      const res = await axiosInstance.get('/vendor/many?orderBy=asc');
+      setPurchaseCompanyList(res.data.data);
+    } catch (error) {
+      showAlert('새로고침 요망', 'info');
     }
-    fetch();
-  }, [showAlert])
+  }, [showAlert]);
+
+  useEffect(() => {
+    getPurchaseCompanyList();
+  }, [showAlert, getPurchaseCompanyList])
 
   return (
     <Box sx={{
@@ -304,6 +305,7 @@ const PurchaseMain = (): React.JSX.Element => {
                 <TextField {...params}
                            size='small'
                            sx={{minWidth: 150}}
+
                 />
               }
             />
@@ -321,6 +323,7 @@ const PurchaseMain = (): React.JSX.Element => {
       <PurchaseCompanyForm isOpen={openDialog}
                            isEditing={false}
                            onClose={() => setOpenDialog(false)}
+                           onSuccess={getPurchaseCompanyList}
       />
 
       <Paper sx={{
