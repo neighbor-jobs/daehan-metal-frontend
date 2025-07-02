@@ -13,7 +13,7 @@ import {
   TableHead,
   TableRow, TextField
 } from '@mui/material';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import dayjs from 'dayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -96,6 +96,8 @@ const MonthlyPurchase = (): React.JSX.Element => {
     companyName: '',
   })
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
+  const companyInputRef = useRef<HTMLInputElement>(null);
   const [updateFormData, setUpdateFormData] = useState();
   const [purchaseCompanyList, setPurchaseCompanyList] = useState([]);
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
@@ -210,8 +212,17 @@ const MonthlyPurchase = (): React.JSX.Element => {
               format="YYYY/MM"
               defaultValue={dayjs()}
               onChange={(value) => setFormData(prev => ({...prev, standardDate: value}))}
+              onAccept={() => companyInputRef.current?.focus()}
               slotProps={{
-                textField: {size: 'small'},
+                textField: {
+                  size: 'small',
+                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter') {
+                      companyInputRef.current?.focus();
+                    }
+                  }
+                },
+
               }}
             />
           </Box>
@@ -220,12 +231,29 @@ const MonthlyPurchase = (): React.JSX.Element => {
           freeSolo
           options={purchaseCompanyList.map((option) => option.name)}
           onChange={handleCompanyChange}
+          onOpen={() => setIsAutocompleteOpen(true)}
+          onClose={() => setIsAutocompleteOpen(false)}
           value={formData.companyName}
           sx={{width: 200}}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='거래처명' size='small'
+                       inputRef={companyInputRef}
                        sx={{minWidth: 150}}
+                       slotProps={{
+                         htmlInput: {
+                           onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>) => {
+                             if (e.key === 'Enter') {
+                               if (!isAutocompleteOpen) {
+                                 setTimeout(() => {
+                                   handleSearch()
+                                 }, 0);
+                               }
+                             }
+                           },
+                           ...params.inputProps
+                         }
+                       }}
             />
           }
         />
