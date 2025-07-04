@@ -9,7 +9,7 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow
+  TableRow, Typography
 } from '@mui/material';
 
 // project
@@ -58,12 +58,28 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
     format: formatCurrency
   },
   {
+    id: DailySalesColumn.TOTAL_RAW_MAT_AMOUNT,
+    label: '재료비',
+    minWidth: 100,
+    align: 'right',
+    typoSx: {color: 'blue'},
+    format: formatCurrency,
+  },
+  {
     id: DailySalesColumn.MANUFACTURE_AMOUNT,
     label: '가공단가',
     minWidth: 100,
     align: 'right',
     format: formatCurrency
   },
+  {
+    id: DailySalesColumn.TOTAL_MANUFACTURE_AMOUNT,
+    label: '가공비',
+    minWidth: 100,
+    align: 'right',
+    typoSx: {color: 'darkorange'},
+    format: formatCurrency
+  }
 ];
 
 const DailySales = () => {
@@ -84,10 +100,17 @@ const DailySales = () => {
 
   const getDailySalesList = async (startAt: string, endAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/daily/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`);
-    const sortedList = res.data.data?.reports.sort((a, b) => {
+    const reports = res.data.data?.reports
+      /*.sort((a, b) => {
       return dayjs(a.createdAt).diff(dayjs(b.createdAt))
-    });
-    setDailySalesList(sortedList);
+    });*/
+    const updatedList = reports.map(item => ({
+      ...item,
+      totalRawMatAmount: Math.round(Number(item.rawMatAmount) * item.quantity),
+      totalManufactureAmount: Math.trunc(Number(item.manufactureAmount) * item.quantity),
+    }));
+
+    setDailySalesList(updatedList);
     setAmount({
       totalManufactureAmount: res.data.data.totalManufactureAmount,
       totalRawMatAmount: res.data.data.totalRawMatAmount,
@@ -103,7 +126,6 @@ const DailySales = () => {
   },[])
 
   // debug
-  // console.log(dailySalesList);
 
   return (
     <Box>
@@ -137,7 +159,11 @@ const DailySales = () => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant="body2"
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell align='right'
@@ -156,9 +182,14 @@ const DailySales = () => {
                         const value = row[column.id];
                         return (
                           <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
+                            {column.format ?
+                              <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {column.format(value)}
+                              </Typography>
+                              : <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {value}
+                              </Typography>
+                            }
                           </TableCell>
                         );
                       })}
