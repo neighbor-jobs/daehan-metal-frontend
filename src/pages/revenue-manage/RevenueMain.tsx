@@ -13,7 +13,8 @@ import {
   TableFooter,
   TableHead,
   TableRow,
-  TextField
+  TextField,
+  Typography
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -67,7 +68,8 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
-    format: (amount: number) => amount?.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    typoSx: {color: 'blue'},
+    format: (amount: number) => amount?.toLocaleString(undefined, {maximumFractionDigits: 0})
   },
   {
     id: RevenueMainColumn.MANUFACTURE_AMOUNT,
@@ -81,6 +83,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'darkorange'},
     format: (amount: number) => Math.floor(amount)?.toLocaleString()
   }
 ];
@@ -181,7 +184,7 @@ const RevenueMain = (): React.JSX.Element => {
           totalPayingAmount: "0",
           totalSalesAmount: "0",
           carryoverAmount: "0"
-          })
+        })
         setPrintData(null);
       } else {
         await getReceipt(formData.companyName, formData.startAt);
@@ -207,7 +210,7 @@ const RevenueMain = (): React.JSX.Element => {
       }
     }
     fetchSalesCompanies();
-  }, []);
+  }, [showAlert]);
 
   // debug
 
@@ -242,7 +245,7 @@ const RevenueMain = (): React.JSX.Element => {
           </Box>
         </LocalizationProvider>
         <Autocomplete
-          sx={{ width: 200 }}
+          sx={{width: 200}}
           options={salesCompanyList.map((option) => option.companyName)}
           onChange={handleCompanyChange}
           onOpen={() => setIsAutocompleteOpen(true)}
@@ -297,7 +300,11 @@ const RevenueMain = (): React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant="body2"
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell align='right'>금액</TableCell>
@@ -312,9 +319,14 @@ const RevenueMain = (): React.JSX.Element => {
                         const value = row[column.id];
                         return (
                           <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
+                            {column.format ?
+                              <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {column.format(value)}
+                              </Typography>
+                              : <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {value}
+                              </Typography>
+                            }
                           </TableCell>
                         );
                       })}

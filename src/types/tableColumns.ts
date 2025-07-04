@@ -1,3 +1,5 @@
+import {SxProps, Theme} from '@mui/material';
+
 export interface TableColumns<T> {
   id: T;
   label: string;
@@ -5,6 +7,7 @@ export interface TableColumns<T> {
   align?: 'right' | 'center';
   format?: (value: string | string[] | number, numValue?: number) => string | number;
   disabled?: boolean;
+  typoSx?: SxProps<Theme>;
 }
 
 /*
@@ -93,7 +96,8 @@ export enum DailySalesColumn {
   QUANTITY = 'quantity',
   RAW_MAT_AMOUNT = 'rawMatAmount',
   MANUFACTURE_AMOUNT = 'manufactureAmount',
-  PRODUCT_LENGTH = 'productLength',
+  TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
+  TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
 }
 
 export enum ClientSalesColumn {

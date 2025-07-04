@@ -13,7 +13,8 @@ import {
   TableFooter,
   TableHead,
   TableRow,
-  TextField
+   TextField,
+  Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
 import PrintButton from '../../layout/PrintButton.tsx';
@@ -52,6 +53,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'blue'},
     format: (value: number) => value.toLocaleString(),
   },
   {
@@ -59,6 +61,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'darkorange'},
     format: (value: number) => value.toLocaleString(),
   },
 ];
@@ -83,7 +86,7 @@ const ClientSales = (): React.JSX.Element => {
     endAt: string;
   } | null>(null);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
-  const { showAlert } = useAlertStore();
+  const {showAlert} = useAlertStore();
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -103,7 +106,7 @@ const ClientSales = (): React.JSX.Element => {
       totalPayingAmount: res.data.data?.totalPayingAmount,
       totalSalesAmount: res.data.data?.totalSalesAmount,
     })
-    const { startAt } = date;
+    const {startAt} = date;
     const isFirstDay = startAt.date() === 1;
 
     const salesStartAt = startAt.startOf('month');
@@ -155,7 +158,7 @@ const ClientSales = (): React.JSX.Element => {
         'rawMatAmount': materialPrice,
         'manufactureAmount': processingPrice,
         'amount': total,
-        'remainingAmount' : outstanding,
+        'remainingAmount': outstanding,
       }
     }) ?? []).sort((a, b) => {
       return dayjs(a.createdAt).diff(dayjs(b.createdAt))
@@ -196,7 +199,7 @@ const ClientSales = (): React.JSX.Element => {
         <DateRangePicker onChange={handleDateChange} startAt={date.startAt} endAt={date.endAt}/>
         <Autocomplete
           freeSolo
-          sx={{width : 200}}
+          sx={{width: 200}}
           options={salesCompanyList.map((option) => option.companyName)}
           value={companyName}
           onChange={handleCompanyChange}
@@ -242,7 +245,11 @@ const ClientSales = (): React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant="body2"
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell align='right' sx={{minWidth: 80}}>금액</TableCell>
@@ -251,13 +258,13 @@ const ClientSales = (): React.JSX.Element => {
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell />
+                <TableCell/>
                 <TableCell align='left'>전일이월</TableCell>
-                <TableCell />
-                <TableCell />
-                <TableCell />
-                <TableCell />
-                <TableCell />
+                <TableCell/>
+                <TableCell/>
+                <TableCell/>
+                <TableCell/>
+                <TableCell/>
                 <TableCell align='right'>{outstandingBeforeOneDay.toLocaleString()}</TableCell>
               </TableRow>
               {reports && reports.map((row, rowIdx) => {
@@ -267,9 +274,14 @@ const ClientSales = (): React.JSX.Element => {
                       const value = row[column.id];
                       return (
                         <TableCell key={column.id} align={column.align}>
-                          {column.format
-                            ? column.format(value)
-                            : value}
+                          {column.format ?
+                            <Typography variant='body2' sx={column.typoSx || undefined}>
+                              {column.format(value)}
+                            </Typography>
+                            : <Typography variant='body2' sx={column.typoSx || undefined}>
+                              {value}
+                            </Typography>
+                          }
                         </TableCell>
                       );
                     })}
@@ -291,7 +303,7 @@ const ClientSales = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={printData} />
+      <PrintButton printData={printData}/>
     </Box>
   );
 }

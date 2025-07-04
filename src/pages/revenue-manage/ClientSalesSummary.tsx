@@ -9,7 +9,8 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow
+  TableRow,
+  Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker';
 
@@ -33,6 +34,7 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'blue'},
     format: formatCurrency
   },
   {
@@ -40,6 +42,7 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'darkorange'},
     format: formatCurrency
   },
   {
@@ -52,7 +55,7 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
 ];
 
 
-const ClientSalesSummary = ():React.JSX.Element => {
+const ClientSalesSummary = (): React.JSX.Element => {
   const [clientSalesSumList, setClientSalesSumList] = useState([]);
   const [date, setDate] = useState({
     startAt: dayjs(),
@@ -66,7 +69,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
 
   const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
     if (!start || !end) return;
-    setDate({ startAt: start, endAt: end });
+    setDate({startAt: start, endAt: end});
   };
 
   const getClientSalesSumList = async (startAt: string, endAt: string) => {
@@ -85,8 +88,8 @@ const ClientSalesSummary = ():React.JSX.Element => {
         'material-price': raw,
         'processing-price': manu,
         'paying-amount': item.totalPayingAmount,
-        'total-amount' : raw + manu,
-        'remaining-amount' : raw + manu - Number(item.totalPayingAmount),
+        'total-amount': raw + manu,
+        'remaining-amount': raw + manu - Number(item.totalPayingAmount),
       }
     }) ?? [];
     setPrintData({
@@ -132,7 +135,11 @@ const ClientSalesSummary = ():React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant="body2"
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell align='right'>총액</TableCell>
@@ -148,9 +155,14 @@ const ClientSalesSummary = ():React.JSX.Element => {
                         const value = row[column.id];
                         return (
                           <TableCell key={column.id} align={column.align}>
-                            {column.format
-                              ? column.format(value)
-                              : value}
+                            {column.format ?
+                              <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {column.format(value)}
+                              </Typography>
+                              : <Typography variant='body2' sx={column.typoSx || undefined}>
+                                {value}
+                              </Typography>
+                            }
                           </TableCell>
                         );
                       })}
@@ -160,7 +172,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
                       </TableCell>
                       {/* 잔액 */}
                       <TableCell align='right'>
-                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)-Number(row.totalPayingAmount)).toLocaleString('ko-KR')}
+                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount) - Number(row.totalPayingAmount)).toLocaleString('ko-KR')}
                       </TableCell>
                     </TableRow>
                   );
@@ -179,7 +191,7 @@ const ClientSalesSummary = ():React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={printData} ></PrintButton>
+      <PrintButton printData={printData}></PrintButton>
     </Box>
   )
 }

@@ -8,7 +8,7 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow
+  TableRow, Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker';
 
@@ -50,6 +50,7 @@ const columns: readonly TableColumns<ItemSalesSummaryColumn>[] = [
     label: '재료비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'blue'},
     format: formatCurrency
   },
   {
@@ -64,6 +65,7 @@ const columns: readonly TableColumns<ItemSalesSummaryColumn>[] = [
     label: '가공비',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'darkorange'},
     format: formatCurrency
   },
   {
@@ -161,7 +163,11 @@ const ItemSalesSummary = (): React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant="body2"
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
               </TableRow>
@@ -174,9 +180,14 @@ const ItemSalesSummary = (): React.JSX.Element => {
                       const value = row[column.id];
                       return (
                         <TableCell key={column.id} align={column.align}>
-                          {column.format
-                            ? column.format(value)
-                            : value}
+                          {column.format ?
+                            <Typography variant='body2' sx={column.typoSx || undefined}>
+                              {column.format(value)}
+                            </Typography>
+                            : <Typography variant='body2' sx={column.typoSx || undefined}>
+                              {value}
+                            </Typography>
+                          }
                         </TableCell>
                       );
                     })}
