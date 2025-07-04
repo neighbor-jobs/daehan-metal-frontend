@@ -92,17 +92,17 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
 
 const MonthlyPurchase = (): React.JSX.Element => {
   const [formData, setFormData] = useState({
-    standardDate: dayjs(),
+    standardDate: dayjs() as dayjs.Dayjs | null,
     companyName: '',
   })
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
-  const companyInputRef = useRef<HTMLInputElement>(null);
   const [updateFormData, setUpdateFormData] = useState();
   const [purchaseCompanyList, setPurchaseCompanyList] = useState([]);
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
   const [selectedCompanyData, setSelectedCompanyData] = useState({});
   const [records, setRecords] = useState([]);
+  const companyInputRef = useRef<HTMLInputElement>(null);
   const { showAlert } = useAlertStore();
 
   const totals = useMemo(() => {
@@ -210,9 +210,14 @@ const MonthlyPurchase = (): React.JSX.Element => {
             <DesktopDatePicker
               views={['year', 'month']}
               format="YYYY/MM"
-              defaultValue={dayjs()}
+              closeOnSelect={true} // 월 선택 시 자동 닫힘 및 onAccept 실행
+              value={formData.standardDate}
               onChange={(value) => setFormData(prev => ({...prev, standardDate: value}))}
-              onAccept={() => companyInputRef.current?.focus()}
+              onAccept={() => {
+                setTimeout(() => {
+                  companyInputRef.current?.focus();
+                }, 20)
+              }}
               slotProps={{
                 textField: {
                   size: 'small',
@@ -222,7 +227,6 @@ const MonthlyPurchase = (): React.JSX.Element => {
                     }
                   }
                 },
-
               }}
             />
           </Box>
