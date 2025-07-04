@@ -63,10 +63,12 @@ const columns: readonly SalesCompanyColumn[] = [
 ];
 
 const SalesCompany = (): React.JSX.Element => {
-  // TODO: pop over 안돌아가는거 고쳐놓기
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [anchor, setAnchor] = useState({
+    anchorEl: null as HTMLElement | null,
+    index: null as number | null,
+  });
   const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     companyName: '',
@@ -163,14 +165,13 @@ const SalesCompany = (): React.JSX.Element => {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell sx={{minWidth: 180}}>주소</TableCell>
                 <TableCell sx={{width: 2}}/>
               </TableRow>
             </TableHead>
             <TableBody>
               {salesCompanyList
                 .map((row, rowIndex) => {
-                  const isPopoverOpen = anchorEl === rowIndex;
-
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                       {columns.map((column) => {
@@ -182,20 +183,26 @@ const SalesCompany = (): React.JSX.Element => {
                         );
                       })}
                       {/* 주소 */}
-                      <TableCell>
+                      <TableCell sx={{minWidth: 180}}>
                         <Typography variant='body2'
-                                    aria-owns={isPopoverOpen ? `popover-${row.address}` : undefined}
+                                    aria-owns={anchor.anchorEl ? `popover-${rowIndex}` : undefined}
                                     aria-haspopup="true"
-                                    onMouseEnter={() => setAnchorEl(rowIndex)}
-                                    onMouseLeave={() => setAnchorEl(null)}
+                                    onMouseEnter={(e) => setAnchor({
+                                      anchorEl: e.currentTarget,
+                                      index: rowIndex,
+                                    })}
+                                    onMouseLeave={() => setAnchor({
+                                      anchorEl: null,
+                                      index: null,
+                                    })}
                         >
                           {row.address}
                         </Typography>
                         <Popover
-                          id={`popover-${row.address}`}
+                          id={`popover-${rowIndex}`}
                           sx={{ pointerEvents: 'none' }}
-                          open={isPopoverOpen}
-                          anchorEl={anchorEl}
+                          open={Boolean(anchor.anchorEl) && rowIndex === anchor.index}
+                          anchorEl={anchor.anchorEl}
                           anchorOrigin={{
                             vertical: 'bottom',
                             horizontal: 'left',
@@ -204,10 +211,13 @@ const SalesCompany = (): React.JSX.Element => {
                             vertical: 'top',
                             horizontal: 'left',
                           }}
-                          onClose={() => setAnchorEl(null)}
+                          onClose={() => setAnchor({
+                            anchorEl: null,
+                            index: null
+                          })}
                           disableRestoreFocus
                         >
-                          <Typography sx={{ p: 1 }}>{row.address}</Typography>
+                          <Typography variant='body2' sx={{ p: 1 }}>{row.address}</Typography>
                         </Popover>
                       </TableCell>
 
