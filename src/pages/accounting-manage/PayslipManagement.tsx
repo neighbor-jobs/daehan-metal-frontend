@@ -29,7 +29,6 @@ const PayslipManagement = ({isOpen,
                              : PayslipProps): React.JSX.Element => {
   // TODO: /payment/push api 붙이기
   // TODO: /payment/pop api 붙이기
-  // TODO: 급여명세서 인쇄 템플릿 붙이기
 
   return (
     <Dialog open={isOpen}>

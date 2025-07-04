@@ -261,12 +261,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }))
     try {
       if (mode === 'create') {
-        await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
-        await axiosInstance.post('/ledger', {
+        const payrollRes = await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
+        const ledgerRes = await axiosInstance.post('/ledger', {
           paying: [...leftLedger, ...rightLedger],
           deduction: [],
           createdAt: standardAt
         });
+
+        if (payrollRes.data.statusCode === 409 || ledgerRes.data.statusCode === 409) {
+          showAlert('해당 월에 이미 생성한 급여대장이 있습니다.', 'error');
+          return;
+        }
       } else {
         data.map(async (p) => {
           await axiosInstance.patch('/payroll/payment', p);
@@ -276,6 +281,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
           paying: [...leftLedger, ...rightLedger],
         });
       }
+
       showAlert('등록 성공', 'success');
       await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
 
@@ -851,7 +857,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
             </TableContainer>
           </Box>
         </Box>
-
       </Paper>
 
       {/* 버튼들 */}
