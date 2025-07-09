@@ -25,15 +25,16 @@ export interface Payroll {
 }
 
 export interface Payment {
-  id: string;
+  id: string;                             // payment id
   employeeName: string;
   employeePosition: string;
+  startWorkingAt?: string;                // 직원 입사일
   memo?: string;
   paymentDetail: PaymentDetail;
   deductionDetail: DeductionDetail[];
-  salary: string;
-  deduction: string;
-  totalSalary: string;
+  salary: string;                         // 급여
+  deduction: string;                      // 공제액
+  totalSalary: string;                    // 급여 - 공제액
   createdAt: string;
 }
 

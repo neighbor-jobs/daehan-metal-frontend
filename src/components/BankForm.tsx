@@ -99,7 +99,9 @@ const BankForm = ({
       >
         <CloseIcon/>
       </IconButton>
-      <DialogTitle>{isEdit === BankDialogType.EDIT ? '계좌수정' : '계좌등록'}</DialogTitle>
+      <DialogTitle>
+        {isEdit === BankDialogType.EDIT ? '계좌수정' : '계좌등록'}
+      </DialogTitle>
       <DialogContent
         sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 500}}
       >
@@ -154,7 +156,9 @@ const BankForm = ({
             </Button>
           </>
         )}
-        <Button onClick={handleBankSubmit}>{isEdit === BankDialogType.EDIT ? '수정' : '등록'}</Button>
+        <Button onClick={handleBankSubmit}>
+          {isEdit === BankDialogType.EDIT ? '수정' : '등록'}
+        </Button>
       </DialogActions>
     </Dialog>
   )
