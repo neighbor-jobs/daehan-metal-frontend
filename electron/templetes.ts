@@ -756,10 +756,10 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
           deductions,
           // spacer,
           totalSalarys,
-          spacer,
+          // spacer,
         ],
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
   ]
@@ -774,7 +774,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
 
   for (let i = 0; i < financialLedgerData.payingExpenses.length; ++i) {
     const payingExpenses = financialLedgerData.payingExpenses[i]
-    data[0].push({text: payingExpenses['purpose'], style: 'subheader', alignment: 'center'})
+    data[0].push({text: payingExpenses['purpose'], style: 'subheader', alignment: 'center', valign: 'center'})
     data[1].push({text: `${formatCurrency(payingExpenses['value'])} 원`, style: 'cell', alignment: 'center'})
 
     if (data[0].length > 7) {
@@ -799,7 +799,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
   const groupCalcs = [[], []]
   for (let i = 0; i < groups.length; ++i) {
     const group = groups[i]
-    groupCalcs[0].push({text: group, style: 'subheader'})
+    groupCalcs[0].push({text: group.length === 0 ? '그 외' : group, style: 'subheader'})
     groupCalcs[1].push({
       text: `${formatCurrency(String(financialLedgerData.calcGroups[group]))} 원`,
       style: 'cell',
@@ -807,6 +807,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
     })
   }
 
+/*
   if (groupCalcs[0].length > 0 && groupCalcs[0].length < 8) {
     for (let i = 0; i < 8; ++i) {
       if (!groupCalcs[0][i]) {
@@ -815,6 +816,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
       }
     }
   }
+*/
 
   return [
     {
@@ -829,7 +831,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
         widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
         body: paymentsColumns,
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
     {
@@ -837,7 +839,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
         widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
         body: groupCalcs,
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
     {
@@ -887,12 +889,14 @@ const getSalaryContent = (data: Payment): any[]  => {
   let deduction:
     any[][] = [[], []]
 
+  console.log(data);
+
   for (let i = 0; i < data.deductionDetail.length; ++i) {
     const deductionDetail = data.deductionDetail[i];
     if (deductionDetail.purpose.length === 0) continue;
 
-    deduction[0].push({text: deductionDetail['purpose'], style: 'cell'})
-    deduction[1].push(`${deductionDetail['value']} 원`)
+    deduction[0].push({text: deductionDetail['purpose'], alignment: 'center'})
+    deduction[1].push({text: `${formatCurrency(deductionDetail['value'])} 원`, alignment: 'right'});
 
     if (deduction[0].length > 2) {
       deductions.push(deduction)
@@ -900,7 +904,7 @@ const getSalaryContent = (data: Payment): any[]  => {
     }
   }
 
-  if (deduction[0].length >= 0) {
+  if (deduction[0].length > 0) {
     if (deduction[0].length < 3) {
       for (let i = 0; i < 3; ++i) {
         if (!deduction[0][i]) {
@@ -912,11 +916,14 @@ const getSalaryContent = (data: Payment): any[]  => {
     deductions.push(deduction)
   }
   deductions = deductions.flatMap((deduction) => [deduction[0], deduction[1]])
-  console.log(deductions)
+
+  // debug
+  // console.log(deductions)
+
   // content만 반환
   return [
     {
-      text: `대한금속ENG(주) ${year}년 ${month} 급여명세서 ${today}`,
+      text: `대한금속ENG(주) ${year}년 ${month}월 급여명세서 ${today}`,
       style: 'header',
       alignment: 'center',
       margin: [0, 0, 0, 10],
@@ -924,8 +931,7 @@ const getSalaryContent = (data: Payment): any[]  => {
     {
       columns: [
         {width: "20%", text: `${data.employeeName} 님`, style: 'subheader', fontSize: 12},
-        {width: "20%", text: `총 근무일: ${data.paymentDetail.workingDay} 일`, style: 'subheader'},
-        {width: "60%", text: `사번 ${data.id}`, alignment: 'right', style: 'subheader'},
+        {width: "60%", text: `사번: ${data?.startWorkingAt?.split('T')[0] || ''}`, alignment: 'right', style: 'subheader'},
       ],
       margin: [0, 0, 0, 10],
     },
@@ -940,48 +946,48 @@ const getSalaryContent = (data: Payment): any[]  => {
         widths: ['*', '*', '*'],
         body: [
           [
-            {text: '기본급', style: 'cell'},
-            {text: '시급', style: 'cell'},
-            {text: '식대', style: 'cell'}
+            {text: '기본급', alignment: 'center'},
+            {text: '시급', alignment: 'center'},
+            {text: '식대', alignment: 'center'}
           ],
           [
-            `${data.paymentDetail.pay} 원`,
-            `${data.paymentDetail.hourlyWage} 원`,
-            `${data.paymentDetail.mealAllowance} 원`,
+            {text:`${formatCurrency(data.paymentDetail.pay)} 원`, alignment: 'right'},
+            {text: `${formatCurrency(data.paymentDetail.hourlyWage)} 원`, alignment: 'right'},
+            {text: `${formatCurrency(data.paymentDetail.mealAllowance)} 원`, alignment: 'right'},
           ],
           [
-            {text: '연장 근무시간', style: 'cell'},
-            {text: '연장 근무수당', style: 'cell'},
+            {text: '연장 근무시간', alignment: 'center'},
+            {text: '연장 근무수당', alignment: 'center'},
             {}
           ],
           [
-            `${data.paymentDetail.extendWorkingTime} 시간`,
-            `${data.paymentDetail.extendWokringWage} 원`,
+            {text: `${data.paymentDetail.extendWorkingTime} 시간`, alignment: 'right'},
+            {text: `${formatCurrency(data.paymentDetail.extendWokringWage)} 원`, alignment: 'right'},
             ''
           ],
           [
-            {text: '휴일 근무시간', style: 'cell'},
-            {text: '휴일 근무수당', style: 'cell'},
+            {text: '휴일 근무시간', alignment: 'center'},
+            {text: '휴일 근무수당', alignment: 'center'},
             {}
           ],
           [
-            `${data.paymentDetail.dayOffWorkingTime} 시간`,
-            `${data.paymentDetail.dayOffWorkingWage} 원`,
+            {text: `${data.paymentDetail.dayOffWorkingTime} 시간`, alignment: 'right'},
+            {text: `${formatCurrency(data.paymentDetail.dayOffWorkingWage)} 원`, alignment: 'right'},
             '',
           ],
           [
-            {text: '연차수당 (연차+월차)', style: 'cell'},
+            {text: '연차수당 (연차+월차)', alignment: 'center'},
             {},
             {},
           ],
           [
-            `${data.paymentDetail.annualLeaveAllowance} 원`,
+            {text: `${formatCurrency(data.paymentDetail.annualLeaveAllowance)} 원`, alignment: 'right'},
             '',
             '',
           ]
         ]
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
     {text: "\n"},
@@ -996,7 +1002,7 @@ const getSalaryContent = (data: Payment): any[]  => {
         widths: ['*', '*', '*'],
         body: deductions,
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
     {
@@ -1004,18 +1010,18 @@ const getSalaryContent = (data: Payment): any[]  => {
         widths: ['*', '*', '*'],
         body: [
           [
-            {text: '수령액계', style: 'cell'},
-            {text: '공제액계', style: 'cell'},
-            {text: '실수령액', style: 'cell'},
+            {text: '수령액계', alignment: 'center'},
+            {text: '공제액계', alignment: 'center'},
+            {text: '실수령액', alignment: 'center'},
           ],
           [
-            `${data.salary} 원`,
-            `${data.deduction} 원`,
-            `${data.totalSalary} 원`,
+            {text: `${formatCurrency(data.salary)} 원`, alignment: 'right'},
+            {text: `${formatCurrency(data.deduction)} 원`, alignment: 'right'},
+            {text: `${formatCurrency(data.totalSalary)} 원`, alignment: 'right'},
           ],
         ]
       },
-      layout: 'lightHorizontalLines',
+      layout: customTableLayout,
       margin: [0, 0, 0, 10],
     },
     {
@@ -1060,6 +1066,28 @@ export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
       footer: { fontSize: 9, marginTop: 10 },
     }
   };
+};
+
+/**
+ * 커스텀 테두리 layout
+ * */
+const customTableLayout = {
+  hLineWidth: function (i, node) {
+    return 1; // 모든 가로선 두께
+  },
+  vLineWidth: function (i, node) {
+    return 1; // 모든 세로선 두께
+  },
+  hLineColor: function (i, node) {
+    return 'black'; // 가로선 색상
+  },
+  vLineColor: function (i, node) {
+    return 'black'; // 세로선 색상
+  },
+  paddingLeft: function(i, node) { return 4; },
+  paddingRight: function(i, node) { return 4; },
+  paddingTop: function(i, node) { return 2; },
+  paddingBottom: function(i, node) { return 2; }
 };
 
 
