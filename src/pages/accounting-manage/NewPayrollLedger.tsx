@@ -1,7 +1,8 @@
-import React, {Fragment, useEffect, useMemo, useState} from 'react';
+// UI
 import {
   Box,
   Button,
+  IconButton,
   Input,
   InputLabel,
   Paper,
@@ -14,6 +15,10 @@ import {
   Typography
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
+import CloseIcon from '@mui/icons-material/Close';
+
+// project
+import React, {Fragment, useEffect, useMemo, useState} from 'react';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {Employee} from '../../types/employeeRes.ts';
@@ -22,16 +27,17 @@ import {PatchPayment, PostPayment, PostPaymentDetail} from '../../types/payrollR
 import {defaultDeductionList, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
-import {PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
+import {Deduction, PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
 import {cacheManager} from '../../utils/cacheManager.ts';
 import {formatCurrency} from '../../utils/format.ts';
+import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
+import DeductionList from '../../components/DeductionList.tsx';
 
 const defaultPayment: PostPaymentDetail = {
-  // 기본값
   pay: '0',
-  workingDay: '0',
+  workingDay: '209',
   extendWorkingTime: '0',
   extendWorkingMulti: 1.5,
   dayOffWorkingTime: '0',
@@ -48,8 +54,15 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
   },
   {
     id: PaymentTableRow.WORKING_DAY,
-    label: '근무일수',
+    label: '월평균 근로시간',
     minWidth: 100,
+  },
+  {
+    id: PaymentTableRow.HOURLY_WAGE,
+    label: '시급',
+    minWidth: 100,
+    disabled: true,
+    format: formatCurrency,
   },
   {
     id: PaymentTableRow.EXTEND_WORKING_TIME,
@@ -114,33 +127,36 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
 
 const NewPayrollLedger = (): React.JSX.Element => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {showAlert} = useAlertStore();
+
   const [formData, setFormData] = useState<PostPayment[] | PatchPayment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [deduction, setDeduction] = useState(
-    defaultDeductionList.map((item) => ({
-      purpose: item,
-      value: '0',
-    }))
-  );
+  const [deduction, setDeduction] = useState<Deduction[]>([]);
   const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const {payrollId, payments: initialPayments, ledger: initialLedger} = location.state || {};
   const [mode, setMode] = useState<'create' | 'edit'>(initialPayments ? 'edit' : 'create');
-  const listToPaymentRender = mode === 'create' ? employees : formData;
   const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
-  // TODO: calculatedWages type 정의
   const [calculatedWages, setCalculatedWages] = useState<any>({});
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [deductionDialogProps, setDeductionDialogProps] = useState({
+    isOpen: false,
+    defaultList: [],
+  });
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  const listToPaymentRender = mode === 'create' ? employees : formData;
   const totalPaymentSum = Object.values(calculatedWages).reduce(
-    (acc, cur) => acc + (cur?.totalPayment || 0), 0
+    (acc, cur: any) => acc + (cur?.totalPayment || 0), 0
   );
   const totalDeductionSum = Object.values(calculatedWages).reduce(
-    (acc, cur) => acc + (cur?.totalDeductions || 0), 0
+    (acc, cur: any) => acc + (cur?.totalDeductions || 0), 0
   );
   const totalSalarySum = Object.values(calculatedWages).reduce(
-    (acc, cur) => acc + (cur?.totalSalary || 0), 0
+    (acc, cur: any) => acc + (cur?.totalSalary || 0), 0
   );
 
   const {sumByDate, ledgerSum} = useMemo(() => {
@@ -158,6 +174,31 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
     return {sumByDate: dateSum, ledgerSum: totalSum};
   }, [leftLedger, rightLedger]);
+
+  const handleAllWorkingDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, '');
+    if (value.length > 0) value = String(Number(value)); // 앞자리 0 방지
+    setFormData(prev =>
+      prev.map(item => ({
+        ...item,
+        paymentDetail: {
+          ...item.paymentDetail,
+          workingDay: value,
+        }
+      }))
+    );
+  };
+
+  const handleRemoveEmployee = (id: string) => {
+    if (mode === 'create') {
+      // 사원 id로 구분
+      setEmployees(prev => prev.filter(emp => emp.id !== id));
+      setFormData((prev: PostPayment[]) => prev.filter((item: PostPayment) => item.employeeId !== id));
+    } else {
+      // paymentId로 구분
+      setFormData((prev: PatchPayment[]) => prev.filter((item: PatchPayment) => item.id !== id));
+    }
+  };
 
   const handlePaymentInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -273,13 +314,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
           return;
         }
       } else {
-        data.map(async (p) => {
+        data?.map(async (p) => {
           await axiosInstance.patch('/payroll/payment', p);
         });
         await axiosInstance.patch('/ledger', {
           ...ledger,
           paying: [...leftLedger, ...rightLedger],
         });
+        navigate(`/account/payroll`, {
+          state: standardAt
+        });
+        return;
       }
 
       showAlert('등록 성공', 'success');
@@ -298,6 +343,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
         employeeId: employee.id,
         employeeName: employee.info.name,
         employeePosition: employee.info.position,
+        startWorkingAt: employee.startWorkingAt?.split('T')[0],
         paymentDetail: defaultPayment,
         deductionDetail: defaultDeductionList.map((item) => ({
           purpose: item,
@@ -321,24 +367,42 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }
 
   useEffect(() => {
-    const getEmployees = async () => {
-      try {
-        const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
-        setEmployees(employees.data.data);
-        setFormData(employees.data.data.map((employee: Employee) => ({
-          employeeId: employee.id,
-          employeeName: employee.info.name,
-          employeePosition: employee.info.position,
-          paymentDetail: defaultPayment,
-          deductionDetail: deduction,
-          memo: '',
-        })));
-      } catch {
-        showAlert('사원 정보를 불러오지 못했습니다. 새로고침 해주세요.', 'error');
-      }
-    }
     if (mode === 'create') {
       setMode('create');
+      /*const getEmployees = async () => {
+        try {
+          const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+          setEmployees(employees.data.data);
+          setFormData(employees.data.data.map((employee: Employee) => ({
+            employeeId: employee.id,
+            employeeName: employee.info.name,
+            employeePosition: employee.info.position,
+            startWorkingAt: employee.startWorkingAt?.split('T')[0],
+            paymentDetail: defaultPayment,
+            deductionDetail: deduction,
+            memo: '',
+          })));
+        } catch {
+          showAlert('사원 정보를 불러오지 못했습니다. 새로고침 해주세요.', 'error');
+        }
+      }
+      const getDeductions = async () => {
+        try {
+          const res: string[] = await cacheManager.getDeductions();
+          setDeduction(res.map(item => ({
+            purpose: item,
+            value: '0',
+          })));
+          console.log('cache O');
+        } catch {
+          defaultDeductionList.map((item) => ({
+            purpose: item,
+            value: '0',
+          }))
+          console.log('cache X')
+        }
+      }
+      getDeductions();
       getEmployees();
       cacheManager.getLedgers().then((ledgers) => {
         const mid = Math.ceil(ledgers.length / 2);
@@ -349,7 +413,70 @@ const NewPayrollLedger = (): React.JSX.Element => {
         });
         setLeftLedger(ledgers.slice(0, mid));
         setRightLedger(ledgers.slice(mid));
-      });
+      });*/
+      (async () => {
+        let deductionRes: { purpose: string, value: string }[];
+        let deductionList: string[];
+
+        // 1. 기본 공제 정보 설정
+        try {
+          const res = await cacheManager.getDeductions();
+          deductionRes = res.map((item: string) => ({
+            purpose: item,
+            value: '0',
+          }));
+          deductionList = res;
+        } catch {
+          deductionRes = defaultDeductionList.map((item) => ({
+            purpose: item,
+            value: '0',
+          }));
+          deductionList = defaultDeductionList;
+        }
+        setDeduction(deductionRes);
+        setDeductionDialogProps(prev => ({...prev, defaultList: deductionList}));
+
+        // 2. 직원 기본 데이터 설정
+        try {
+          const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+          setEmployees(employees.data.data);
+          setFormData(employees.data.data.map((employee: Employee) => ({
+            employeeId: employee.id,
+            employeeName: employee.info.name,
+            employeePosition: employee.info.position,
+            startWorkingAt: employee.startWorkingAt?.split('T')[0],
+            paymentDetail: defaultPayment,
+            deductionDetail: deductionRes,
+            memo: '',
+          })));
+        } catch {
+          showAlert('사원 정보를 불러오지 못했습니다. 새로고침 해주세요.', 'error');
+        }
+
+        // 3. ledger 불러오기
+        try {
+          const ledgers = await cacheManager.getLedgers();
+          const mid = Math.ceil(ledgers.length / 2);
+          setLedger({
+            paying: ledgers,
+            deduction: [],
+            createdAt: standardAt,
+          });
+          setLeftLedger(ledgers.slice(0, mid));
+          setRightLedger(ledgers.slice(mid));
+          // console.log('ledger cache O');
+        } catch {
+          const emptyLedgers: Paying[] = Array.from({length: 30}, () => ({purpose: '', value: '0', group: '', memo: ''}))
+          setLedger({
+            paying: emptyLedgers,
+            deduction: [],
+            createdAt: standardAt,
+          })
+          setLeftLedger(emptyLedgers.slice(0, 15));
+          setRightLedger(emptyLedgers.slice(15));
+          // console.log('ledger cache X')
+        }
+      })();
     } else {
       setMode('edit');
       /* form data setting */
@@ -389,16 +516,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
       setLeftLedger(arr?.slice(0, midIndex) || []);
       setRightLedger(arr?.slice(midIndex) || []);
     }
-  }, [showAlert, deduction, mode, initialPayments, payrollId, initialLedger, standardAt]);
+  }, [showAlert, mode, initialPayments, payrollId, initialLedger, refreshKey]);
 
   useEffect(() => {
     const newWages = {};
     formData.forEach((item, idx) => {
       // payments calc
       const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
-      const ew = hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime);
-      const dw = hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime);
-      const al = hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti;
+      const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
+      const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
+      const al = Math.round(hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti);
       const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
 
       // deductions calc
@@ -416,6 +543,23 @@ const NewPayrollLedger = (): React.JSX.Element => {
     });
     setCalculatedWages(newWages);
   }, [formData]);
+
+  useEffect(() => {
+    setLeftLedger(prev =>
+      prev.map(item =>
+        item.purpose === '급여'
+          ? {...item, value: String(totalSalarySum)}
+          : item
+      )
+    );
+    setRightLedger(prev =>
+      prev.map(item =>
+        item.purpose === '급여'
+          ? {...item, value: String(totalSalarySum)}
+          : item
+      )
+    );
+  }, [totalSalarySum]);
 
   // debug
   // console.log(formData);
@@ -448,6 +592,26 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 }}
               />
             </Box>
+            <Box sx={{display: 'flex', gap: 2}}>
+              {/* 공제 목록 수정 */}
+              <Button variant='outlined'
+                      size='small'
+                      onClick={() => setDeductionDialogProps(prev => ({...prev, isOpen: true}))}
+              >
+                공제목록수정
+              </Button>
+
+              {/* 전체 workingDay 수정 */}
+              <Box sx={{display: 'flex', alignItems: 'center'}}>
+                <InputLabel sx={{fontSize: 'small', mx: 1}}>월평균 근로시간 변경:</InputLabel>
+                <Input disableUnderline
+                       onChange={handleAllWorkingDayChange}
+                       inputProps={{
+                         sx: {textAlign: 'center', width: 50}
+                       }}
+                       value={formData[0]?.paymentDetail?.workingDay || '0'}/>
+              </Box>
+            </Box>
           </Box>
         </LocalizationProvider>
       </Box>
@@ -469,26 +633,53 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   <TableCell
                     sx={{borderRight: '1px solid lightgray',}}
                   />
-                  {mode === 'create' ? employees.map((employee) => (
+                  {mode === 'create' ? employees?.map((employee) => (
                     <TableCell align='center'
                                key={employee.id}
                                sx={{
+                                 position: 'relative',
                                  borderRight: '1px solid lightgray', minWidth: 100,
                                  py: 0.5,
-                                 px: 1
+                                 px: 1,
                                }}>
-                      {employee.info.name}
+                      <Typography variant='body2' sx={{mx: 1.5}}>{employee.info.name}</Typography>
+                      <IconButton color='error' size='small'
+                                  onClick={() => handleRemoveEmployee(employee.id)}
+                                  sx={{
+                                    position: 'absolute',
+                                    top: '0.1rem',
+                                    right: '0.1rem',
+                                    padding: '1px',
+                                  }}>
+                        <CloseIcon fontSize='inherit'/>
+                      </IconButton>
                       <Typography sx={{m: 0, fontSize: 11}}>{employee.info.position}</Typography>
                     </TableCell>
                   )) : formData?.map((item, idx) => (
                     <TableCell align='center'
                                key={`${item.employeeName}-${idx}`}
                                sx={{
+                                 position: 'relative',
                                  borderRight: '1px solid lightgray', minWidth: 100,
                                  py: 0.5,
                                  px: 1
                                }}>
-                      {item.employeeName}
+                      <Typography variant='body2' sx={{mx: 1.5}}>
+                        {item.employeeName}
+                      </Typography>
+                      <IconButton color='error' size='small'
+                                  onClick={() => {
+                                    setSelectedPaymentId(item.id);
+                                    setIsConfirmDialogOpen(true)
+                                  }}
+                                  sx={{
+                                    position: 'absolute',
+                                    top: '0.1rem',
+                                    right: '0.1rem',
+                                    padding: '1px',
+                                  }}>
+                        <CloseIcon fontSize='inherit'/>
+                      </IconButton>
                       <Typography sx={{m: 0, fontSize: 11}}>{item.employeePosition}</Typography>
                     </TableCell>
                   ))}
@@ -507,11 +698,15 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     {listToPaymentRender.map((item, colIdx) => {
                       let delta = 0
                       let value = formData[colIdx]?.paymentDetail[row.id];
-                      if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -1
-                      else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -2
-                      else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -3
+                      if (row.id === PaymentTableRow.EXTEND_WORKING_TIME
+                      || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -1
+                      else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
+                        || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -2
+                      else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -3
+                      else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -4
 
-                      if (row.id === PaymentTableRow.EXTEND_WORKING_WAGE
+                      if (row.id === PaymentTableRow.HOURLY_WAGE
+                        || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
                         || row.id === PaymentTableRow.DAY_OFF_WORKING_WAGE
                         || row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE
                         || row.id === PaymentTableRow.TOTAL_PAYMENT
@@ -538,7 +733,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                    'data-col-index': colIdx,
                                    'data-row-index': row.disabled ? undefined : rowIdx + delta,
                                    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                                     arrowNavAtRegister(e, employees.length - 1, false)
+                                     arrowNavAtRegister(e, listToPaymentRender.length - 1, false)
                                    }
                                  }}
                           />
@@ -548,7 +743,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   </TableRow>
                 ))}
                 {/* deduction */}
-                {deduction.map((dec, decIdx) => (
+                {deduction?.map((dec, decIdx) => (
                   <TableRow key={`${dec.purpose}-${decIdx}`}>
                     <TableCell
                       key={dec.purpose}
@@ -566,7 +761,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  'data-col-index': colIdx,
                                  'data-row-index': decIdx + 8,
                                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                                   arrowNavAtRegister(e, employees.length - 1, false)
+                                   arrowNavAtRegister(e, listToPaymentRender.length - 1, false)
                                  }
                                }}
                                onChange={(e) => handleDeductionChange(e, item.id)}
@@ -607,7 +802,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   >
                     수령액
                   </TableCell>
-                  {listToPaymentRender.map((_item, colIdx: number) => (
+                  {listToPaymentRender?.map((_item, colIdx: number) => (
                     <TableCell key={`수령액-${colIdx + 100}`} align="center"
                                sx={{borderRight: '1px solid lightgray', py: 0}}
                     >
@@ -625,6 +820,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
             </Table>
           </TableContainer>
         </Box>
+        <DeletePaymentConfirmDialog isOpen={isConfirmDialogOpen}
+                                    paymentId={selectedPaymentId}
+                                    payrollRegisterId={payrollId}
+                                    onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
+                                    onClose={() => setIsConfirmDialogOpen(false)}/>
+        <DeductionList isOpened={deductionDialogProps.isOpen}
+                       defaultDeductionList={deductionDialogProps.defaultList}
+                       onClose={() => setDeductionDialogProps(prev => ({...prev, isOpen: false}))}
+                       onSuccess={() => setRefreshKey(prev => prev + 1)}
+        />
 
         {/* 합산 */}
         <Box sx={{mt: 1}}>

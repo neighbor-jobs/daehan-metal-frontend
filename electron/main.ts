@@ -38,6 +38,7 @@ import {
   updateScale,
   validateProductsAgainstAPI
 } from './store/amountStore.ts';
+import {getDeductions, replaceDeductions} from './store/deductionStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -220,6 +221,10 @@ ipcMain.handle('ledgers:remove', (_event, index) => {
   removeLedgers(index);
   return {success: true};
 });
+
+ipcMain.handle('deductions:get', () => getDeductions());
+
+ipcMain.handle('deductions:replace', (_event, newDeductions: string[]) => replaceDeductions(newDeductions))
 
 /*
 * ======================== 인쇄 관련 ==========================

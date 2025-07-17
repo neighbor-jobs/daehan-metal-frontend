@@ -37,7 +37,7 @@ export const cacheManager = {
 
   /** 특정 회사에 새로운 현장(location) 추가 */
   async addLocation(companyId: string, location: any) {
-    return await window.ipcRenderer.invoke('add-location', { companyId, location });
+    return await window.ipcRenderer.invoke('add-location', {companyId, location});
   },
 
   async clearSalesCompany() {
@@ -80,17 +80,17 @@ export const cacheManager = {
     })
   },
 
-/*
-* ================================ 회계 관련 ===============================
-* */
+  /*
+  * ================================ 회계 관련 ===============================
+  * */
   async getLedgers() {
-      return await window.ipcRenderer.invoke('ledgers:get');
+    return await window.ipcRenderer.invoke('ledgers:get');
   },
   async addLedgers(ledger: Paying) {
     return await window.ipcRenderer.invoke('ledgers:add', ledger);
   },
   async updateLedgers(index: number, data: Paying) {
-    return await window.ipcRenderer.invoke('ledgers:update',index, data);
+    return await window.ipcRenderer.invoke('ledgers:update', index, data);
   },
 
   async replaceLedgers(newLedgers: Paying[]) {
@@ -98,7 +98,15 @@ export const cacheManager = {
   },
 
   async removeLedgers(index: number) {
-    return await window.ipcRenderer.invoke('ledgers:update',index);
+    return await window.ipcRenderer.invoke('ledgers:update', index);
+  },
+
+  async getDeductions() {
+    return await window.ipcRenderer.invoke('deductions:get');
+  },
+
+  async replaceDeductions(newDeductions: string[]) {
+    return await window.ipcRenderer.invoke('deductions:replace', newDeductions);
   }
 };
 
