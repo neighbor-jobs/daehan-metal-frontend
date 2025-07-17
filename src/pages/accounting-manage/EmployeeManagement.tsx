@@ -17,6 +17,7 @@ import axiosInstance from '../../api/axios.ts';
 import {Employee} from '../../types/employeeRes.ts';
 import {PatchEmployee} from '../../types/employeeReq.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import calcAge from '../../utils/calcAge.ts';
 
 const columns: readonly TableColumns<EmployeeTableColumn>[] = [
   {
@@ -87,16 +88,18 @@ const EmployeeManagement = (): React.JSX.Element => {
       id: row.id,
       info: {
         ...infoWithoutId,
-        birth: infoWithoutId.birth?.split('T')[0] || '-'
+        birth: infoWithoutId.birth?.split('T')[0] || '',
+        age: calcAge(infoWithoutId.birth),
       },
       startWorkingAt: row.startWorkingAt.split('T')[0] || null,
-      retirementAt: row.retirementAt || null,
+      retirementAt: row.retirementAt?.split('T')[0] || null,
     });
   };
 
   const getEmployees = async () => {
     const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
     setEmployees(employees.data.data);
+    return employees.data.data || [];
   }
 
   useEffect(() => {
@@ -161,7 +164,7 @@ const EmployeeManagement = (): React.JSX.Element => {
                         {row.info.position}
                       </TableCell>
                       <TableCell align='center'>
-                        {row.info.phoneNumber || '-'}
+                        {row.info.phoneNumber || ''}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -176,10 +179,12 @@ const EmployeeManagement = (): React.JSX.Element => {
           <EmployeeForm type={formType}
                         key={`${formType}-${selectedEmployee?.id ?? 'new'}`}
                         onSuccess={async () => {
-                          await getEmployees();
+                          const employees = await getEmployees();
+                          const zzzz: Employee = employees?.find(e => e.id === selectedEmployee?.id);
+                          formatSelectedEmployee(zzzz);
                           if (selectedBank) {
                             const response = await axiosInstance.get(`/employee/bank?id=${selectedBank.id}`);
-                            setSelectedBank(response.data.data);
+                            setSelectedBank(response.data.data || null);
                           }
                           setFormType('read');
                         }}
@@ -187,7 +192,7 @@ const EmployeeManagement = (): React.JSX.Element => {
                           await getEmployees();
                           setFormType('read');
                           setSelectedEmployee(null);
-                          selectedBank(null);
+                          setSelectedBank(null);
                         }}
                         prevBankData={selectedBank}
                         prevEmployeeData={selectedEmployee}

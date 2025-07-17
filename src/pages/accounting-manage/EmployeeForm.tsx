@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
 import {formatAccountNumber, formatPhoneNumber, formatStringDate} from '../../utils/format.ts';
 import {Bank} from '../../types/vendorRes.ts';
+import calcAge from '../../utils/calcAge.ts';
 
 interface EmployeeFormProps {
   type: 'create' | 'edit' | 'read' | null;
@@ -76,13 +77,26 @@ const EmployeeForm = ({
       || name === 'retirementAt'
     ) value = formatStringDate(value);
 
-    setFormData((prev) => ({
-      ...prev,
-      info: {
-        ...prev.info,
-        [name]: value,
+    setFormData((prev) => {
+      if (name === 'birth') {
+        const newAge = calcAge(value);
+        return {
+          ...prev,
+          info: {
+            ...prev.info,
+            [name]: value,
+            age: newAge, // age 자동 세팅
+          }
+        };
       }
-    }));
+      return {
+        ...prev,
+        info: {
+          ...prev.info,
+          [name]: value,
+        }
+      };
+    });
   }
   const handleBanksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
@@ -98,15 +112,26 @@ const EmployeeForm = ({
   /* update 용 handler */
   const handleUpdateInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
-    setUpdateEmployee(prev =>
-      prev
-        ? {
+    setUpdateEmployee((prev) => {
+      // birth 가 바뀌면 age 도 자동 계산
+      if (name === 'birth') {
+        const newAge = calcAge(value);
+        return {
           ...prev,
-          info: {...prev.info, [name]: value}
-        }
-        : null
-    );
+          info: {
+            ...prev.info,
+            [name]: value,
+            age: newAge,
+          }
+        };
+      }
+      return {
+        ...prev,
+        info: {...prev.info, [name]: value}
+      };
+    });
   };
+
   const handleUpdateBankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
     setUpdateBank(prev =>
@@ -120,7 +145,7 @@ const EmployeeForm = ({
     // 기본 정보 필드 유효성 검사
     const requiredFields = [
       {name: '성명', value: formData.info.name},
-      {name: '나이', value: formData.info.age},
+      {name: '생년월일', value: formData.info.birth},
       {name: '직무', value: formData.info.position},
       {name: '내/외국인', value: formData.info.countryCode},
     ];
@@ -169,7 +194,7 @@ const EmployeeForm = ({
   const patchEmployee = async () => {
     const requiredFields = [
       {name: '성명', value: updateEmployee.info.name},
-      {name: '나이', value: updateEmployee.info.age},
+      {name: '생년월일', value: updateEmployee.info.birth},
       {name: '직무', value: updateEmployee.info.position},
       {name: '내/외국인', value: updateEmployee.info.countryCode},
     ];
@@ -181,8 +206,10 @@ const EmployeeForm = ({
     }
 
     // 은행 정보 필드 유효성 검사
-    const allEmpty = !updateBank.accountNumber && !updateBank.accountOwner && !updateBank.bankName;
-    const allFilled = updateBank.accountNumber && updateBank.accountOwner && updateBank.bankName;
+    const allEmpty = !updateBank ||
+      (!updateBank.accountNumber && !updateBank.accountOwner && !updateBank.bankName);
+    const allFilled = updateBank &&
+      updateBank.accountNumber && updateBank.accountOwner && updateBank.bankName;
 
     if (!allEmpty && !allFilled) {
       showAlert('은행 정보를 입력할 경우 모든 필드를 채워야 합니다.', 'warning');
@@ -224,7 +251,6 @@ const EmployeeForm = ({
   }
 
   // debug
-  // console.log(formData);
 
   return (
     <Paper sx={{
@@ -249,7 +275,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.name
-                              : updateEmployee?.info.name ?? '-'
+                              : updateEmployee?.info.name ?? ''
                           }
                           onChange={
                             isCreate
@@ -263,16 +289,15 @@ const EmployeeForm = ({
                             onKeyDown: (e) => {
                               const isComposing = e.nativeEvent.isComposing;
                               if (!isComposing && (e.key === 'Enter' || e.key === 'ArrowDown')) {
-                                moveFocusToNextInput('name');
+                                moveFocusToNextInput('age');
                               }
                             }
                           }}/>
           <InputWithLabel name='age' label='나이' labelPosition='left'
-                          placeholder='필수 입력란입니다.'
                           value={
                             isCreate
                               ? formData.info.age
-                              : updateEmployee?.info.age ?? '-'
+                              : updateEmployee?.info.age ?? ''
                           }
                           onChange={
                             isCreate
@@ -281,7 +306,7 @@ const EmployeeForm = ({
                           }
                           type='number'
                           inputProps={{
-                            disabled: isDisabled,
+                            disabled: true,
                             color: 'black',
                             'data-input-id': `age`,
                             pattern: '[0-9]*',
@@ -297,11 +322,11 @@ const EmployeeForm = ({
                             }
                           }}/>
           <InputWithLabel name='birth' label='생년월일' labelPosition='left'
-                          placeholder='0000-00-00'
+                          placeholder='필수 입력란입니다.(0000-00-00)'
                           value={
                             isCreate
                               ? formData.info.birth
-                              : updateEmployee?.info.birth ?? '-'
+                              : updateEmployee?.info.birth ?? ''
                           }
                           onChange={
                             isCreate
@@ -314,14 +339,14 @@ const EmployeeForm = ({
                             'data-input-id': `birth`,
                             onKeyDown: (e) => {
                               if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput(`birth`);
-                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('birth');
+                              else if (e.key === 'ArrowUp') moveFocusToPrevInput('age');
                             }
                           }}/>
           <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left'
                           value={
                             isCreate
                               ? formData.info.phoneNumber
-                              : updateEmployee?.info.phoneNumber ?? '-'
+                              : updateEmployee?.info.phoneNumber ?? ''
                           }
                           onChange={
                             isCreate
@@ -340,16 +365,16 @@ const EmployeeForm = ({
                           }}
           />
           <InputWithLabel name='hireDate' label='입사일' labelPosition='left'
-                          placeholder='0000-00-00'
+                          placeholder='필수 입력란입니다.(0000-00-00)'
                           value={
                             isCreate
                               ? formData.startWorkingAt
-                              : updateEmployee?.startWorkingAt ?? '-'
+                              : updateEmployee?.startWorkingAt ?? ''
                           }
                           onChange={
                             isCreate
                               ? (e) => setFormData((prev) => ({...prev, startWorkingAt: formatStringDate(e.target.value)}))
-                              : (e) => setUpdateEmployee((prev) => ({...prev, startWorkingAt: e.target.value}))
+                              : (e) => setUpdateEmployee((prev) => ({...prev, startWorkingAt: formatStringDate(e.target.value)}))
                           }
                           inputProps={{
                             disabled: isDisabled,
@@ -366,7 +391,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.position
-                              : updateEmployee?.info.position ?? '-'
+                              : updateEmployee?.info.position ?? ''
                           }
                           onChange={
                             isCreate
@@ -388,7 +413,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.email
-                              : updateEmployee?.info.email ?? '-'
+                              : updateEmployee?.info.email ?? ''
                           }
                           onChange={
                             isCreate
@@ -409,14 +434,14 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.countryCode
-                              : updateEmployee?.info.countryCode ?? '-'
+                              : updateEmployee?.info.countryCode ?? ''
                           }
                           onChange={
                             isCreate
                               ? handleInfoChange
                               : handleUpdateInfoChange
                           }
-                          placeholder='필수 입력 란입니다.'
+                          placeholder='필수 입력란입니다.'
                           inputProps={{
                             disabled: isDisabled,
                             color: 'black',
@@ -432,7 +457,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.info.address
-                              : updateEmployee?.info.address ?? '-'
+                              : updateEmployee?.info.address ?? ''
                           }
                           onChange={
                             isCreate
@@ -456,8 +481,8 @@ const EmployeeForm = ({
               label='퇴사일'
               labelPosition='left'
               placeholder='0000-00-00'
-              value={updateEmployee?.retirementAt || '-'}
-              onChange={(e) => setUpdateEmployee((prev) => ({...prev, retirementAt: e.target.value}))}
+              value={updateEmployee?.retirementAt || ''}
+              onChange={(e) => setUpdateEmployee((prev) => ({...prev, retirementAt: formatStringDate(e.target.value)}))}
               inputProps={{
                 disabled: isDisabled,
                 color: 'black',
@@ -487,7 +512,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.banks.bankName
-                              : updateBank?.bankName ?? '-'
+                              : updateBank?.bankName ?? ''
                           }
                           onChange={
                             isCreate
@@ -509,7 +534,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.banks.accountOwner
-                              : updateBank?.accountOwner ?? '-'
+                              : updateBank?.accountOwner ?? ''
                           }
                           onChange={
                             isCreate
@@ -531,7 +556,7 @@ const EmployeeForm = ({
                           value={
                             isCreate
                               ? formData.banks.accountNumber
-                              : updateBank?.accountNumber ?? '-'
+                              : updateBank?.accountNumber ?? ''
                           }
                           onChange={
                             isCreate
@@ -561,7 +586,7 @@ const EmployeeForm = ({
           {(type === 'create' || type === null) && (
             <>
               <Button onClick={createEmployee}>저장</Button>
-              <Button color='error'>취소</Button>
+              <Button color='error' onClick={onClose}>취소</Button>
             </>
           )}
           {type === 'read' && (
