@@ -104,11 +104,6 @@ const SalesCompanyForm = ({
       open={isOpen}
       onClose={onClose}
       disableEscapeKeyDown={openAlert}
-      slotProps={{
-        paper: {
-          component: 'form',
-        },
-      }}
     >
       <DialogTitle>{isEditing ? '거래처수정' : '거래처등록'}</DialogTitle>
       <DialogContent

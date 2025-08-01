@@ -14,8 +14,7 @@ const AutocompleteWithLabel = ({
                                     onChange
 }: AutocompleteWithTopLabelProps):React.JSX.Element => {
   return (
-    <Box
-      sx={{
+    <Box sx={{
         display: 'flex',
         flexDirection: labelPosition === 'top' ? 'column' : 'row',
         alignItems: labelPosition === 'top' ? '' : 'center',

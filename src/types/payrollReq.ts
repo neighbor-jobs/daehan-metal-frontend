@@ -10,7 +10,9 @@ export interface PostPayment {
   employeePosition: string;
   paymentDetail: PostPaymentDetail,
   deductionDetail: PostDeductionDetail[],
+  startWorkingAt: string;
   memo?: string;
+  payrollRegisterId?: string;
 }
 
 export interface PatchPayment {
@@ -18,8 +20,9 @@ export interface PatchPayment {
   payrollRegisterId: string;
   employeeName: string;
   employeePosition: string;
-  paymentDetail: PostPaymentDetail,
-  deductionDetail: PostDeductionDetail[],
+  paymentDetail: PostPaymentDetail;
+  deductionDetail: PostDeductionDetail[];
+  startWorkingAt?: string;
   memo?: string;
 }
 

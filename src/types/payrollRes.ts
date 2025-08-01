@@ -14,6 +14,7 @@ export interface Payment {
   salary: string;
   deduction: string;
   totalSalary: string;
+  startWorkingAt?: string;
   createdAt: string;
 }
 

@@ -186,11 +186,6 @@ const ProductForm = ({
       open={isOpened}
       onClose={onClose}
       disableEscapeKeyDown={openAlert}
-      slotProps={{
-        paper: {
-          component: 'form',
-        },
-      }}
     >
       <DialogTitle>{dialogType === ProductDialogType.CREATE ? '품목 등록' : '품목명 수정'}</DialogTitle>
       <DialogContent
