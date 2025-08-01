@@ -54,7 +54,7 @@ const EmployeeForm = ({
   const [updateBank, setUpdateBank] = useState<PatchBank | Bank | null>(prevBankData);
   const {showAlert} = useAlertStore();
 
-  // console.log('prev bank data: ', prevBankData)
+  console.log('prev bank data: ', prevBankData)
 
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';
@@ -232,10 +232,19 @@ const EmployeeForm = ({
         retirementAt: updateEmployee.retirementAt || undefined,
       });
       if (allFilled) {
-        await axiosInstance.patch('/employee/bank', updateBank);
+        if (prevBankData) { // 사원 등록 시 은행 정보 등록 O
+          await axiosInstance.patch('/employee/bank', updateBank);
+        } else { // 사원 등록 시 은행 정보 등록 X
+          const {id, ...postBankInfo} = updateBank;
+          const res = await axiosInstance.post('/employee/bank', {
+            employeeId: updateEmployee.id,
+            ...postBankInfo
+          });
+          console.log('post 시: ', res.data.data);
+        }
       }
-      showAlert('사원 정보 수정이 완료되었습니다.', 'success');
       if (onSuccess) onSuccess();
+      showAlert('사원 정보 수정이 완료되었습니다.', 'success');
     } catch (error) {
       showAlert('사원 정보 수정에 실패했습니다.', 'error');
     }
