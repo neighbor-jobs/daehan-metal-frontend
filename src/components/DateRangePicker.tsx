@@ -9,6 +9,7 @@ interface DateRangePickerProps {
   endAt?: Dayjs | null;
   startInputRef?: RefObject<HTMLInputElement>;
   endInputRef?: RefObject<HTMLInputElement>;
+  nextInputRef?: RefObject<HTMLInputElement>;
   onChange: (startDate: Dayjs | null, endDate: Dayjs | null) => void;
   onStartKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onEndKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -20,8 +21,7 @@ const DateRangePicker = ({
                            endAt,
                            startInputRef,
                            endInputRef,
-                           onStartKeyDown,
-                           onEndKeyDown,
+                           nextInputRef,
                          }: DateRangePickerProps): React.JSX.Element => {
   const [startDate, setStartDate] = useState<Dayjs | null>(startAt);
   const [endDate, setEndDate] = useState<Dayjs | null>(endAt);
@@ -56,7 +56,11 @@ const DateRangePicker = ({
           slotProps={{
             textField: {
               size: 'small',
-              onKeyDown: onStartKeyDown || undefined,
+              onKeyDown: endInputRef ? (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === 'Enter') {
+                  endInputRef.current?.focus();
+                }
+              } : undefined
             },
             calendarHeader: {format: 'YYYY/MM'},
           }}
@@ -68,11 +72,24 @@ const DateRangePicker = ({
           format="YYYY/MM/DD"
           inputRef={endInputRef || undefined}
           onChange={handleEndDateChange}
+          onAccept={() => {
+            setTimeout(() => {
+              nextInputRef?.current?.focus();
+            }, 20)
+          }}
           minDate={startDate || undefined}
           slotProps={{
             textField: {
               size: 'small',
-              onKeyDown: onEndKeyDown || undefined,
+              onKeyDown:
+                startInputRef ? (e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0) {
+                    startInputRef?.current?.focus();
+                    e.preventDefault();
+                  } else if (e.key === 'Enter') {
+                    nextInputRef?.current?.focus();
+                  }
+                } : undefined,
             },
             calendarHeader: {format: 'YYYY/MM'},
           }}

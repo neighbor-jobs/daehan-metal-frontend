@@ -107,6 +107,8 @@ const defaultReceipt = {
 }
 
 const PurchaseMain = (): React.JSX.Element => {
+  // TODO: 매입처 등록 성공 시 입력필드 초기화
+
   const [receipts, setReceipts] = useState(
     Array.from({length: 1}, () => ({...defaultReceipt}))
   );
@@ -152,7 +154,7 @@ const PurchaseMain = (): React.JSX.Element => {
       'vatRate'
     ];
     if (numericOnlyFields.includes(name)) {
-      const numericValue = value.replace(/[^0-9.]/g, ''); // 소수점 허용
+      const numericValue = String(Number(value.replace(/[^0-9.]/g, ''))); // 소수점 허용
       setReceipts((prev) =>
         prev.map((item, i) =>
           i === rowIndex ? {...item, [name]: numericValue} : item
@@ -178,10 +180,15 @@ const PurchaseMain = (): React.JSX.Element => {
       return;
     }
 
-    const transformedReceipts = receipts.map((item) => ({
-      ...item,
-      isPaying: !!item.productPrice
-    }));
+    const transformedReceipts = receipts.map((item) => {
+      let paying = false;
+      if (item.productPrice && item.productPrice !== '0') paying = true;
+      return {
+        ...item,
+        isPaying: paying
+      }
+    });
+    console.log(transformedReceipts);
 
     for (let i = 0; i < receipts.length; i++) {
       const item = transformedReceipts[i];
@@ -201,7 +208,7 @@ const PurchaseMain = (): React.JSX.Element => {
         const hasRaw = item.rawMatAmount && item.rawMatAmount.trim() !== '';
         const hasManufacture = item.manufactureAmount && item.manufactureAmount.trim() !== '';
         if (!hasRaw && !hasManufacture) {
-          showAlert(`매입 항목에는 재료단가 또는 가공단가가 필요합니다. (행 ${i + 1})`, 'info');
+          showAlert(`매입 항목에는 단가가 필요합니다. (행 ${i + 1})`, 'info');
           return;
         }
       }
@@ -367,7 +374,9 @@ const PurchaseMain = (): React.JSX.Element => {
                              inputProps={{
                                'data-row-index': rowIndex,
                                'data-col-index': 0,
-                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
+                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                 if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4)
+                               }
                              }}
                              onChange={(e) => handleInputChange(e, rowIndex)}
                       />
@@ -402,7 +411,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                }
                              }}
                              name='rawMatAmount'
-                             value={row.rawMatAmount}
+                             value={formatCurrency(row.rawMatAmount)}
                              onChange={(event) => handleInputChange(event, rowIndex)}
                              data-table-input/>
                     </TableCell>
@@ -466,7 +475,7 @@ const PurchaseMain = (): React.JSX.Element => {
                              }}
                              name='productPrice'
                              onChange={(e) => handleInputChange(e, rowIndex)}
-                             value={row.productPrice}
+                             value={formatCurrency(row.productPrice)}
                       />
                     </TableCell>
 

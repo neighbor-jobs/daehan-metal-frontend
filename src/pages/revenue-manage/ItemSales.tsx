@@ -2,7 +2,8 @@
 import {
   Autocomplete,
   Box,
-  Button, createFilterOptions,
+  Button,
+  createFilterOptions,
   Paper,
   Table,
   TableBody,
@@ -11,13 +12,14 @@ import {
   TableFooter,
   TableHead,
   TableRow,
-  TextField, Typography
+  TextField,
+  Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker';
 
 // project
 import {ItemSalesColumn, TableColumns} from '../../types/tableColumns';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
 import dayjs from 'dayjs';
@@ -99,6 +101,15 @@ const ItemSales = (): React.JSX.Element => {
     rawSum: 0,
     sum: 0,
   })
+  const [isAutocomplete, setAutocomplete] = useState({
+    item: false,
+    scale: false,
+  });
+  const startDateRef = useRef<HTMLInputElement | null>(null);
+  const endDateRef = useRef<HTMLInputElement | null>(null);
+  const itemInputRef = useRef<HTMLInputElement | null>(null);
+  const scaleInputRef = useRef<HTMLInputElement | null>(null);
+
   const uniqueScaleOptions = useMemo(() => {
     return getUniqueScalesByProductName(productList, formData.productName);
   }, [productList, formData.productName]);
@@ -156,13 +167,19 @@ const ItemSales = (): React.JSX.Element => {
         {/* date picker */}
         <DateRangePicker onChange={handleDateChange}
                          startAt={date.startAt}
+                         startInputRef={startDateRef}
                          endAt={date.endAt}
+                         endInputRef={endDateRef}
+                         nextInputRef={itemInputRef}
         />
+        {/* 품명 */}
         <Autocomplete
           freeSolo
           options={productList.map((option) => option.name)}
           sx={{width: 180}}
           value={formData.productName}
+          onOpen={() => setAutocomplete((prev) => ({...prev, item: true}))}
+          onClose={() => setAutocomplete((prev) => ({...prev, item: false}))}
           onInputChange={(_, newInputValue) => {
             setFormData(() => ({
               productName: newInputValue,
@@ -172,23 +189,54 @@ const ItemSales = (): React.JSX.Element => {
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='품목' size='small'
+                       inputRef={itemInputRef}
                        sx={{minWidth: 150}}
+                       slotProps={{
+                         htmlInput: {
+                           ...params.inputProps,
+                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>)=> {
+                             if (e.key === 'Enter' && !isAutocomplete.item) {
+                               scaleInputRef.current?.focus();
+                             } else if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0) {
+                               endDateRef.current?.focus();
+                             }
+                           }
+                         },
+                       }}
             />
           }
         />
+        {/* 규격 */}
         <Autocomplete
           // freeSolo
           options={uniqueScaleOptions}
           sx={{width: 200}}
           filterOptions={(options, state) => filter(options, state)}
           value={formData.scale}
+          onOpen={() => setAutocomplete((prev) => ({...prev, scale: true}))}
+          onClose={() => setAutocomplete((prev) => ({...prev, scale: false}))}
           onInputChange={(_, newInputValue) => {
             setFormData((prev) => ({...prev, scale: newInputValue}));
           }}
           renderInput={(params) =>
             <TextField {...params}
                        placeholder='규격' size='small'
+                       inputRef={scaleInputRef}
                        sx={{minWidth: 180}}
+                       slotProps={{
+                         htmlInput: {
+                           ...params.inputProps,
+                           onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>)=> {
+                             if (e.key === 'Enter' && !isAutocomplete.scale) {
+                               await getProductReports();
+                             } else if (e.currentTarget.selectionEnd === 0 && !isAutocomplete.scale) {
+                               setTimeout(() => {
+                                itemInputRef.current?.focus();
+                               }, 0)
+                             }
+                           }
+                         },
+                       }}
             />
           }
         />

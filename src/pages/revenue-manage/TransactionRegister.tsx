@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {TableColumns, TransactionRegisterColumn} from '../../types/tableColumns.ts';
 import {
   Autocomplete,
@@ -19,6 +19,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -81,6 +82,7 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
     label: '재료비',
     minWidth: 80,
     align: 'right',
+    typoSx: {color: 'blue'},
     format: formatCurrency,
   },
   {
@@ -95,6 +97,7 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
     label: '가공비',
     minWidth: 80,
     align: 'right',
+    typoSx: {color: 'darkorange'},
     format: formatCurrency,
   },
   {
@@ -130,7 +133,9 @@ const TransactionRegister = ({
   } : prevFormData)
   const [newProductFormOpen, setNewProductFormOpen] = useState(false);
   const [productListState, setProductListState] = useState<Product[] | []>([]);
+
   const {showAlert, openAlert} = useAlertStore();
+  const companyInputRef = useRef<HTMLInputElement | null>(null);
 
   const locationOptions = useMemo(() => {
     const selectedCompany = salesCompanyList.find((company) => company.companyName === formData.companyName);
@@ -224,12 +229,12 @@ const TransactionRegister = ({
     rowIndex: number
   ) => {
     const {name, value} = e.target;
-    // 숫자와 소수점만 허용하고 그 외 입력 무시
-    const isValidNumberInput = /^(\d+)?(\.\d*)?$/.test(value);
-    if (!isValidNumberInput && value !== '') return;
 
+    /*const isValidNumberInput = /^(\d+)?(\.\d*)?$/.test(value);
+    if (!isValidNumberInput && value !== '') return;*/
+    // 숫자와 소숫점만 남김
+    let newValue = value.replace(/[^0-9.]/g, '');
     // 앞자리 0 제거 (단, '0', '0.'은 허용)
-    let newValue = value;
     if (newValue && newValue !== '0' && !newValue.startsWith('0.')) {
       newValue = newValue.replace(/^0+/, '');
       // 빈 문자열이 되면 '0'으로 대체
@@ -422,8 +427,20 @@ const TransactionRegister = ({
                             }));
                           }
                         }}
+                        onAccept={() => {
+                          setTimeout(() => {
+                            companyInputRef.current?.focus();
+                          }, 20)
+                        }}
                         slotProps={{
-                          textField: {size: 'small'},
+                          textField: {
+                            size: 'small',
+                            onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                              if (e.key === 'Enter') {
+                                companyInputRef.current?.focus();
+                              }
+                            }
+                          },
                           calendarHeader: {format: 'YYYY/MM'},
                         }}
                       />
@@ -436,10 +453,11 @@ const TransactionRegister = ({
                         options={salesCompanyList.map((option) => option.companyName)}
                         onChange={handleCompanyChange}
                         value={formData.companyName}
-                        sx={{width : 200}}
+                        sx={{width: 200}}
                         renderInput={(params) =>
                           <TextField {...params}
                                      sx={{minWidth: 150}}
+                                     inputRef={companyInputRef}
                                      slotProps={{
                                        htmlInput: {
                                          ...params.inputProps,
@@ -493,9 +511,13 @@ const TransactionRegister = ({
                       />
                     </Box>
                   </Box>
-                  <Button variant='outlined' onClick={() => setNewProductFormOpen(true)}>
-                    품목&규격 추가
-                  </Button>
+                  <Box sx={{display: 'flex', flexDirection: 'column', gap: 1, ml: 'auto'}}>
+                    <Button variant='outlined'
+                            onClick={() => setNewProductFormOpen(true)}
+                    >
+                      품목&규격 추가
+                    </Button>
+                  </Box>
                 </Box>
               </LocalizationProvider>
             </Box>
@@ -517,7 +539,11 @@ const TransactionRegister = ({
                         align={column.align}
                         style={{minWidth: column.minWidth}}
                       >
-                        {column.label}
+                        <Typography variant="body2"
+                                    sx={column.typoSx || undefined}
+                        >
+                          {column.label}
+                        </Typography>
                       </TableCell>
                     ))}
                     <TableCell>삭제</TableCell>
@@ -598,18 +624,18 @@ const TransactionRegister = ({
                                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
                                }}
                                name='rawMatAmount'
-                               value={choice.rawMatAmount}
+                               value={formatCurrency(choice.rawMatAmount)}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                data-table-input/>
                       </TableCell>
                       <TableCell>
                         <Input size='small'
-                               disabled
                                disableUnderline
                                fullWidth
                                value={`${Math.round((Number(choice.rawMatAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
-                                 sx: {textAlign: 'right'},
+                                 sx: {textAlign: 'right', color: 'blue'},
+                                 disabled: true,
                                }}
                                data-table-input/>
                       </TableCell>
@@ -639,18 +665,18 @@ const TransactionRegister = ({
                                    }
                                  }
                                }}
-                               value={`${choice.manufactureAmount}`}
+                               value={formatCurrency(choice.manufactureAmount)}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                name='manufactureAmount'/>
                       </TableCell>
                       <TableCell>
                         <Input size='small'
                                disableUnderline
-                               disabled
                                fullWidth
                                value={`${Math.trunc((Number(choice.manufactureAmount) * Number(choice.quantity))).toLocaleString()}`}
                                inputProps={{
-                                 sx: {textAlign: 'right'},
+                                 sx: {textAlign: 'right', color: 'darkorange'},
+                                 disabled: true,
                                }}/>
                       </TableCell>
                       {/* 계 */}
@@ -711,8 +737,17 @@ const TransactionRegister = ({
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <InputLabel sx={{fontSize: 'small',}}>입금액</InputLabel>
                 <TextField size='small' variant="outlined"
-                           value={formData.payingAmount}
-                           onChange={(e) => setFormData((prev) => ({...prev, payingAmount: e.target.value}))}
+                           value={formatCurrency(formData.payingAmount)}
+                           onChange={(e) => setFormData((prev) => {
+                             let newValue = e.target.value.replace(/[^0-9.]/g, '');
+                             // 앞자리 0 제거 (단, '0', '0.'은 허용)
+                             if (newValue && newValue !== '0' && !newValue.startsWith('0.')) {
+                               newValue = newValue.replace(/^0+/, '');
+                               // 빈 문자열이 되면 '0'으로 대체
+                               if (newValue === '') newValue = '0';
+                             }
+                             return {...prev, payingAmount: newValue}
+                           })}
                 />
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
