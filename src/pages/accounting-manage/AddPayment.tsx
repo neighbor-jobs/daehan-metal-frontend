@@ -286,9 +286,11 @@ const AddPayment = ({
         employeePosition: '',
         employeeName: '',
         startWorkingAt: '',
+        payrollRegisterId: '',
         paymentDetail: defaultPaymentDetail,
         deductionDetail: defaultDeductionDetail,
       })
+      onClose();
     } catch {
       showAlert('급여명세 추가 실패', 'error');
     }
@@ -337,8 +339,17 @@ const AddPayment = ({
     setCalculatedWages(newWages);
   }, [formData])
 
+  useEffect(() => {
+    if (payrollRegisterId) {
+      setFormData(prev => ({
+        ...prev,
+        payrollRegisterId
+      }));
+    }
+  }, [payrollRegisterId]);
+
   // debug
-  console.log(restEmployee);
+  // console.log(payrollRegisterId);
 
   return (
     <Dialog open={isOpened}
