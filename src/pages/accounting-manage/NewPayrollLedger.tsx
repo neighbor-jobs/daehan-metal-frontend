@@ -525,7 +525,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
       const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
       const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
-      const al = Math.round(hw * 8 * item.paymentDetail.annualLeaveAllowanceMulti);
+      const al = Math.round(hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
       const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
 
       // deductions calc
@@ -594,12 +594,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
             </Box>
             <Box sx={{display: 'flex', gap: 2}}>
               {/* 공제 목록 수정 */}
-              <Button variant='outlined'
+              {/*<Button variant='outlined'
                       size='small'
                       onClick={() => setDeductionDialogProps(prev => ({...prev, isOpen: true}))}
               >
                 공제목록수정
-              </Button>
+              </Button>*/}
 
               {/* 전체 workingDay 수정 */}
               <Box sx={{display: 'flex', alignItems: 'center'}}>

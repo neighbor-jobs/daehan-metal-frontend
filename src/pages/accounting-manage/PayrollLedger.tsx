@@ -16,18 +16,19 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/ko';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import React, {Fragment, useState} from 'react';
-import {DeductionTableRow, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
+import React, {Fragment, useEffect, useState} from 'react';
+import {DeductionTableRow, PaymentTableRow} from '../../types/tableColumns.ts';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {Payment} from '../../types/payrollRes.ts';
 import {formatCurrency} from '../../utils/format.ts';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Ledger, Paying} from '../../types/ledger.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {AccountingManageMenuType} from '../../types/headerMenu.ts';
+import AddPayment from './AddPayment.tsx';
 
-const leftRows: readonly TableColumns<PaymentTableRow | DeductionTableRow>[] = [
+const leftRows = [
   {
     id: PaymentTableRow.PAY,
     label: '기본급',
@@ -80,6 +81,7 @@ const leftRows: readonly TableColumns<PaymentTableRow | DeductionTableRow>[] = [
     minWidth: 100,
     format: formatCurrency
   },
+  /* 여기부터 */
   {
     id: DeductionTableRow.INCOME_TAX,
     label: '소득세',
@@ -115,6 +117,7 @@ const leftRows: readonly TableColumns<PaymentTableRow | DeductionTableRow>[] = [
     minWidth: 100,
     format: formatCurrency
   },
+  /* 여기까지 바뀔 수 있음.. */
   {
     id: DeductionTableRow.DEDUCTION,
     label: '지급액계',
@@ -130,24 +133,29 @@ const leftRows: readonly TableColumns<PaymentTableRow | DeductionTableRow>[] = [
 ];
 
 const PayrollLedger = (): React.JSX.Element => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const paramStandardAt = location.state || '';
+
   const [payrollId, setPayrollId] = useState<string>();
-  const [createdAtPayroll, setCreatedAtPayroll] = useState<string>('');
+  const [createdAtPayroll, setCreatedAtPayroll] = useState<string>(''); // 급여대장 작성일자
   const [payments, setPayments] = useState<Payment[]>([]);
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
   const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-01'));
-  const navigate = useNavigate();
+  const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false)
+
   const {showAlert} = useAlertStore();
 
   const isDeductionRowId = (id: string | number): id is DeductionTableRow => {
     return Object.values(DeductionTableRow).includes(id as DeductionTableRow);
   };
 
-  const getPayroll = async () => {
+  const getPayroll = async (date: string = standardAt) => {
     try {
-      const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${standardAt}`);
-      const l = await axiosInstance.get(`/ledger/monthly?standardAt=${standardAt}`);
+      const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${date}`);
+      const l = await axiosInstance.get(`/ledger/monthly?standardAt=${date}`);
       setPayrollId(payroll.data.data.id);
       setCreatedAtPayroll(payroll.data.data.createdAt);
       setPayments(payroll.data.data.payments);
@@ -158,6 +166,11 @@ const PayrollLedger = (): React.JSX.Element => {
       setRightLedger(arr.slice(midIndex));
     } catch {
       showAlert('해당 월 급여대장 정보가 없습니다.', 'error');
+      setCreatedAtPayroll('');
+      setPayments([]);
+      setLedger(null);
+      setLeftLedger([]);
+      setRightLedger([]);
     }
   }
 
@@ -180,11 +193,22 @@ const PayrollLedger = (): React.JSX.Element => {
     try {
       await axiosInstance.delete(`/payroll?id=${payrollId}`);
       await axiosInstance.delete(`/ledger?id=${ledger.id}`)
+      setCreatedAtPayroll('');
+      setPayments([]);
+      setLedger(null);
+      setLeftLedger([]);
+      setRightLedger([]);
       showAlert('삭제 완료', 'success');
     } catch {
       showAlert('급여대장 삭제 실패. 다시 시도해 주세요.', 'error');
     }
   }
+
+  useEffect(() => {
+    if (paramStandardAt) {
+      getPayroll(paramStandardAt);
+    }
+  }, [paramStandardAt]);
 
   // debug
   // console.log(payments);
@@ -217,17 +241,20 @@ const PayrollLedger = (): React.JSX.Element => {
               }}
             />
             <Button variant='outlined'
-                    onClick={getPayroll}
+                    onClick={() => getPayroll()}
             >
               검색
             </Button>
           </Box>
+          <Box>
+            <Button variant='outlined'
+                    onClick={() => setIsOpenedAddPayments(true)}
+                    disabled={payments.length === 0}   // 급여명세가 없으면 disabled = true
+            >
+              급여명세 내역 추가
+            </Button>
+          </Box>
         </LocalizationProvider>
-        {/* TODO: payment add&pop
-        <Button variant='outlined'>
-          급여명세 관리
-        </Button>
-        */}
       </Box>
 
       <Paper sx={{paddingBottom: 1, px: 2}}>
@@ -258,6 +285,7 @@ const PayrollLedger = (): React.JSX.Element => {
                 </TableRow>
               </TableHead>
               <TableBody>
+                {/* payment */}
                 {leftRows.map((row, rowIdx) => (
                   <TableRow key={rowIdx}>
                     <TableCell
@@ -266,7 +294,6 @@ const PayrollLedger = (): React.JSX.Element => {
                     >
                       {row.label}
                     </TableCell>
-                    {/* payment */}
                     {payments.map((payment, colIdx) => {
                       let value = payment.paymentDetail[row.id];
                       if (row.id === PaymentTableRow.SALARY
@@ -274,7 +301,7 @@ const PayrollLedger = (): React.JSX.Element => {
                         || row.id === DeductionTableRow.DEDUCTION
                       ) value = payment[row.id];
                       else if (isDeductionRowId(row.id)) {
-                        value = payment.deductionDetail[rowIdx-9]?.['value'];
+                        value = payment.deductionDetail[rowIdx - 9]?.['value'];
                       }
                       return (
                         <TableCell key={`${payment.id}-${colIdx}`} align="right"
@@ -377,12 +404,12 @@ const PayrollLedger = (): React.JSX.Element => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rightLedger.map((item, idx) => (
+                  {rightLedger.map((item: Paying, idx) => (
                     <TableRow key={`right-${idx}`}>
                       <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
-                               value={(item as any).purpose}
+                               value={item.purpose}
                                sx={{py: 0, my: 0,}}
                                inputProps={{
                                  disabled: true,
@@ -404,7 +431,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                  width='20%'
                                  sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
-                               value={(item as any).group ?? '-'}
+                               value={item.group ?? '-'}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
                                inputProps={{
                                  disabled: true,
@@ -449,6 +476,15 @@ const PayrollLedger = (): React.JSX.Element => {
           </Box>
         </Box>
       </Paper>
+
+      {/* 개별 급여명세 추가 */}
+      <AddPayment
+        isOpened={isOpenedAddPayments}
+        onClose={() => setIsOpenedAddPayments(false)}
+        onSuccess={async () => await getPayroll()}
+        payrollRegisterId={payrollId}
+        payments={payments}
+      />
 
       {/* 버튼들 */}
       <Box sx={{

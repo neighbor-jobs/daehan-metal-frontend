@@ -24,3 +24,8 @@ export interface PostLedger {
   deduction: Paying[];
   createdAt: string;
 }
+
+export interface Deduction {
+  purpose: string;
+  value?: string;
+}
