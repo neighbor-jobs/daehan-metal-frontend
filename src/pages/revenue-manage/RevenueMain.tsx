@@ -22,7 +22,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 // project
 import {RevenueMainColumn, TableColumns} from '../../types/tableColumns';
 import {formatCurrency, formatDecimal} from '../../utils/format';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import TransactionRegister from './TransactionRegister.tsx';
 import dayjs from 'dayjs';
 import {AxiosResponse} from 'axios';
@@ -118,6 +118,7 @@ const RevenueMain = (): React.JSX.Element => {
     sales: any[],
   } | null>();
   const {showAlert} = useAlertStore();
+  const companyInputRef = useRef<HTMLInputElement | null>(null);
 
   // handler
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
@@ -238,7 +239,14 @@ const RevenueMain = (): React.JSX.Element => {
               value={dayjs(formData.startAt)}
               onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
-                textField: {size: 'small'},
+                textField: {
+                  size: 'small',
+                  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter') {
+                      companyInputRef.current?.focus();
+                    }
+                  }
+                },
                 calendarHeader: {format: 'YYYY/MM'},
               }}
             />
@@ -255,6 +263,7 @@ const RevenueMain = (): React.JSX.Element => {
             <TextField {...params}
                        placeholder='거래처명' size='small'
                        sx={{minWidth: 150}}
+                       inputRef={companyInputRef}
                        slotProps={{
                          htmlInput: {
                            onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>) => {

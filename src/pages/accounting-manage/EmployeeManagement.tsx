@@ -182,8 +182,9 @@ const EmployeeManagement = (): React.JSX.Element => {
                           const employees = await getEmployees();
                           const zzzz: Employee = employees?.find(e => e.id === selectedEmployee?.id);
                           formatSelectedEmployee(zzzz);
-                          if (selectedBank) {
-                            const response = await axiosInstance.get(`/employee/bank?id=${selectedBank.id}`);
+                          const bankId = zzzz.bankIds[0];
+                          if (bankId) {
+                            const response = await axiosInstance.get(`/employee/bank?id=${bankId}`);
                             setSelectedBank(response.data.data || null);
                           }
                           setFormType('read');
