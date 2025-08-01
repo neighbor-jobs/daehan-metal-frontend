@@ -6,12 +6,14 @@ import {
   Button,
   IconButton,
   Paper,
+  Popover,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Typography
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
@@ -52,12 +54,16 @@ const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
     id: PurchaseCompanyColumn.ADDRESS,
     label: '주소',
-    minWidth: 280,
+    minWidth: 200,
   }
 ]
 
 const PurchaseCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState({
+    anchorEl: null as HTMLElement | null,
+    index: null as number | null,
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
   const [isBankEditing, setIsBankEditing] = useState(BankDialogType.CREATE);
@@ -203,7 +209,7 @@ const PurchaseCompany = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {purchaseCompanyList && purchaseCompanyList.map((row) => {
+              {purchaseCompanyList && purchaseCompanyList.map((row, rowIndex) => {
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                     <TableCell>{row.name}</TableCell>
@@ -211,7 +217,46 @@ const PurchaseCompany = (): React.JSX.Element => {
                     <TableCell>{row.info.telNumber || ''}</TableCell>
                     <TableCell>{row.info.subTelNumber || ''}</TableCell>
                     <TableCell>{row.info.businessNumber || ''}</TableCell>
-                    <TableCell>{row.info.address || ''}</TableCell>
+                    {/* 주소 & 주소 pop over */}
+                    <TableCell sx={{maxWidth: 200}}>
+                      <Typography variant='body2'
+                                  aria-owns={anchor.anchorEl ? `popover-${rowIndex}` : undefined}
+                                  aria-haspopup="true"
+                                  onMouseEnter={(e) => setAnchor({
+                                    anchorEl: e.currentTarget,
+                                    index: rowIndex,
+                                  })}
+                                  onMouseLeave={() => setAnchor({
+                                    anchorEl: null,
+                                    index: null,
+                                  })}
+                      >
+                        {row.info.address || ''}
+                      </Typography>
+                      <Popover
+                        id={`popover-${rowIndex}`}
+                        sx={{pointerEvents: 'none'}}
+                        open={Boolean(anchor.anchorEl) && rowIndex === anchor.index}
+                        anchorEl={anchor.anchorEl}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                        onClose={() => setAnchor({
+                          anchorEl: null,
+                          index: null
+                        })}
+                        disableRestoreFocus
+                      >
+                        <Typography variant='body2' sx={{p: 1}}>
+                          {row.info.address || ''}
+                        </Typography>
+                      </Popover>
+                    </TableCell>
                     <TableCell>
                       {row.bank?.length > 0 ? row.bank.map((b) => (
                         <p style={{padding: 0, margin: 0, cursor: 'pointer'}} key={b.id}
