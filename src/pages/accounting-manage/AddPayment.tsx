@@ -265,6 +265,7 @@ const AddPayment = ({
   }
 
   const submitAddPayment = async () => {
+    // TODO: payroll id 없으면 id 다시 가져오기
     const updateFormData = {
       ...formData,
       paymentDetail: {
@@ -279,14 +280,21 @@ const AddPayment = ({
     }
 
     try {
-      await axiosInstance.post('/payroll/payment', updateFormData);
+      const res = await axiosInstance.post('/payroll/payment', updateFormData);
+
+      if (res.data.statusCode === 409) {
+        showAlert('이미 존재하는 데이터입니다.', 'error');
+        onClose();
+        return;
+      }
+      // TODO: add payroll 성공 시 지출내역 급여 값 변경
       if (onSuccess) onSuccess();
       setFormData({
         employeeId: '',
         employeePosition: '',
         employeeName: '',
         startWorkingAt: '',
-        payrollRegisterId: '',
+        payrollRegisterId: payrollRegisterId,
         paymentDetail: defaultPaymentDetail,
         deductionDetail: defaultDeductionDetail,
       })
@@ -349,7 +357,7 @@ const AddPayment = ({
   }, [payrollRegisterId]);
 
   // debug
-  // console.log(payrollRegisterId);
+  console.log(payrollRegisterId);
 
   return (
     <Dialog open={isOpened}
