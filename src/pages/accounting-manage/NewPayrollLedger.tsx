@@ -18,7 +18,7 @@ import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 
 // project
-import React, {Fragment, useEffect, useMemo, useState} from 'react';
+import React, {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {Employee} from '../../types/employeeRes.ts';
@@ -26,7 +26,6 @@ import axiosInstance from '../../api/axios.ts';
 import {PatchPayment, PostPayment, PostPaymentDetail} from '../../types/payrollReq.ts';
 import {defaultDeductionList, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
-import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
 import {Deduction, PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
@@ -34,6 +33,7 @@ import {cacheManager} from '../../utils/cacheManager.ts';
 import {formatCurrency} from '../../utils/format.ts';
 import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
 import DeductionList from '../../components/DeductionList.tsx';
+import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
@@ -126,6 +126,7 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
 ]
 
 const NewPayrollLedger = (): React.JSX.Element => {
+  // TODO: 입력 성능 개선 (개발자도구 x6 slow 기준으로 잘 돌아가게)
   const location = useLocation();
   const navigate = useNavigate();
   const {showAlert} = useAlertStore();
@@ -139,7 +140,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
-  const [calculatedWages, setCalculatedWages] = useState<any>({});
+  // const [calculatedWages, setCalculatedWages] = useState<any>({});
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [deductionDialogProps, setDeductionDialogProps] = useState({
     isOpen: false,
@@ -147,6 +148,33 @@ const NewPayrollLedger = (): React.JSX.Element => {
   });
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const calculatedWages = useMemo(() => {
+    console.log('계산식 재렌더')
+    const newWages = {};
+    formData.forEach((item, idx) => {
+      // payments calc
+      const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
+      const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
+      const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
+      const al = Math.round(hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
+      const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
+
+      // deductions calc
+      const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
+
+      newWages[idx] = {
+        hourlyWage: hw,
+        extendWokringWage: ew,
+        dayOffWorkingWage: dw,
+        annualLeaveAllowance: al,
+        totalPayment: totalPayments,
+        totalDeductions: totalDeductions,
+        totalSalary: totalPayments - totalDeductions
+      };
+    });
+    return newWages;
+  }, [formData])
 
   const listToPaymentRender = mode === 'create' ? employees : formData;
   const totalPaymentSum = Object.values(calculatedWages).reduce(
@@ -200,9 +228,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   };
 
-  const handlePaymentInput = (
+  const handlePaymentInput = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    id: string
+    id: string,
   ) => {
     const {name, value} = e.target;
     let onlyNums = value.replace(/[^0-9.]/g, '');
@@ -235,9 +263,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
         )
       })
     );
-  };
+  }, [mode]);
 
-  const handleDeductionChange = (
+  const handleDeductionChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     id: string
   ) => {
@@ -259,9 +287,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
         )
       })
     );
-  };
+  }, [mode]);
 
-  const handleLedgerInputChange = (
+  const handleLedgerInputChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     side: 'left' | 'right',
     idx: number
@@ -285,7 +313,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
         )
       );
     }
-  };
+  }, []);
 
   const submitPayroll = async () => {
     const data = formData.map((p) => ({
@@ -466,7 +494,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
           setRightLedger(ledgers.slice(mid));
           // console.log('ledger cache O');
         } catch {
-          const emptyLedgers: Paying[] = Array.from({length: 30}, () => ({purpose: '', value: '0', group: '', memo: ''}))
+          const emptyLedgers: Paying[] = Array.from({length: 30}, () => ({
+            purpose: '',
+            value: '0',
+            group: '',
+            memo: ''
+          }))
           setLedger({
             paying: emptyLedgers,
             deduction: [],
@@ -518,7 +551,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   }, [showAlert, mode, initialPayments, payrollId, initialLedger, refreshKey]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const newWages = {};
     formData.forEach((item, idx) => {
       // payments calc
@@ -542,7 +575,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       };
     });
     setCalculatedWages(newWages);
-  }, [formData]);
+  }, [formData])*/
 
   useEffect(() => {
     setLeftLedger(prev =>
@@ -699,7 +732,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       let delta = 0
                       let value = formData[colIdx]?.paymentDetail[row.id];
                       if (row.id === PaymentTableRow.EXTEND_WORKING_TIME
-                      || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -1
+                        || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -1
                       else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
                         || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -2
                       else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -3
@@ -714,7 +747,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
                         value = calculatedWages[colIdx]?.[row.id];
                       }
                       return (
-                        <TableCell key={`${item.id}-${colIdx}`} align="right"
+                        <TableCellForPayroll value={row.format ? row.format(value) : value || ''}
+                                             disabled={row.disabled || false}
+                                             name={row.id}
+                                             onChange={(e) => handlePaymentInput(e, item.id)}
+                                             colIdx={colIdx}
+                                             rowIdx={row.disabled ? undefined : rowIdx + delta}
+                                             maxColLen={listToPaymentRender.length}
+                                             key={`${item.id}-${colIdx}`}
+                        />
+                        /*<TableCell key={`${item.id}-${colIdx}`} align="right"
                                    sx={{borderRight: '1px solid lightgray', py: 0}}
                         >
                           <Input disableUnderline
@@ -725,9 +767,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  sx={{
                                    py: 0,
                                    my: 0,
-                                   '& input': {
-                                     textAlign: 'right',
-                                   }
+                                   '& input': {textAlign: 'right'}
                                  }}
                                  inputProps={{
                                    'data-col-index': colIdx,
@@ -737,7 +777,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                    }
                                  }}
                           />
-                        </TableCell>
+                        </TableCell>*/
                       )
                     })}
                   </TableRow>
@@ -751,8 +791,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     >
                       {dec.purpose}
                     </TableCell>
-                    {listToPaymentRender.map((item, colIdx) => (
-                      <TableCell key={`${item.id}-${colIdx + 100}`} align="right"
+                    {listToPaymentRender.map((item, colIdx: number) => (
+                      <TableCellForPayroll key={`${item.id}-${colIdx + 100}`}
+                                           value={formatCurrency(formData[colIdx]?.deductionDetail[decIdx]?.value) ?? ''}
+                                           name={dec.purpose}
+                                           onChange={(e) => handleDeductionChange(e, item.id)}
+                                           colIdx={colIdx}
+                                           rowIdx={decIdx + 8}
+                                           maxColLen={listToPaymentRender.length}
+                      />
+                      /*<TableCell key={`${item.id}-${colIdx + 100}`} align="right"
                                  sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
@@ -768,7 +816,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                value={formatCurrency(formData[colIdx]?.deductionDetail[decIdx]?.value) ?? ''}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                         ></Input>
-                      </TableCell>
+                      </TableCell>*/
                     ))}
                   </TableRow>
                 ))}
@@ -877,68 +925,39 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 <TableBody>
                   {leftLedger?.map((item, idx) => (
                     <TableRow key={`left-${idx}`}>
-                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0,}}>
-                        <Input disableUnderline
-                               name='purpose'
-                               value={(item).purpose || ''}
-                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               sx={{
-                                 py: 0, my: 0,
-                                 width: 130,
-                                 '& input': {color: 'black'},
-                               }}
-                               inputProps={{
-                                 'data-col-index': 0,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
-                      <TableCell align="right" sx={{borderRight: '1px solid lightgray', py: 0}}>
-                        <Input disableUnderline
-                               name='value'
-                               value={formatCurrency((item).value) ?? '-'}
-                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                               inputProps={{
-                                 'data-col-index': 1,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
-                      <TableCell align="center"
-                                 width='20%'
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               name='group'
-                               value={(item).group ?? '-'}
-                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
-                               inputProps={{
-                                 'data-col-index': 2,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
-                      <TableCell align="center"
-                                 width='20%'
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               name='memo'
-                               value={(item).memo ?? '-'}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
-                               inputProps={{
-                                 'data-col-index': 3,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
+                      <TableCellForPayroll name='purpose'
+                                           value={(item).purpose || ''}
+                                           align='left'
+                                           onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                                           colIdx={0}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                      />
+                      <TableCellForPayroll value={formatCurrency((item).value) ?? '-'}
+                                           name='value'
+                                           onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                                           colIdx={1}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                      />
+                      <TableCellForPayroll value={(item).group ?? '-'}
+                                           name='group'
+                                           onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                                           colIdx={2}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                                           align='center'
+                                           cellW='20%'
+                      />
+                      <TableCellForPayroll value={(item).memo ?? '-'}
+                                           name='memo'
+                                           onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
+                                           colIdx={3}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                                           align='center'
+                                           cellW='20%'
+                      />
                     </TableRow>
                   ))}
                 </TableBody>
@@ -966,7 +985,15 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 <TableBody>
                   {rightLedger?.map((item, idx) => (
                     <TableRow key={`right-${idx}`}>
-                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
+                      <TableCellForPayroll name='purpose'
+                                           value={(item).purpose || ''}
+                                           align='left'
+                                           onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                                           colIdx={4}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                      />
+                      {/*<TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
                       >
                         <Input disableUnderline
                                name='purpose'
@@ -979,53 +1006,32 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  'data-row-index': 100 + idx,
                                }}
                         />
-                      </TableCell>
-                      <TableCell align="right"
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               name='value'
-                               value={formatCurrency((item).value) ?? '-'}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                               inputProps={{
-                                 'data-col-index': 5,
-                                 'data-row-index': 100 + idx,
-
-                               }}
-                        />
-                      </TableCell>
-                      <TableCell align="center"
-                                 width='20%'
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
-                        <Input disableUnderline
-                               name='group'
-                               value={(item).group ?? '-'}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
-                               inputProps={{
-                                 'data-col-index': 6,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
-                      <TableCell align="center"
-                                 width='20%'
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
-                        <Input disableUnderline
-                               name='memo'
-                               value={(item).memo ?? ''}
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
-                               inputProps={{
-                                 'data-col-index': 7,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>
+                      </TableCell>*/}
+                      <TableCellForPayroll value={formatCurrency((item).value) ?? '-'}
+                                           name='value'
+                                           onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                                           colIdx={5}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                      />
+                      <TableCellForPayroll value={(item).group ?? '-'}
+                                           name='group'
+                                           onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                                           colIdx={6}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                                           align='center'
+                                           cellW='20%'
+                      />
+                      <TableCellForPayroll value={(item).memo ?? '-'}
+                                           name='memo'
+                                           onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
+                                           colIdx={7}
+                                           rowIdx={100 + idx}
+                                           maxColLen={8}
+                                           align='center'
+                                           cellW='20%'
+                      />
                     </TableRow>
                   ))}
                 </TableBody>
