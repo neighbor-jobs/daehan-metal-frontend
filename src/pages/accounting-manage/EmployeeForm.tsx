@@ -54,8 +54,6 @@ const EmployeeForm = ({
   const [updateBank, setUpdateBank] = useState<PatchBank | Bank | null>(prevBankData);
   const {showAlert} = useAlertStore();
 
-  console.log('prev bank data: ', prevBankData)
-
   const isDisabled = type === 'read' || type === null;
   const isCreate = type === 'create';
 
@@ -73,9 +71,7 @@ const EmployeeForm = ({
     let value = e.target.value;
 
     if (name === 'phoneNumber') value = formatPhoneNumber(value);
-    else if (name === 'birth'
-      || name === 'retirementAt'
-    ) value = formatStringDate(value);
+    else if (name === 'birth' || name === 'retirementAt') value = formatStringDate(value);
 
     setFormData((prev) => {
       if (name === 'birth') {
@@ -111,7 +107,12 @@ const EmployeeForm = ({
 
   /* update 용 handler */
   const handleUpdateInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = e.target;
+    const name = e.target.name;
+    let value = e.target.value;
+
+    if (name === 'phoneNumber') value = formatPhoneNumber(value);
+    else if (name === 'birth' || name === 'retirementAt') value = formatStringDate(value);
+
     setUpdateEmployee((prev) => {
       // birth 가 바뀌면 age 도 자동 계산
       if (name === 'birth') {
@@ -171,7 +172,7 @@ const EmployeeForm = ({
     const infoPayload = {
       ...formData.info,
       age: Number(formData.info.age),
-      email: formData.info.email || undefined,
+      email: formData.info.email.trim() || undefined,
       phoneNumber: formData.info.phoneNumber || undefined,
       birth: formData.info.birth || undefined,
     };
