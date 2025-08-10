@@ -154,7 +154,9 @@ const PurchaseMain = (): React.JSX.Element => {
       'vatRate'
     ];
     if (numericOnlyFields.includes(name)) {
-      const numericValue = String(Number(value.replace(/[^0-9.]/g, ''))); // 소수점 허용
+      const numericValue = value
+        .replace(/[^0-9.]/g, '')       // 숫자와 점만 남기고
+        .replace(/(\..*)\./g, '$1');
       setReceipts((prev) =>
         prev.map((item, i) =>
           i === rowIndex ? {...item, [name]: numericValue} : item
@@ -305,7 +307,7 @@ const PurchaseMain = (): React.JSX.Element => {
             <Autocomplete
               freeSolo
               sx={{width: 180}}
-              options={purchaseCompanyList.map((item) => item.name)}
+              options={purchaseCompanyList?.map((item) => item.name) || []}
               onChange={handleCompanyChange}
               value={header?.companyName || ''}
               renderInput={(params) =>
