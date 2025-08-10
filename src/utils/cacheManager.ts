@@ -1,4 +1,5 @@
 import {Paying} from '../types/ledger.ts';
+import {Employee} from '../types/employeeRes.ts';
 
 export const cacheManager = {
   /*
@@ -107,6 +108,22 @@ export const cacheManager = {
 
   async replaceDeductions(newDeductions: string[]) {
     return await window.ipcRenderer.invoke('deductions:replace', newDeductions);
+  },
+
+  async getEmployees() {
+    return await window.ipcRenderer.invoke('employees:get');
+  },
+
+  async addEmployee(newEmployeeId: string) {
+    return await window.ipcRenderer.invoke('employees:add', newEmployeeId);
+  },
+
+  async replaceEmployees(newEmployees: Employee[]) {
+    return await window.ipcRenderer.invoke('employees:replace', newEmployees);
+  },
+
+  async removeEmployee(employeeId: string) {
+    return await window.ipcRenderer.invoke('employees:remove', employeeId);
   }
 };
 

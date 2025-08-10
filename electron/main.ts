@@ -13,7 +13,8 @@ import {
   companySalesSumDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
-  outstandingAmountDocDef, payrollRegisterDocRef,
+  outstandingAmountDocDef,
+  payrollRegisterDocRef,
   purchaseReceiptDocRef,
   salaryDocsRef
 } from './templetes.ts';
@@ -39,6 +40,14 @@ import {
   validateProductsAgainstAPI
 } from './store/amountStore.ts';
 import {getDeductions, replaceDeductions} from './store/deductionStore.ts';
+import {
+  addEmployee,
+  getEmployees,
+  initEmployee,
+  removeEmployee,
+  replaceEmployees,
+  validateEmployeesAgainstAPI
+} from './store/employeeStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -75,7 +84,7 @@ function createWindow() {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
-      contextIsolation: true,
+      contextIsolation: true, /* 개발용: false, 서비스용: true */
       webSecurity: false,
     },
   })
@@ -114,11 +123,17 @@ app.on('activate', () => {
 
 app.whenReady().then(async () => {
   createWindow();
+
+  // product
   await initializeProducts();
   await validateProductsAgainstAPI({
     autoFix: true,
     removeOrphaned: true
   });
+
+  // employees
+  await initEmployee();
+  await validateEmployeesAgainstAPI();
 });
 
 // 데이터 가져오기
@@ -224,12 +239,19 @@ ipcMain.handle('ledgers:remove', (_event, index) => {
 
 ipcMain.handle('deductions:get', () => getDeductions());
 
-ipcMain.handle('deductions:replace', (_event, newDeductions: string[]) => replaceDeductions(newDeductions))
+ipcMain.handle('deductions:replace', (_event, newDeductions: string[]) => replaceDeductions(newDeductions));
+
+ipcMain.handle('employees:get', () => getEmployees());
+
+ipcMain.handle('employees:add', (_event, newEmployeeId: string) => addEmployee(newEmployeeId))
+
+ipcMain.handle('employees:replace', (_event, newEmployees) => replaceEmployees(newEmployees));
+
+ipcMain.handle('employees:remove', (_event, id) => removeEmployee(id));
 
 /*
 * ======================== 인쇄 관련 ==========================
 * */
-
 
 pdfMake.vfs = {
   'Pretendard-Medium.ttf': readFileSync(path.join(fontPath, 'Pretendard-Medium.ttf'), 'base64'),
