@@ -2,6 +2,8 @@ export const arrowNavAtRegister = (
     e: React.KeyboardEvent<HTMLInputElement>,
     maxCols: number,
     isAutoComplete?: boolean,
+    directionEnter?: 'col' | 'row',
+    maxRows?: number,
   ) => {
   const input = e.currentTarget;
   // Autocomplete 목록 열려 있으면 기본 동작
@@ -10,6 +12,7 @@ export const arrowNavAtRegister = (
   const { selectionStart, selectionEnd, value } = input;
   const row = Number(input.dataset.rowIndex);
   const col = Number(input.dataset.colIndex);
+  // console.log('row: ', row, 'col: ', col)
   let newRow = row;
   let newCol = col;
 
@@ -37,11 +40,20 @@ export const arrowNavAtRegister = (
       newCol = col + 1;
       break;
     case 'Enter' :
-      if (col >= maxCols) {
-        newRow = row + 1;
-        newCol = 0;
+      if (directionEnter === 'col') {
+        if (row >= maxRows) {
+          newCol = col + 1;
+          newRow = 0;
+        } else {
+          newRow = row + 1;
+        }
       } else {
-        newCol = col + 1;
+        if (col >= maxCols) {
+          newRow = row + 1;
+          newCol = 0;
+        } else {
+          newCol = col + 1;
+        }
       }
       break;
     default:
