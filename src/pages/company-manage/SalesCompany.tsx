@@ -113,8 +113,14 @@ const SalesCompany = (): React.JSX.Element => {
 
   // api
   const fetchSalesCompanies = async () => {
-    const companies = await axiosInstance.get('/company?orderBy=asc');
-    setSalesCompanyList(companies.data.data || []);
+    const response = await axiosInstance.get('/company?orderBy=asc');
+    const companies = response.data.data || [];
+
+    // companyName 기준 오름차순 정렬
+    const sorted = companies.sort((a, b) =>
+      a.companyName.localeCompare(b.companyName, 'ko', { sensitivity: 'base' })
+    );
+    setSalesCompanyList(sorted);
   };
 
   const delSalesCompany = async (companyName: string) => {
