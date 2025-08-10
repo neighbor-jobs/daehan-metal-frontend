@@ -653,16 +653,16 @@ export const invoiceDocDef = (data: any) => {
  * payment 생성
  */
 const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
+  // eslint-disable-next-line no-unsafe-optional-chaining
   const [year, month, day]: string[] = (payrollRegisterData.createdAt).split('T')[0]?.split("-");
   const payments = payrollRegisterData.payments
   const widths = Array.from({length: payments.length + 1}, () => '*')
-  const spacer = Array.from({length: widths.length}, () => ({text: ''}))
+  // const spacer = Array.from({length: widths.length}, () => ({text: ''}))
   widths[0] = '15%'
 
-  const headers: any[][] = [[{text: "작성일자", style: 'subheader'}], [{
-    text: `${year}-${month}-${day}`,
-    style: 'subheader'
-  }]]
+  const headers: any[][] = [
+    [{text: `작성일자: ${year}-${month}-${day}`, style: 'subheader', border: [true, true, true, false]}],
+  ]
   const employees: any[] = [{text: "성명", style: 'subheader'}]
   const salaryDetails: object = {
     '기본급': [{text: "기본급", style: 'subheader'}],
@@ -688,8 +688,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
 
   for (let i = 0; i < payments.length; ++i) {
     const payment = payments[i]
-    headers[0].push({text: payment.memo, style: 'cell', alignment: 'center'})
-    headers[1].push({text: payment.employeePosition, style: 'cell', alignment: 'center'})
+    headers[0].push({text: payment.employeePosition, style: 'cell', alignment: 'center', margin: [0, 6, 0, 6]})
     employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
 
     salaryDetails['기본급'].push({text: `${formatCurrency(payment.paymentDetail.pay)} 원`, style: 'cell', alignment: 'center'})
@@ -746,7 +745,6 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
         widths,
         body: [
           headers[0],
-          headers[1],
           employees,
           // spacer,
           ...Object.keys(salaryDetails).map((key) => salaryDetails[key]),
@@ -1072,22 +1070,22 @@ export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
  * 커스텀 테두리 layout
  * */
 const customTableLayout = {
-  hLineWidth: function (i, node) {
+  hLineWidth: function () {
     return 1; // 모든 가로선 두께
   },
-  vLineWidth: function (i, node) {
+  vLineWidth: function () {
     return 1; // 모든 세로선 두께
   },
-  hLineColor: function (i, node) {
+  hLineColor: function () {
     return 'black'; // 가로선 색상
   },
-  vLineColor: function (i, node) {
+  vLineColor: function () {
     return 'black'; // 세로선 색상
   },
-  paddingLeft: function(i, node) { return 4; },
-  paddingRight: function(i, node) { return 4; },
-  paddingTop: function(i, node) { return 2; },
-  paddingBottom: function(i, node) { return 2; }
+  paddingLeft: function() { return 4; },
+  paddingRight: function() { return 4; },
+  paddingTop: function() { return 2; },
+  paddingBottom: function() { return 2; }
 };
 
 
