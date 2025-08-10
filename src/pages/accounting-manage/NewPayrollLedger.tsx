@@ -34,6 +34,7 @@ import {formatCurrency} from '../../utils/format.ts';
 import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
 import DeductionList from '../../components/DeductionList.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
+import AssignEmployees from './AssignEmployees.tsx';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
@@ -126,35 +127,38 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
 ]
 
 const NewPayrollLedger = (): React.JSX.Element => {
-  // TODO: 입력 성능 개선 (개발자도구 x6 slow 기준으로 잘 돌아가게)
   const location = useLocation();
+  const {
+    payrollId,
+    payments: initialPayments,
+    ledger: initialLedger,
+    standardAt: prevStandardAt
+  } = location.state || {};
   const navigate = useNavigate();
   const {showAlert} = useAlertStore();
 
   const [formData, setFormData] = useState<PostPayment[] | PatchPayment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [deduction, setDeduction] = useState<Deduction[]>([]);
-  const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-DD'));
-  const {payrollId, payments: initialPayments, ledger: initialLedger} = location.state || {};
+  const [standardAt, setStandardAt] = useState<string>(prevStandardAt || dayjs().format('YYYY-MM-DD'));
   const [mode, setMode] = useState<'create' | 'edit'>(initialPayments ? 'edit' : 'create');
   const [ledger, setLedger] = useState<PostLedger | PatchLedger>();
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
-  // const [calculatedWages, setCalculatedWages] = useState<any>({});
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [deductionDialogProps, setDeductionDialogProps] = useState({
     isOpen: false,
     defaultList: [],
   });
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const calculatedWages = useMemo(() => {
-    console.log('계산식 재렌더')
     const newWages = {};
     formData.forEach((item, idx) => {
       // payments calc
-      const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
+      const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.ceil((Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay)) / 10) * 10;
       const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
       const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
       const al = Math.round(hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
@@ -341,6 +345,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
           showAlert('해당 월에 이미 생성한 급여대장이 있습니다.', 'error');
           return;
         }
+
+        navigate(`/account/payroll`, {
+          state: standardAt
+        });
       } else {
         data?.map(async (p) => {
           await axiosInstance.patch('/payroll/payment', p);
@@ -365,7 +373,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
         value: '0',
       })));
       // formData 초기화
-      const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+      let list: string;
+      try {
+        const cache = await cacheManager.getEmployees();
+        list = cache.join(',');
+      } catch {
+        list = '';
+      }
+      const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
       setEmployees(employeesRes.data.data);
       setFormData(employeesRes.data.data.map((employee) => ({
         employeeId: employee.id,
@@ -397,51 +412,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
   useEffect(() => {
     if (mode === 'create') {
       setMode('create');
-      /*const getEmployees = async () => {
-        try {
-          const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
-          setEmployees(employees.data.data);
-          setFormData(employees.data.data.map((employee: Employee) => ({
-            employeeId: employee.id,
-            employeeName: employee.info.name,
-            employeePosition: employee.info.position,
-            startWorkingAt: employee.startWorkingAt?.split('T')[0],
-            paymentDetail: defaultPayment,
-            deductionDetail: deduction,
-            memo: '',
-          })));
-        } catch {
-          showAlert('사원 정보를 불러오지 못했습니다. 새로고침 해주세요.', 'error');
-        }
-      }
-      const getDeductions = async () => {
-        try {
-          const res: string[] = await cacheManager.getDeductions();
-          setDeduction(res.map(item => ({
-            purpose: item,
-            value: '0',
-          })));
-          console.log('cache O');
-        } catch {
-          defaultDeductionList.map((item) => ({
-            purpose: item,
-            value: '0',
-          }))
-          console.log('cache X')
-        }
-      }
-      getDeductions();
-      getEmployees();
-      cacheManager.getLedgers().then((ledgers) => {
-        const mid = Math.ceil(ledgers.length / 2);
-        setLedger({
-          paying: ledgers,
-          deduction: [],
-          createdAt: standardAt,
-        });
-        setLeftLedger(ledgers.slice(0, mid));
-        setRightLedger(ledgers.slice(mid));
-      });*/
       (async () => {
         let deductionRes: { purpose: string, value: string }[];
         let deductionList: string[];
@@ -465,8 +435,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
         setDeductionDialogProps(prev => ({...prev, defaultList: deductionList}));
 
         // 2. 직원 기본 데이터 설정
+        let list: string;
         try {
-          const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+          const cache = await cacheManager.getEmployees();
+          list = cache.join(',');
+        } catch {
+          list = '';
+        }
+
+        try {
+          const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
           setEmployees(employees.data.data);
           setFormData(employees.data.data.map((employee: Employee) => ({
             employeeId: employee.id,
@@ -492,7 +470,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
           });
           setLeftLedger(ledgers.slice(0, mid));
           setRightLedger(ledgers.slice(mid));
-          // console.log('ledger cache O');
         } catch {
           const emptyLedgers: Paying[] = Array.from({length: 30}, () => ({
             purpose: '',
@@ -507,7 +484,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
           })
           setLeftLedger(emptyLedgers.slice(0, 15));
           setRightLedger(emptyLedgers.slice(15));
-          // console.log('ledger cache X')
         }
       })();
     } else {
@@ -551,32 +527,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   }, [showAlert, mode, initialPayments, payrollId, initialLedger, refreshKey]);
 
-  /*useEffect(() => {
-    const newWages = {};
-    formData.forEach((item, idx) => {
-      // payments calc
-      const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay));
-      const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
-      const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
-      const al = Math.round(hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
-      const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
-
-      // deductions calc
-      const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
-
-      newWages[idx] = {
-        hourlyWage: hw,
-        extendWokringWage: ew,
-        dayOffWorkingWage: dw,
-        annualLeaveAllowance: al,
-        totalPayment: totalPayments,
-        totalDeductions: totalDeductions,
-        totalSalary: totalPayments - totalDeductions
-      };
-    });
-    setCalculatedWages(newWages);
-  }, [formData])*/
-
   useEffect(() => {
     setLeftLedger(prev =>
       prev.map(item =>
@@ -611,6 +561,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
             alignItems: 'center',
             gap: 2,
           }}>
+            {/* 날짜 선택 */}
             <Box sx={{display: 'flex', gap: 2, alignItems: 'center'}}>
               <InputLabel sx={{fontSize: 'small',}}>작성일</InputLabel>
               <DesktopDatePicker
@@ -625,14 +576,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 }}
               />
             </Box>
+
             <Box sx={{display: 'flex', gap: 2}}>
-              {/* 공제 목록 수정 */}
-              {/*<Button variant='outlined'
-                      size='small'
-                      onClick={() => setDeductionDialogProps(prev => ({...prev, isOpen: true}))}
-              >
-                공제목록수정
-              </Button>*/}
+              {/* 사원 순서 변경 */}
+              <Box>
+                <Button variant='outlined'
+                        onClick={() => setDialogOpen(true)}
+                >
+                  사원 순서 변경
+                </Button>
+              </Box>
 
               {/* 전체 workingDay 수정 */}
               <Box sx={{display: 'flex', alignItems: 'center'}}>
@@ -648,6 +601,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
           </Box>
         </LocalizationProvider>
       </Box>
+
+      <AssignEmployees isOpened={dialogOpen}
+                       onClose={() => setDialogOpen(false)}
+                       employees={employees}
+                       onApply={(ordered) => setEmployees(ordered)}
+      />
 
       <Paper sx={{paddingBottom: 1, px: 2}}>
         {/* 급여대장 */}
@@ -754,30 +713,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                              colIdx={colIdx}
                                              rowIdx={row.disabled ? undefined : rowIdx + delta}
                                              maxColLen={listToPaymentRender.length}
+                                             maxRowLen={13}
                                              key={`${item.id}-${colIdx}`}
                         />
-                        /*<TableCell key={`${item.id}-${colIdx}`} align="right"
-                                   sx={{borderRight: '1px solid lightgray', py: 0}}
-                        >
-                          <Input disableUnderline
-                                 disabled={row.disabled || false}
-                                 name={row.id}
-                                 value={row.format ? row.format(value) : value || ''}
-                                 onChange={(e) => handlePaymentInput(e, item.id)}
-                                 sx={{
-                                   py: 0,
-                                   my: 0,
-                                   '& input': {textAlign: 'right'}
-                                 }}
-                                 inputProps={{
-                                   'data-col-index': colIdx,
-                                   'data-row-index': row.disabled ? undefined : rowIdx + delta,
-                                   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                                     arrowNavAtRegister(e, listToPaymentRender.length - 1, false)
-                                   }
-                                 }}
-                          />
-                        </TableCell>*/
                       )
                     })}
                   </TableRow>
@@ -799,37 +737,27 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            colIdx={colIdx}
                                            rowIdx={decIdx + 8}
                                            maxColLen={listToPaymentRender.length}
+                                           maxRowLen={13}
                       />
-                      /*<TableCell key={`${item.id}-${colIdx + 100}`} align="right"
-                                 sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               name={dec.purpose}
-                               inputProps={{
-                                 'data-col-index': colIdx,
-                                 'data-row-index': decIdx + 8,
-                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                                   arrowNavAtRegister(e, listToPaymentRender.length - 1, false)
-                                 }
-                               }}
-                               onChange={(e) => handleDeductionChange(e, item.id)}
-                               value={formatCurrency(formData[colIdx]?.deductionDetail[decIdx]?.value) ?? ''}
-                               sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                        ></Input>
-                      </TableCell>*/
                     ))}
                   </TableRow>
                 ))}
                 {/* 지급액계 */}
                 <TableRow>
                   <TableCell
-                    sx={{borderRight: '1px solid lightgray', py: 0.5}}
+                    sx={{borderRight: '1px solid lightgray', py: 0, my: 0}}
                   >
                     지급액계
                   </TableCell>
                   {listToPaymentRender?.map((_item, colIdx: number) => (
-                    <TableCell key={`지급액계-${colIdx + 100}`} align="center"
-                               sx={{borderRight: '1px solid lightgray', py: 0}}
+                    <TableCellForPayroll value={calculatedWages[colIdx]?.totalDeductions.toLocaleString() || '0'}
+                                         key={`지급액계-${colIdx + 100}`}
+                                         disabled={true}
+                                         maxRowLen={15}
+
+                    />
+                    /*<TableCell key={`지급액계-${colIdx + 100}`} align="center"
+                               sx={{borderRight: '1px solid lightgray', py: 0, my: 0}}
                     >
                       <Input fullWidth
                              disableUnderline
@@ -837,31 +765,23 @@ const NewPayrollLedger = (): React.JSX.Element => {
                              value={calculatedWages[colIdx]?.totalDeductions.toLocaleString() || '0'}
                              sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
                       >
-
                       </Input>
-                    </TableCell>
+                    </TableCell>*/
                   ))}
                 </TableRow>
 
                 {/* 수령액 */}
                 <TableRow>
                   <TableCell
-                    sx={{borderRight: '1px solid lightgray', py: 0.5}}
+                    sx={{borderRight: '1px solid lightgray', py: 0}}
                   >
                     수령액
                   </TableCell>
                   {listToPaymentRender?.map((_item, colIdx: number) => (
-                    <TableCell key={`수령액-${colIdx + 100}`} align="center"
-                               sx={{borderRight: '1px solid lightgray', py: 0}}
-                    >
-                      <Input fullWidth
-                             disableUnderline
-                             disabled
-                             value={calculatedWages[colIdx]?.totalSalary.toLocaleString() || '0'}
-                             sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                      >
-                      </Input>
-                    </TableCell>
+                    <TableCellForPayroll value={calculatedWages[colIdx]?.totalSalary.toLocaleString() || '0'}
+                                         key={`수령액-${colIdx + 100}`}
+                                         disabled={true}
+                    />
                   ))}
                 </TableRow>
               </TableBody>
@@ -902,7 +822,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
         {/* 지출 내역 */}
         <Box sx={{mt: 2}}>
-          <Typography variant='h6'>지출 내역</Typography>
+          <Box sx={{display: 'flex', alignItems: 'end', gap: 1}}>
+            <Typography variant='h6'>지출 내역</Typography>
+            <Typography variant='caption'>*수령액 합계는 항목명이 '급여' 여야만 자동합산됩니다.</Typography>
+          </Box>
           <Box sx={{display: 'flex', mt: 1}}>
             {/* 왼쪽 table */}
             <TableContainer
@@ -993,20 +916,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            rowIdx={100 + idx}
                                            maxColLen={8}
                       />
-                      {/*<TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
-                        <Input disableUnderline
-                               name='purpose'
-                               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 7, false)}
-                               onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
-                               value={(item).purpose || ""}
-                               sx={{py: 0, my: 0, width: 130}}
-                               inputProps={{
-                                 'data-col-index': 4,
-                                 'data-row-index': 100 + idx,
-                               }}
-                        />
-                      </TableCell>*/}
                       <TableCellForPayroll value={formatCurrency((item).value) ?? '-'}
                                            name='value'
                                            onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
