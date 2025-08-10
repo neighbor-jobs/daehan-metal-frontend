@@ -18,6 +18,7 @@ import {Employee} from '../../types/employeeRes.ts';
 import {PatchEmployee} from '../../types/employeeReq.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import calcAge from '../../utils/calcAge.ts';
+import cacheManager from '../../utils/cacheManager.ts';
 
 const columns: readonly TableColumns<EmployeeTableColumn>[] = [
   {
@@ -97,8 +98,16 @@ const EmployeeManagement = (): React.JSX.Element => {
   };
 
   const getEmployees = async () => {
-    const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+    let employeeCache: string;
+    try {
+      employeeCache = await cacheManager.getEmployees();
+    } catch {
+      employeeCache = '';
+    }
+    const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${employeeCache}&includesPayment=false`);
+    // const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
     setEmployees(employees.data.data);
+    // console.log(employees.data.data?.map(e => e.id));
     return employees.data.data || [];
   }
 

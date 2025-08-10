@@ -27,6 +27,8 @@ import {Ledger, Paying} from '../../types/ledger.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {AccountingManageMenuType} from '../../types/headerMenu.ts';
 import AddPayment from './AddPayment.tsx';
+import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
+import cacheManager from '../../utils/cacheManager.ts';
 
 const leftRows = [
   {
@@ -135,7 +137,7 @@ const leftRows = [
 const PayrollLedger = (): React.JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
-  const paramStandardAt = location.state || '';
+  const paramStandardAt = location.state;
 
   const [payrollId, setPayrollId] = useState<string>();
   const [createdAtPayroll, setCreatedAtPayroll] = useState<string>(''); // 급여대장 작성일자
@@ -143,7 +145,7 @@ const PayrollLedger = (): React.JSX.Element => {
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
-  const [standardAt, setStandardAt] = useState<string>(dayjs().format('YYYY-MM-01'));
+  const [standardAt, setStandardAt] = useState<string>(paramStandardAt || dayjs().format('YYYY-MM-01'));
   const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false)
 
   const {showAlert} = useAlertStore();
@@ -153,8 +155,16 @@ const PayrollLedger = (): React.JSX.Element => {
   };
 
   const getPayroll = async (date: string = standardAt) => {
+    let list: string;
     try {
-      const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${date}`);
+      const cache = await cacheManager.getEmployees();
+      list = cache.join(',');
+    } catch {
+      list = '';
+    }
+
+    try {
+      const payroll = await axiosInstance.get(`/payroll/monthly/sales/report?standardAt=${date}&orderIds=${list}`);
       const l = await axiosInstance.get(`/ledger/monthly?standardAt=${date}`);
       setPayrollId(payroll.data.data.id);
       setCreatedAtPayroll(payroll.data.data.createdAt);
@@ -205,10 +215,9 @@ const PayrollLedger = (): React.JSX.Element => {
   }
 
   useEffect(() => {
-    if (paramStandardAt) {
+    if (paramStandardAt)
       getPayroll(paramStandardAt);
-    }
-  }, [paramStandardAt]);
+  }, []);
 
   // debug
   // console.log(payments);
@@ -292,7 +301,7 @@ const PayrollLedger = (): React.JSX.Element => {
                       sx={{borderRight: '1px solid lightgray', py: 0.5}}
                       width={row.minWidth}
                     >
-                      {row.label}
+                      <Typography fontSize={13}>{row.label}</Typography>
                     </TableCell>
                     {payments.map((payment, colIdx) => {
                       let value = payment.paymentDetail[row.id];
@@ -304,19 +313,11 @@ const PayrollLedger = (): React.JSX.Element => {
                         value = payment.deductionDetail[rowIdx - 9]?.['value'];
                       }
                       return (
-                        <TableCell key={`${payment.id}-${colIdx}`} align="right"
-                                   sx={{borderRight: '1px solid lightgray', py: 0}}
-                        >
-                          <Input disableUnderline
-                                 value={row.format ? row.format(value) : value}
-                                 sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                                 inputProps={{
-                                   disabled: true,
-                                   color: 'black'
-                                 }}
-                          >
-                          </Input>
-                        </TableCell>
+                        <TableCellForPayroll value={row.format ? row.format(value) : String(value)}
+                                             key={`${payment.id}-${colIdx}`}
+                                             disabled={true}
+                                             disabledTextColor='black'
+                        />
                       )
                     })}
                   </TableRow>
@@ -345,6 +346,7 @@ const PayrollLedger = (): React.JSX.Element => {
                     <TableCell>항목</TableCell>
                     <TableCell align="right">금액</TableCell>
                     <TableCell align='center'>지출일</TableCell>
+                    <TableCell align='center'>메모</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -380,6 +382,17 @@ const PayrollLedger = (): React.JSX.Element => {
                                }}
                         />
                       </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               value={item.memo ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -401,13 +414,13 @@ const PayrollLedger = (): React.JSX.Element => {
                     <TableCell>항목</TableCell>
                     <TableCell align="right">금액</TableCell>
                     <TableCell align='center'>지출일</TableCell>
+                    <TableCell align='center'>메모</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {rightLedger.map((item: Paying, idx) => (
                     <TableRow key={`right-${idx}`}>
-                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}
-                      >
+                      <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
                                value={item.purpose}
                                sx={{py: 0, my: 0,}}
@@ -432,6 +445,17 @@ const PayrollLedger = (): React.JSX.Element => {
                                  sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
                                value={item.group ?? '-'}
+                               sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
+                               inputProps={{
+                                 disabled: true,
+                               }}
+                        />
+                      </TableCell>
+                      <TableCell align="center"
+                                 width='20%'
+                                 sx={{borderRight: '1px solid lightgray', py: 0}}>
+                        <Input disableUnderline
+                               value={item.memo ?? '-'}
                                sx={{py: 0, my: 0, '& input': {textAlign: 'center'}}}
                                inputProps={{
                                  disabled: true,
@@ -484,6 +508,7 @@ const PayrollLedger = (): React.JSX.Element => {
         onSuccess={async () => await getPayroll()}
         payrollRegisterId={payrollId}
         payments={payments}
+        prevLedger={ledger}
       />
 
       {/* 버튼들 */}

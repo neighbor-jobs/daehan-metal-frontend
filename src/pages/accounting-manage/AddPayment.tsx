@@ -27,6 +27,7 @@ import {PostDeductionDetail, PostPayment, PostPaymentDetail} from '../../types/p
 import {defaultDeductionList, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
 import {formatCurrency} from '../../utils/format.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
+import {Ledger, PatchLedger} from '../../types/ledger.ts';
 
 /**
  * POST payroll/payment
@@ -35,6 +36,7 @@ interface AddPaymentProps {
   isOpened: boolean;
   payments?: Payment[];
   payrollRegisterId?: string;
+  prevLedger?: Ledger;
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -136,6 +138,7 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
 const AddPayment = ({
                       isOpened,
                       payments,
+                      prevLedger,
                       payrollRegisterId,
                       onClose,
                       onSuccess
@@ -222,7 +225,7 @@ const AddPayment = ({
         startWorkingAt: newValue.startWorkingAt?.split('T')[0]
       }));
     }
-  }, [restEmployee]);
+  }, []);
 
   const handlePaymentInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
@@ -265,7 +268,6 @@ const AddPayment = ({
   }
 
   const submitAddPayment = async () => {
-    // TODO: payroll id 없으면 id 다시 가져오기
     const updateFormData = {
       ...formData,
       paymentDetail: {
@@ -287,7 +289,25 @@ const AddPayment = ({
         onClose();
         return;
       }
-      // TODO: add payroll 성공 시 지출내역 급여 값 변경
+      if (prevLedger) {
+        const addedSalary = Number(calculatedWages.totalSalary);
+
+        const patchLedger: PatchLedger = {
+          id: prevLedger.id,
+          deduction: [],
+          paying: prevLedger.payingExpenses.map(item =>
+            item.purpose === '급여'
+              ? {
+                ...item,
+                value: String(Number(item.value) + addedSalary),
+              }
+              : item
+          ),
+        };
+
+        await axiosInstance.patch('/ledger', patchLedger);
+      }
+
       if (onSuccess) onSuccess();
       setFormData({
         employeeId: '',
@@ -307,7 +327,7 @@ const AddPayment = ({
   useEffect(() => {
     (async () => {
       try {
-        const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderBy=asc&includesPayment=false`);
+        const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=&includesPayment=false`);
         setRestEmployee(employees?.data.data.filter((emp: Employee) => {
           const hasMatchedPayment = payments?.some(pay => {
             const nameMatch = pay.employeeName === emp.info.name;
@@ -357,7 +377,7 @@ const AddPayment = ({
   }, [payrollRegisterId]);
 
   // debug
-  console.log(payrollRegisterId);
+  // console.log(payrollRegisterId);
 
   return (
     <Dialog open={isOpened}
@@ -380,6 +400,7 @@ const AddPayment = ({
             <InputLabel>사원 선택</InputLabel>
             <Autocomplete options={restEmployee}
                           getOptionLabel={option => option.info.name}
+                          noOptionsText='등록된 모든 사원에 대하여 급여내역이 존재합니다.'
                           value={restEmployee.find(emp => emp.id === formData?.employeeId) || null}
                           renderInput={(params) =>
                             <TextField {...params}

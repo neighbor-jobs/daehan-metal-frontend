@@ -9,6 +9,7 @@ import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
 import {formatAccountNumber, formatPhoneNumber, formatStringDate} from '../../utils/format.ts';
 import {Bank} from '../../types/vendorRes.ts';
 import calcAge from '../../utils/calcAge.ts';
+import cacheManager from '../../utils/cacheManager.ts';
 
 interface EmployeeFormProps {
   type: 'create' | 'edit' | 'read' | null;
@@ -177,18 +178,26 @@ const EmployeeForm = ({
       birth: formData.info.birth || undefined,
     };
 
+    let newEmpId: string;
     try {
-      await axiosInstance.post('/employee', {
+      const res = await axiosInstance.post('/employee', {
         info: infoPayload,
         banks,
         startWorkingAt: formData.startWorkingAt ? formData.startWorkingAt : undefined,
       });
+      newEmpId = res.data.data.id;
       showAlert('사원 등록이 완료되었습니다.', 'success');
       setFormData(defaultFormData);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
       showAlert('사원 등록에 실패했습니다.', 'error');
+    }
+
+    try {
+      await cacheManager.addEmployee(newEmpId);
+    } catch {
+      console.error('사원 등록 정보 업데이트 실패')
     }
   };
 
@@ -220,7 +229,7 @@ const EmployeeForm = ({
     const infoPayload = {
       ...updateEmployee.info,
       age: Number(updateEmployee.info.age),
-      email: updateEmployee.info.email || undefined,
+      email: updateEmployee.info.email.trim() || undefined,
       phoneNumber: updateEmployee.info.phoneNumber || undefined,
       birth: updateEmployee.info.birth || undefined,
     };
@@ -237,11 +246,10 @@ const EmployeeForm = ({
           await axiosInstance.patch('/employee/bank', updateBank);
         } else { // 사원 등록 시 은행 정보 등록 X
           const {id, ...postBankInfo} = updateBank;
-          const res = await axiosInstance.post('/employee/bank', {
+          await axiosInstance.post('/employee/bank', {
             employeeId: updateEmployee.id,
             ...postBankInfo
           });
-          console.log('post 시: ', res.data.data);
         }
       }
       if (onSuccess) onSuccess();
@@ -252,11 +260,19 @@ const EmployeeForm = ({
   }
 
   const deleteEmployee = async () => {
+    // API 요청
     try {
       await axiosInstance.delete(`/employee?id=${updateEmployee.id}`);
       if (onDeleteSuccess) onDeleteSuccess();
     } catch {
-      showAlert('사원 삭제에 실패했습니다. 재시도   해주세요.', 'error');
+      showAlert('사원 삭제에 실패했습니다. 재시도 해주세요.', 'error');
+    }
+
+    // cache data update
+    try {
+      await cacheManager.removeEmployee(updateEmployee.id);
+    } catch {
+      console.error('사원 정보 삭제 실패');
     }
   }
 
