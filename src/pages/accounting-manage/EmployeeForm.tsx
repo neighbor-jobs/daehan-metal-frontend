@@ -173,7 +173,7 @@ const EmployeeForm = ({
     const infoPayload = {
       ...formData.info,
       age: Number(formData.info.age),
-      email: formData.info.email.trim() || undefined,
+      email: formData.info.email?.trim() || undefined,
       phoneNumber: formData.info.phoneNumber || undefined,
       birth: formData.info.birth || undefined,
     };
@@ -229,7 +229,7 @@ const EmployeeForm = ({
     const infoPayload = {
       ...updateEmployee.info,
       age: Number(updateEmployee.info.age),
-      email: updateEmployee.info.email.trim() || undefined,
+      email: updateEmployee.info.email?.trim() || undefined,
       phoneNumber: updateEmployee.info.phoneNumber || undefined,
       birth: updateEmployee.info.birth || undefined,
     };
