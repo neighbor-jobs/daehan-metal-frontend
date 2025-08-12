@@ -11,7 +11,7 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow, TextField
+  TableRow, TextField, Typography
 } from '@mui/material';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import dayjs from 'dayjs';
@@ -298,8 +298,19 @@ const MonthlyPurchase = (): React.JSX.Element => {
                         align='right'>{(Number(row.totalRawMatAmount) + Number(row.totalManufactureAmount)).toLocaleString()}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.totalVatPrice)}</TableCell>
                       <TableCell align='right'>{formatCurrency(row.totalPrice)}</TableCell>
-                      <TableCell align='right'>{formatCurrency(row.productPrice)}</TableCell>
-                      <TableCell align='right'>{formatCurrency(row.payableBalance)}</TableCell>
+
+                      {/* 합계 */}
+                      <TableCell align='right'>
+                        <Typography>
+
+                        </Typography>
+                        {formatCurrency(row.productPrice)}
+                      </TableCell>
+                      <TableCell align='right'>
+                        {formatCurrency(row.payableBalance)}
+                      </TableCell>
+
+                      {/* 수정 & 삭제 버튼 */}
                       <TableCell sx={{padding: 0}}>
                         <IconButton size='small'
                           onClick={() => {

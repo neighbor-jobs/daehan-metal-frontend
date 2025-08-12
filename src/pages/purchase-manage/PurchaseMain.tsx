@@ -12,7 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
+  TextField, Typography,
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -65,6 +65,7 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     label: '합계',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'black'},
     format: formatCurrency,
   },
   {
@@ -72,6 +73,7 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     label: '입금액',
     minWidth: 100,
     align: 'right',
+    typoSx: {color: 'red'},
     format: formatCurrency,
   },
   /*  {
@@ -108,7 +110,6 @@ const defaultReceipt = {
 
 const PurchaseMain = (): React.JSX.Element => {
   // TODO: 매입처 등록 성공 시 입력필드 초기화
-
   const [receipts, setReceipts] = useState(
     Array.from({length: 1}, () => ({...defaultReceipt}))
   );
@@ -155,8 +156,8 @@ const PurchaseMain = (): React.JSX.Element => {
     ];
     if (numericOnlyFields.includes(name)) {
       const numericValue = value
-        .replace(/[^0-9.]/g, '')       // 숫자와 점만 남기고
-        .replace(/(\..*)\./g, '$1');
+        /*.replace(/[^0-9.]/g, '')       // 숫자와 점만 남기고
+        .replace(/(\..*)\./g, '$1');*/
       setReceipts((prev) =>
         prev.map((item, i) =>
           i === rowIndex ? {...item, [name]: numericValue} : item
@@ -190,7 +191,7 @@ const PurchaseMain = (): React.JSX.Element => {
         isPaying: paying
       }
     });
-    console.log(transformedReceipts);
+    // console.log(transformedReceipts);
 
     for (let i = 0; i < receipts.length; i++) {
       const item = transformedReceipts[i];
@@ -355,7 +356,11 @@ const PurchaseMain = (): React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant='body2'
+                                sx={column.typoSx || undefined}
+                    >
+                      {column.label}
+                    </Typography>
                   </TableCell>
                 ))}
                 <TableCell>삭제</TableCell>
@@ -413,7 +418,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                }
                              }}
                              name='rawMatAmount'
-                             value={formatCurrency(row.rawMatAmount)}
+                             value={(row.rawMatAmount)}
                              onChange={(event) => handleInputChange(event, rowIndex)}
                              data-table-input/>
                     </TableCell>
@@ -421,10 +426,10 @@ const PurchaseMain = (): React.JSX.Element => {
                     <TableCell>
                       <Input size='small'
                              disableUnderline
-                             disabled
                              fullWidth
                              inputProps={{
-                               sx: {textAlign: 'right'},
+                               sx: {textAlign: 'right', color: 'black'},
+                               disabled: true,
                                'data-input-id': `totalRawMatAmount-${rowIndex}`,
                              }}
                              name='totalRawMatAmount'
@@ -434,22 +439,22 @@ const PurchaseMain = (): React.JSX.Element => {
                     {/* 매입세액 */}
                     <TableCell align='right'>
                       <Input size='small'
-                             disabled
                              disableUnderline
                              value={vatAmount.toLocaleString()}
                              inputProps={{
-                               sx: {textAlign: 'right'}
+                               sx: {textAlign: 'right', color: 'black'},
+                               disabled: true,
                              }}
                       />
                     </TableCell>
                     {/* 합계 */}
                     <TableCell align='right'>
                       <Input size='small'
-                             disabled
                              disableUnderline
                              value={(vatAmount + price).toLocaleString()}
                              inputProps={{
-                               sx: {textAlign: 'right'}
+                               sx: {textAlign: 'right', fontSize: 15},
+                               disabled: true,
                              }}
                       />
                     </TableCell>
@@ -473,7 +478,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                    arrowNavAtRegister(e, 4);
                                  }
                                },
-                               sx: {textAlign: 'right'},
+                               sx: {textAlign: 'right', color: 'red'},
                              }}
                              name='productPrice'
                              onChange={(e) => handleInputChange(e, rowIndex)}
