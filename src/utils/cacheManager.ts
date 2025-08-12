@@ -122,6 +122,10 @@ export const cacheManager = {
     return await window.ipcRenderer.invoke('employees:replace', newEmployees);
   },
 
+  async updateEmployees(newEmployees: any[]) {
+    return await window.ipcRenderer.invoke('employees:update', newEmployees);
+  },
+
   async removeEmployee(employeeId: string) {
     return await window.ipcRenderer.invoke('employees:remove', employeeId);
   }

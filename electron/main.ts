@@ -45,7 +45,7 @@ import {
   getEmployees,
   initEmployee,
   removeEmployee,
-  replaceEmployees,
+  replaceEmployees, updateEmployees,
   validateEmployeesAgainstAPI
 } from './store/employeeStore.ts';
 
@@ -247,7 +247,9 @@ ipcMain.handle('employees:add', (_event, newEmployeeId: string) => addEmployee(n
 
 ipcMain.handle('employees:replace', (_event, newEmployees) => replaceEmployees(newEmployees));
 
-ipcMain.handle('employees:remove', (_event, id) => removeEmployee(id));
+ipcMain.handle('employees:update', (_event, newEmployees) => updateEmployees(newEmployees));
+
+ipcMain.handle('employees:remove', (_event, id: string) => removeEmployee(id));
 
 /*
 * ======================== 인쇄 관련 ==========================

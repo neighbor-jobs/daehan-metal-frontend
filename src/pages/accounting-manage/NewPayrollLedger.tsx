@@ -331,7 +331,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
         dayOffWorkingMulti: Number(p.paymentDetail.dayOffWorkingMulti) || 0,
         annualLeaveAllowanceMulti: Number(p.paymentDetail.annualLeaveAllowanceMulti) || 0,
       }
-    }))
+    }));
     try {
       if (mode === 'create') {
         const payrollRes = await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
@@ -344,6 +344,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
         if (payrollRes.data.statusCode === 409 || ledgerRes.data.statusCode === 409) {
           showAlert('해당 월에 이미 생성한 급여대장이 있습니다.', 'error');
           return;
+        }
+
+        // pay 값 update
+        const updateCacheData = formData.map((item) => ({
+          id: item.employeeId,
+          pay: item.paymentDetail.pay
+        }))
+
+        try {
+          await cacheManager.updateEmployees(updateCacheData);
+        } catch {
+          console.error('FAIL employee pay cache data update')
         }
 
         navigate(`/account/payroll`, {
@@ -374,12 +386,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
       })));
       // formData 초기화
       let list: string;
+      let cache = []
+      let payMap = new Map<string, string>();
+
       try {
-        const cache = await cacheManager.getEmployees();
-        list = cache.join(',');
+        cache = await cacheManager.getEmployees();
+        list = cache.map(e => e.id).join(',');
+        payMap = new Map(cache.map(e => [e.id, e.pay ?? '0']));
       } catch {
         list = '';
       }
+
       const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
       setEmployees(employeesRes.data.data);
       setFormData(employeesRes.data.data.map((employee) => ({
@@ -387,7 +404,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
         employeeName: employee.info.name,
         employeePosition: employee.info.position,
         startWorkingAt: employee.startWorkingAt?.split('T')[0],
-        paymentDetail: defaultPayment,
+        paymentDetail: {
+          ...defaultPayment,
+          // 여기서도 동일하게 캐시 pay 주입
+          pay: payMap.get(employee.id) ?? defaultPayment.pay,
+        },
         deductionDetail: defaultDeductionList.map((item) => ({
           purpose: item,
           value: '0',
@@ -436,9 +457,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
         // 2. 직원 기본 데이터 설정
         let list: string;
+        let payMap = new Map<string, string>();
+
         try {
           const cache = await cacheManager.getEmployees();
-          list = cache.join(',');
+          list = cache.map(e => e.id).join(',');
+          payMap = new Map(cache.map(e => [e.id, e.pay ?? '']));
         } catch {
           list = '';
         }
@@ -451,7 +475,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
             employeeName: employee.info.name,
             employeePosition: employee.info.position,
             startWorkingAt: employee.startWorkingAt?.split('T')[0],
-            paymentDetail: defaultPayment,
+            paymentDetail: {
+              ...defaultPayment,
+              // 캐시에 있으면 캐시 pay 사용, 없으면 default 유지
+              pay: payMap.get(employee.id) ?? defaultPayment.pay,
+            },
             deductionDetail: deductionRes,
             memo: '',
           })));
@@ -582,6 +610,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
               <Box>
                 <Button variant='outlined'
                         onClick={() => setDialogOpen(true)}
+                        disabled={mode === 'edit'}
                 >
                   사원 순서 변경
                 </Button>

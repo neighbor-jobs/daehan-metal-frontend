@@ -20,7 +20,6 @@ const defaultList = [
   'a1954851-044b-4fce-83b8-0fd61e5d4836',
 ]
 */
-const defaultList = []
 /*[
   {
     "id": "9e2d8c1f-fcc1-4400-bdcb-3fd082034685",
@@ -334,12 +333,16 @@ const schema = {
   employees: {
     type: 'array',
     items: {
-      type: 'string',
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        pay: { type: 'string', default: '0' },
+      },
+      required: ['id']
     },
-    default: defaultList
+    default: [] as CacheEmployee[]
   }
 }
-
 const employeeStore = new Store({
   schema,
   name: 'employees',
@@ -347,84 +350,118 @@ const employeeStore = new Store({
 })
 
 // GET employees
-const fetchEmployees = async (): Promise<string[]> => {
+const fetchEmployees = async (): Promise<CacheEmployee[] | undefined> => {
   try {
-    // const employees = await axios.get('http://localhost:3000/employee?includesRetirement=true&orderIds=&includesPayment=false')
-    const res = await axios.get('https://saving-finer-fly.ngrok-free.app/employee?includesRetirement=true&orderIds=&includesPayment=false');
-    return res.data.data?.map((e: Employee) => e.id);
+    const res = await axios.get('http://localhost:3000/employee?includesRetirement=true&orderIds=&includesPayment=false');
+    return res.data.data?.map((e: Employee) => ({
+      id: e.id,
+      pay: '0'
+    }));
   } catch {
     console.error('fail fetching employee store');
   }
-}
+};
 
 // 초기화
 export const initEmployee = async () => {
   const employees = getEmployees();
   if (employees?.length > 0) return;
+
   const apiEmployees = await fetchEmployees();
   if (Array.isArray(apiEmployees))
     employeeStore.set('employees', apiEmployees);
   else
-    employeeStore.set('employees', defaultList);
-}
+    employeeStore.set('employees', []);
+};
 
 /** 사원 배열 순서 조회 */
-export const getEmployees = (): string[] => {
-  return employeeStore.get('employees') as string[]
+export const getEmployees = (): CacheEmployee[] => {
+  return employeeStore.get('employees') as CacheEmployee[]
 }
-
-/** 사원별 기본급 조회 */
 
 /** 캐시-DB 데이터 정합성 검증 */
 export const validateEmployeesAgainstAPI = async () => {
-  const storedEmployees: string[] = getEmployees();
-  const apiEmployees: string[] = await fetchEmployees();
+  const storedEmployees = getEmployees();
+  const apiEmployees = await fetchEmployees();
 
   if (!Array.isArray(apiEmployees)) {
     console.error('API 데이터 불러오기 실패');
     return;
   }
 
-  // 캐시 중복 제거
-  let cleanedStored = Array.from(new Set(storedEmployees));
+  // 캐시 중복 제거 (id 기준)
+  let cleanedStored = Array.from(new Map(storedEmployees.map(e => [e.id, e])).values());
+
+  const storedIds = cleanedStored.map(e => e.id);
+  const apiIds = apiEmployees.map(e => e.id);
 
   // API에는 있고 캐시에는 없는 ID → 추가
-  const missingInCache = apiEmployees.filter(id => !cleanedStored.includes(id));
+  const missingInCache = apiEmployees.filter(e => !storedIds.includes(e.id));
 
   // 캐시에는 있지만 API에는 없는 ID → 삭제
-  const outdatedInCache = cleanedStored.filter(id => !apiEmployees.includes(id));
+  const outdatedInCache = cleanedStored.filter(e => !apiIds.includes(e.id));
 
-  // 최종 병합: outdated를 제거하고 missing을 추가
-  cleanedStored = cleanedStored.filter(id => !outdatedInCache.includes(id));
+  // outdated 제거
+  cleanedStored = cleanedStored.filter(e => !outdatedInCache.some(o => o.id === e.id));
+
+  // missing 추가
   cleanedStored = [...cleanedStored, ...missingInCache];
 
   if (
     cleanedStored.length !== storedEmployees.length ||
-    JSON.stringify(new Set(cleanedStored)) !== JSON.stringify(new Set(storedEmployees))
+    JSON.stringify(new Set(storedIds)) !== JSON.stringify(new Set(apiIds))
   ) {
     employeeStore.set('employees', cleanedStored);
     console.log(`정합성 검증 완료: ${missingInCache.length}개 추가, ${outdatedInCache.length}개 삭제, ${storedEmployees.length} → ${cleanedStored.length}`);
   } else {
     console.log('정합성 검증: 변경 없음');
   }
-}
+};
 
 /** 사원 추가 */
 export const addEmployee = (newEmployeeId: string): void => {
  const prev = getEmployees();
-  const cur = [...prev, newEmployeeId];
+  const cur: CacheEmployee[] = [
+    ...prev,
+    {id: newEmployeeId, pay: '0'}
+  ];
   employeeStore.set('employees', cur);
 }
 
-/** 전체 사원 배열 교체 */
+/** 전체 사원 배열 순서만 교체 */
 export const replaceEmployees = (newEmployees: Employee[]): void => {
-  const cur = newEmployees.map((item: Employee) => item.id);
-  employeeStore.set('employees', cur);
-}
+  const stored = getEmployees(); // CacheEmployee[]
+
+  // id -> CacheEmployee 매핑
+  const storedMap = new Map(stored.map(e => [e.id, e]));
+
+  // 새 Employees 순서대로 정렬 (기존 pay 유지)
+  const reordered = newEmployees.map(item => {
+    const existing = storedMap.get(item.id);
+    return existing ?? { id: item.id, pay: '0' };
+  });
+
+  employeeStore.set('employees', reordered);
+};
+
+/** 최근 급여 싹 다 업데이트 */
+export const updateEmployees = (newEmployees: CacheEmployee[]) => {
+  const stored = getEmployees(); // CacheEmployee[]
+
+  // id → pay 매핑
+  const payMap = new Map(newEmployees.map(e => [e.id, e.pay]));
+
+  const updated = stored.map(item =>
+    payMap.has(item.id)
+      ? { ...item, pay: payMap.get(item.id) ?? item.pay }
+      : item
+  );
+
+  employeeStore.set('employees', updated);
+};
 
 /** 사원 삭제 */
 export const removeEmployee = (id: string): void => {
   const prev = getEmployees();
-  const cur = prev.filter((item) => item !== id);
-  employeeStore.set('employees', cur);
+  employeeStore.set('employees', prev.filter(e => e.id !== id));
 }

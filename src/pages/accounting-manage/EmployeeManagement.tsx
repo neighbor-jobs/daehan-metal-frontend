@@ -100,7 +100,8 @@ const EmployeeManagement = (): React.JSX.Element => {
   const getEmployees = async () => {
     let employeeCache: string;
     try {
-      employeeCache = await cacheManager.getEmployees();
+      const cache = await cacheManager.getEmployees();
+      employeeCache = cache.map(e => e.id).join(',');
     } catch {
       employeeCache = '';
     }

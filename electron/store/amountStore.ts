@@ -315,12 +315,12 @@ export const removeScale = (productId: string, scaleName: string): void => {
 export const fetchAllProducts = async () => {
   const allProducts: ApiProduct[] = [];
   try {
-    const firstRes = await axios.get('https://saving-finer-fly.ngrok-free.app/product?page=1&orderBy=asc');
+    const firstRes = await axios.get('http://localhost:3000/product?page=1&orderBy=asc');
     const {products, totalPages} = firstRes.data.data;
     allProducts.push(...products);
 
     for (let page = 2; page <= totalPages; page++) {
-      const res = await axios.get(`https://saving-finer-fly.ngrok-free.app/product?page=${page}&orderBy=asc`);
+      const res = await axios.get(`http://localhost:3000/product?page=${page}&orderBy=asc`);
       allProducts.push(...res.data.data.products);
     }
   } catch {

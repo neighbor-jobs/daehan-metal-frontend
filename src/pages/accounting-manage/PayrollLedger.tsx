@@ -158,7 +158,7 @@ const PayrollLedger = (): React.JSX.Element => {
     let list: string;
     try {
       const cache = await cacheManager.getEmployees();
-      list = cache.join(',');
+      list = cache.map(e => e.id).join(',');
     } catch {
       list = '';
     }
