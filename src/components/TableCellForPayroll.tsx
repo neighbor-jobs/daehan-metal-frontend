@@ -15,11 +15,13 @@ interface TableCellForPayroll {
   maxRowLen?: number;
   align?: 'left' | 'center' | 'right';
   cellW?: number | string;
+  validation?: boolean;
+  fontSize?: number;
 }
 
 const TableCellForPayroll = memo(function TableCellForPayroll({
                                                                 disabled,
-                                                                disabledTextColor='gray',
+                                                                disabledTextColor = 'gray',
                                                                 value,
                                                                 name,
                                                                 onChange,
@@ -28,7 +30,9 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
                                                                 maxColLen,
                                                                 maxRowLen,
                                                                 align = 'right',
-                                                                cellW
+                                                                cellW,
+                                                                validation,
+                                                                fontSize
                                                               }: TableCellForPayroll) {
   return (
     <TableCell align={align}
@@ -58,6 +62,7 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
              disabled={disabled || false}
              name={name}
              value={value || ''}
+             aria-invalid={validation}
              onChange={onChange}
              data-col-index={colIdx}
              data-row-index={rowIdx}
@@ -66,8 +71,9 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
              }}
              style={{
                textAlign: align,
+               fontSize: fontSize,
                width: '100%',
-               border: 'none',
+               border: validation ? '1px solid red' : 'none',
                outline: 'none',
                backgroundColor: 'white',
                color: disabled ? disabledTextColor : 'black'

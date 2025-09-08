@@ -16,6 +16,7 @@ export interface Paying {
   purpose: string
   value: string
   group?: string
+  memo?: string
 }
 
 export interface Payroll {

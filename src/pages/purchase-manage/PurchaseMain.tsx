@@ -10,22 +10,26 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableFooter,
   TableHead,
   TableRow,
-  TextField, Typography,
+  TextField,
+  Typography,
 } from '@mui/material';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
+import {formatCurrency, formatDecimal, formatInputPrice, formatInputQuality, toNum} from '../../utils/format.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts';
 import PurchaseCompanyForm from '../company-manage/PurchaseCompanyForm.tsx';
+import {AxiosResponse} from 'axios';
+import {PurchaseManageMenuType} from '../../types/headerMenu.ts';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
@@ -102,14 +106,13 @@ const defaultReceipt = {
   productPrice: '',
   rawMatAmount: '',
   manufactureAmount: '',
-  quantity: 1,
+  quantity: 0,
   vatRate: 0.1,
   vat: true,
   isPaying: false,
 }
 
 const PurchaseMain = (): React.JSX.Element => {
-  // TODO: 매입처 등록 성공 시 입력필드 초기화
   const [receipts, setReceipts] = useState(
     Array.from({length: 1}, () => ({...defaultReceipt}))
   );
@@ -141,23 +144,56 @@ const PurchaseMain = (): React.JSX.Element => {
     }))
   }, [purchaseCompanyList]);
 
+  // 합계 계산
+  const totals = useMemo(() => {
+    let purchaseAmountSum = 0; // 매입금액 합계 (단가 * 수량)
+    let vatAmountSum = 0;      // 매입세액 합계 (매입금액 * 세율)
+    let depositSum = 0;        // 입금액 합계
+
+    receipts.forEach((r) => {
+      const qty: number = toNum(r.quantity);
+      const unit: number = toNum(r.rawMatAmount);
+      const price: number = Math.round(unit * qty);
+
+      // 부가세 적용 여부 (r.vat === false 이면 0)
+      const rate: number = r.vat === false ? 0 : toNum(r.vatRate);
+
+      // 매입 합계들
+      purchaseAmountSum += price;
+      vatAmountSum += Math.round(price * rate);
+
+      // 입금액 합계
+      depositSum += toNum(r.productPrice);
+    });
+
+    return {
+      purchaseAmountSum,
+      vatAmountSum,
+      totalWithVat: purchaseAmountSum + vatAmountSum,
+      depositSum,
+    };
+  }, [receipts]);
+
   const addRow = () => {
     setReceipts(prev => [...prev, {...defaultReceipt}]);
   }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, rowIndex: number) => {
     const {name, value} = event.target;
-    const numericOnlyFields = [
-      'quantity',
+    const priceFields = [
       'rawMatAmount',
       'productPrice',
       'manufactureAmount',
-      'vatRate'
     ];
-    if (numericOnlyFields.includes(name)) {
-      const numericValue = value
-        /*.replace(/[^0-9.]/g, '')       // 숫자와 점만 남기고
-        .replace(/(\..*)\./g, '$1');*/
+    if (priceFields.includes(name)) {
+      const numericValue = formatInputPrice(value, 0);
+      setReceipts((prev) =>
+        prev.map((item, i) =>
+          i === rowIndex ? {...item, [name]: numericValue} : item
+        )
+      );
+    } else if (name === 'quantity' || name === 'vatRate') {
+      const numericValue = formatInputQuality(value, 0);
       setReceipts((prev) =>
         prev.map((item, i) =>
           i === rowIndex ? {...item, [name]: numericValue} : item
@@ -177,6 +213,40 @@ const PurchaseMain = (): React.JSX.Element => {
     setReceipts((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Alt+Enter로 줄바꿈 삽입
+  const handleAltEnterNewline = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    rowIndex: number
+  ) => {
+    // Alt + Enter만 처리 (IME 조합 중이면 무시)
+    // if (!e.shiftKey || e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    // if (!e.altKey || e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+
+    e.preventDefault();
+    const target = e.currentTarget;
+    const {selectionStart = 0, selectionEnd = 0, value} = target;
+
+    const next = value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+
+    setReceipts(prev =>
+      prev.map((item, i) =>
+        i === rowIndex ? {...item, productName: next} : item
+      )
+    );
+
+    // 커서 위치 복원(선택)
+/*
+    setTimeout(() => {
+      try {
+        target.selectionStart = target.selectionEnd = selectionStart + 1;
+      } catch (err) {
+        console.log(err)
+      }
+    }, 0);
+*/
+  };
+
+  // api
   const handleSubmit = async () => {
     if (header.companyName === '') {
       showAlert('매입처명은 필수 입력값입니다.');
@@ -191,7 +261,6 @@ const PurchaseMain = (): React.JSX.Element => {
         isPaying: paying
       }
     });
-    // console.log(transformedReceipts);
 
     for (let i = 0; i < receipts.length; i++) {
       const item = transformedReceipts[i];
@@ -208,20 +277,15 @@ const PurchaseMain = (): React.JSX.Element => {
           showAlert(`매입 항목의 품명은 필수입니다. (행 ${i + 1})`, 'info');
           return;
         }
-        const hasRaw = item.rawMatAmount && item.rawMatAmount.trim() !== '';
-        const hasManufacture = item.manufactureAmount && item.manufactureAmount.trim() !== '';
-        if (!hasRaw && !hasManufacture) {
-          showAlert(`매입 항목에는 단가가 필요합니다. (행 ${i + 1})`, 'info');
-          return;
-        }
       }
     }
 
-    const apiReceipts = transformedReceipts.map((item) => {
+    const curTime = dayjs(header.createdAt);
+    const apiReceipts = transformedReceipts.map((item, idx: number) => {
       if (item.isPaying) {
         return {
           ...item,
-          createdAt: header.createdAt,
+          createdAt: curTime.add(idx, 'second').toDate().toUTCString(),
           vendorId: header.vendorId,
           companyName: header.companyName,
           quantity: 1,
@@ -232,7 +296,7 @@ const PurchaseMain = (): React.JSX.Element => {
         return {
           ...item,
           vatRate: Number(item.vatRate),
-          createdAt: header.createdAt,
+          createdAt: curTime.add(idx, 'second').toDate().toUTCString(),
           quantity: Number(item.quantity),
           vendorId: header.vendorId,
           companyName: header.companyName,
@@ -256,6 +320,48 @@ const PurchaseMain = (): React.JSX.Element => {
     })
   }
 
+  const handlePrint = async () => {
+    // 1. 등록
+    try {
+      await handleSubmit();
+    } catch (error) {
+      console.error(error);
+    }
+
+    // 2. 인쇄 데이터 불러오기
+    try {
+      const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${header.companyName}&standardDate=${header.createdAt}`);
+      const records = res.data.data.map((item) => {
+        return ({
+          createdAt: item.createdAt.split('T')[0],
+          productName: item.productName,
+          vat: item.vat,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalSalesAmount: Number(item.totalRawMatAmount) + Number(item.totalManufactureAmount),
+          totalVatPrice: item.totalVatPrice,
+          totalPrice: item.totalPrice,
+          productPrice: item.productPrice,
+          payableBalance: item.payableBalance,
+        });
+      })
+      const companyInfo = purchaseCompanyList.find((item) => item.id === header.vendorId);
+      if (window.ipcRenderer && records && companyInfo) {
+        await window.ipcRenderer.invoke('generate-and-open-pdf', PurchaseManageMenuType.MonthlyPurchase, {
+          companyName: header.companyName,
+          telNumber: companyInfo.info.telNumber,
+          subTelNumber: companyInfo.info.subTelNumber || '',
+          phoneNumber: companyInfo.info.phoneNumber || '',
+          bankName: companyInfo.bank?.bankName || '',
+          accountNumber: companyInfo.bank?.accountNumber || '',
+          records: records
+        });
+      }
+    } catch {
+      showAlert('인쇄 데이터 준비에 실패했습니다.', 'error');
+    }
+  }
+
   const getPurchaseCompanyList = useCallback(async () => {
     try {
       const res = await axiosInstance.get('/vendor/many?orderBy=asc');
@@ -268,6 +374,9 @@ const PurchaseMain = (): React.JSX.Element => {
   useEffect(() => {
     getPurchaseCompanyList();
   }, [showAlert, getPurchaseCompanyList])
+
+  // debug
+  // console.log(receipts)
 
   return (
     <Box sx={{
@@ -368,20 +477,29 @@ const PurchaseMain = (): React.JSX.Element => {
             </TableHead>
             <TableBody>
               {receipts && receipts.map((row, rowIndex) => {
-                const price = (parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0);
-                const vatAmount = price * row.vatRate;
+                const price = Math.round((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0));
+                const vatAmount = Math.round(price * row.vatRate);
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                     {/* 품명 */}
                     <TableCell>
                       <Input size='small'
                              fullWidth
+                             multiline
                              value={row.productName}
                              name='productName'
                              inputProps={{
                                'data-row-index': rowIndex,
                                'data-col-index': 0,
                                onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                 // Alt+Enter면 줄바꿈만 수행
+                                 // if (e.altKey && e.key === 'Enter')
+                                 if (e.altKey && e.key === 'Enter') {
+                                   handleAltEnterNewline(e, rowIndex);
+                                   return;
+                                 }
+
+                                 // 그 외 Enter/방향키는 기존 네비게이션 유지
                                  if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4)
                                }
                              }}
@@ -418,7 +536,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                }
                              }}
                              name='rawMatAmount'
-                             value={(row.rawMatAmount)}
+                             value={formatCurrency(row.rawMatAmount)}
                              onChange={(event) => handleInputChange(event, rowIndex)}
                              data-table-input/>
                     </TableCell>
@@ -511,6 +629,33 @@ const PurchaseMain = (): React.JSX.Element => {
                 </TableCell>
               </TableRow>
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={3}>
+                  <Typography variant='body2' color='black'>합계</Typography>
+                </TableCell>
+                {/* 매입금액 합계 */}
+                <TableCell>
+                  <Typography variant='body2' align='right'
+                              color='black'>{totals.purchaseAmountSum?.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 세액 합계 */}
+                <TableCell>
+                  <Typography variant='body2' align='right'
+                              color='black'>{totals.vatAmountSum?.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 총액 합계 */}
+                <TableCell>
+                  <Typography variant='body1' align='right'
+                              color='black'>{totals.totalWithVat?.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 입금액 합계 */}
+                <TableCell>
+                  <Typography variant='body2' align='right'
+                              color='red'>{totals.depositSum?.toLocaleString()}</Typography>
+                </TableCell>
+              </TableRow>
+            </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
@@ -519,12 +664,18 @@ const PurchaseMain = (): React.JSX.Element => {
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 2,
+        gap: 3
       }}>
         <Button variant='contained'
                 sx={{marginY: 1}}
                 onClick={handleSubmit}
         >
           등록
+        </Button>
+        <Button variant='contained'
+                onClick={handlePrint}
+        >
+          등록/인쇄
         </Button>
       </Box>
     </Box>

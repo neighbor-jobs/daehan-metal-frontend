@@ -18,21 +18,25 @@ import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 
 // project
-import React, {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {Employee} from '../../types/employeeRes.ts';
 import axiosInstance from '../../api/axios.ts';
 import {PatchPayment, PostPayment, PostPaymentDetail} from '../../types/payrollReq.ts';
-import {defaultDeductionList, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
+import {
+  defaultDeductionList,
+  PaymentTableRow,
+  TableColumns,
+  TOTAL_DEDUCTION_ROWS
+} from '../../types/tableColumns.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
 import {Deduction, PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
 import {cacheManager} from '../../utils/cacheManager.ts';
-import {formatCurrency} from '../../utils/format.ts';
+import {formatCurrency, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
 import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
-import DeductionList from '../../components/DeductionList.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
 
@@ -135,6 +139,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
     standardAt: prevStandardAt
   } = location.state || {};
   const navigate = useNavigate();
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const {showAlert} = useAlertStore();
 
   const [formData, setFormData] = useState<PostPayment[] | PatchPayment[]>([]);
@@ -146,22 +151,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [deductionDialogProps, setDeductionDialogProps] = useState({
-    isOpen: false,
-    defaultList: [],
-  });
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const calculatedWages = useMemo(() => {
     const newWages = {};
     formData.forEach((item, idx) => {
       // payments calc
       const hw = Number(item.paymentDetail.workingDay) === 0 ? 0 : Math.ceil((Number(item.paymentDetail.pay) / Number(item.paymentDetail.workingDay)) / 10) * 10;
-      const ew = Math.round(hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
-      const dw = Math.round(hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
-      const al = Math.round(hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
+      const ew = (hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
+      const dw = (hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
+      const al = (hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
       const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
 
       // deductions calc
@@ -172,9 +172,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
         extendWokringWage: ew,
         dayOffWorkingWage: dw,
         annualLeaveAllowance: al,
-        totalPayment: totalPayments,
+        totalPayment: Math.ceil(totalPayments / 10) * 10,                    // RoundUp
         totalDeductions: totalDeductions,
-        totalSalary: totalPayments - totalDeductions
+        totalSalary: Math.ceil((totalPayments - totalDeductions) / 10) * 10  // RoundUp
       };
     });
     return newWages;
@@ -237,22 +237,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
     id: string,
   ) => {
     const {name, value} = e.target;
-    let onlyNums = value.replace(/[^0-9.]/g, '');
+    let onlyNums: string;
 
-    // 소수점이 2개 이상 입력된 경우 첫 번째만 남기고 제거
-    const parts = onlyNums.split('.');
-    if (parts.length > 2) {
-      onlyNums = parts[0] + '.' + parts.slice(1).join('');
-    }
+    if (name === PaymentTableRow.EXTEND_WORKING_TIME
+      || name === PaymentTableRow.EXTEND_WORKING_MULTI
+      || name === PaymentTableRow.DAY_OFF_WORKING_TIME
+      || name === PaymentTableRow.DAY_OFF_WORKING_MULTI
+      || name === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI
+    ) onlyNums = formatInputQuality(value, 0);
+    else if (name === PaymentTableRow.PAY
+      || name === PaymentTableRow.MEAL_ALLOWANCE
+    ) onlyNums = formatInputPrice(value, 0);
 
-    // 숫자만 입력된 경우, 앞에 0이 여러 개 붙는 것을 방지
-    if (onlyNums && onlyNums !== '.' && !onlyNums.endsWith('.')) {
-      onlyNums = String(Number(onlyNums));
-      // 소수점 이하가 있으면 원래 값 유지
-      if (value.includes('.')) {
-        onlyNums = value;
-      }
-    }
     setFormData(prev =>
       prev.map(item => {
         const key: string = mode === 'create' ? item.employeeId : item.id;
@@ -269,29 +265,64 @@ const NewPayrollLedger = (): React.JSX.Element => {
     );
   }, [mode]);
 
+  // 기존 handleDeductionChange 대신 사용
   const handleDeductionChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    id: string
+    id: string,
+    decIdx: number
   ) => {
-    const {name, value} = e.target;
-    let onlyNums = value.replace(/[^0-9]/g, '');
-    if (onlyNums.length > 0) {
-      onlyNums = String(Number(onlyNums));
-    }
+    const onlyNums = formatInputPrice(e.target.value, 0);
+
     setFormData(prev =>
-      prev.map((item) => {
-        const key = mode === 'create' ? item.employeeId : item.id
-        return (
-          key === id ? {
-            ...item,
-            deductionDetail: item.deductionDetail.map((d) =>
-              d.purpose === name ? {...d, value: onlyNums} : d
-            ),
-          } : item
-        )
+      prev.map(item => {
+        const key = mode === 'create' ? item.employeeId : item.id;
+        if (key !== id) return item;
+
+        const next = [...(item.deductionDetail ?? [])];
+
+        // 해당 index가 없을 수도 있으니 안전하게 초기화
+        if (!next[decIdx]) {
+          next[decIdx] = {
+            purpose: deduction[decIdx]?.purpose ?? '',
+            value: '0',
+          };
+        }
+
+        next[decIdx] = {
+          ...next[decIdx],
+          value: onlyNums,
+        };
+
+        return {
+          ...item,
+          deductionDetail: next,
+        };
       })
     );
-  }, [mode]);
+  }, [mode, deduction]);
+
+  // 공제 항목명(purpose) 편집: 좌측 컬럼에서 변경 → 모든 사원의 동일 index purpose 동기화
+  const handleDeductionPurposeChange = useCallback((
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    decIdx: number
+  ) => {
+    const newPurpose = e.target.value ?? '';
+
+    // deduction(좌측 제목 열) 업데이트
+    setDeduction(prev =>
+      prev.map((row, i) => (i === decIdx ? { ...row, purpose: newPurpose } : row))
+    );
+
+    // 모든 사원의 동일 인덱스 deductionDetail purpose 동기화
+    setFormData(prev =>
+      prev.map(item => ({
+        ...item,
+        deductionDetail: (item.deductionDetail ?? []).map((d, i) =>
+          i === decIdx ? { ...d, purpose: newPurpose } : d
+        ),
+      }))
+    );
+  }, []);
 
   const handleLedgerInputChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -301,8 +332,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
     const name = e.target.name;
     let value = e.target.value;
     if (name === 'value') {
-      value = value.replace(/[^0-9]/g, '');
-      value = value.length > 0 ? String(Number(value)) : ''
+      value = formatInputPrice(value, 1);
+      // value = value.length > 0 ? String(Number(value)) : ''
     }
     if (side === 'left') {
       setLeftLedger(prev =>
@@ -322,6 +353,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const submitPayroll = async () => {
     const data = formData.map((p) => ({
       ...p,
+      deductionDetail: (p.deductionDetail ?? []).filter(d => (d.purpose ?? '').trim() !== ''),
       paymentDetail: {
         ...p.paymentDetail,
         workingDay: Number(p.paymentDetail.workingDay) || 0,
@@ -346,7 +378,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
           return;
         }
 
-        // pay 값 update
+        // pay(사원 기본급) 값 update
         const updateCacheData = formData.map((item) => ({
           id: item.employeeId,
           pay: item.paymentDetail.pay
@@ -379,11 +411,15 @@ const NewPayrollLedger = (): React.JSX.Element => {
       await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
 
       // 성공 후 입력필드 초기화
+      const baseDedRows = defaultDeductionList.map((item) => ({purpose: item, value: '0'}));
+      const extraRows = Array.from(
+        {length: TOTAL_DEDUCTION_ROWS - baseDedRows?.length},
+        () => ({purpose: '', value: '0'})
+      );
+      const mergedRows = [...baseDedRows, ...extraRows];
       setStandardAt(dayjs().format('YYYY-MM-DD'));
-      setDeduction(defaultDeductionList.map((item) => ({
-        purpose: item,
-        value: '0',
-      })));
+      setDeduction(mergedRows);
+
       // formData 초기화
       let list: string;
       let cache = []
@@ -399,6 +435,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
       const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
       setEmployees(employeesRes.data.data);
+
       setFormData(employeesRes.data.data.map((employee) => ({
         employeeId: employee.id,
         employeeName: employee.info.name,
@@ -409,12 +446,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
           // 여기서도 동일하게 캐시 pay 주입
           pay: payMap.get(employee.id) ?? defaultPayment.pay,
         },
-        deductionDetail: defaultDeductionList.map((item) => ({
-          purpose: item,
-          value: '0',
-        })),
+        deductionDetail: mergedRows,
         memo: '',
       })));
+
       // ledger(지출내역)도 다시 불러와서 초기화
       const ledgers = await cacheManager.getLedgers();
       const mid = Math.ceil(ledgers.length / 2);
@@ -435,7 +470,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
       setMode('create');
       (async () => {
         let deductionRes: { purpose: string, value: string }[];
-        let deductionList: string[];
 
         // 1. 기본 공제 정보 설정
         try {
@@ -444,16 +478,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
             purpose: item,
             value: '0',
           }));
-          deductionList = res;
         } catch {
           deductionRes = defaultDeductionList.map((item) => ({
             purpose: item,
             value: '0',
           }));
-          deductionList = defaultDeductionList;
         }
-        setDeduction(deductionRes);
-        setDeductionDialogProps(prev => ({...prev, defaultList: deductionList}));
+        const extra = Array.from(
+          {length: TOTAL_DEDUCTION_ROWS - deductionRes?.length},
+          () => ({purpose: '', value: '0'}))
+        ;
+        const mergedDedRows = [...deductionRes, ...extra];
+        setDeduction(mergedDedRows);
 
         // 2. 직원 기본 데이터 설정
         let list: string;
@@ -480,7 +516,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
               // 캐시에 있으면 캐시 pay 사용, 없으면 default 유지
               pay: payMap.get(employee.id) ?? defaultPayment.pay,
             },
-            deductionDetail: deductionRes,
+            deductionDetail: mergedDedRows,
             memo: '',
           })));
         } catch {
@@ -516,6 +552,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
       })();
     } else {
       setMode('edit');
+      // 공제칸 가공
+      const baseRows = initialPayments?.[0]?.deductionDetail ?? [];
+      const extra = Array.from(
+        {length: TOTAL_DEDUCTION_ROWS - baseRows?.length},
+        () => ({purpose: '', value: '0'})
+      );
+      setDeduction([...baseRows, ...extra]);
+
       /* form data setting */
       const prevData: PatchPayment[] = initialPayments.map((payment: Payment) => {
         const detail = payment.paymentDetail;
@@ -534,12 +578,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
             annualLeaveAllowanceMulti: detail.multis.annualLeaveAllowanceMulti,
             mealAllowance: detail.mealAllowance
           },
-          deductionDetail: payment.deductionDetail,
+          deductionDetail: [...payment.deductionDetail, ...extra],
           memo: payment.memo || undefined,
         })
       });
       setFormData(prevData);
-      setDeduction(initialPayments[0].deductionDetail);
 
       /* ledger setting */
       const prevLedger: PatchLedger = {
@@ -553,7 +596,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       setLeftLedger(arr?.slice(0, midIndex) || []);
       setRightLedger(arr?.slice(midIndex) || []);
     }
-  }, [showAlert, mode, initialPayments, payrollId, initialLedger, refreshKey]);
+  }, [showAlert, mode, initialPayments, payrollId, initialLedger]);
 
   useEffect(() => {
     setLeftLedger(prev =>
@@ -609,6 +652,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
               {/* 사원 순서 변경 */}
               <Box>
                 <Button variant='outlined'
+                        size='small'
                         onClick={() => setDialogOpen(true)}
                         disabled={mode === 'edit'}
                 >
@@ -618,7 +662,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
               {/* 전체 workingDay 수정 */}
               <Box sx={{display: 'flex', alignItems: 'center'}}>
-                <InputLabel sx={{fontSize: 'small', mx: 1}}>월평균 근로시간 변경:</InputLabel>
+                <InputLabel sx={{fontSize: 'small', mx: 1}}>월평균 근로시간:</InputLabel>
                 <Input disableUnderline
                        onChange={handleAllWorkingDayChange}
                        inputProps={{
@@ -642,28 +686,40 @@ const NewPayrollLedger = (): React.JSX.Element => {
         <Box sx={{mt: 1}}>
           <TableContainer
             component={Box}
+            ref={tableScrollRef}
             sx={{
+              maxHeight: '72vh',
+              // overflow: 'auto',
               border: '1px solid',
               borderColor: 'lightgray',
               borderRadius: 1,
             }}
           >
-            <Table size='small'>
+            <Table size='small' stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell
-                    sx={{borderRight: '1px solid lightgray',}}
+                    sx={{
+                      borderRight: '1px solid lightgray',
+                      backgroundColor: 'background.paper',
+                      zIndex: 2,
+                    }}
                   />
                   {mode === 'create' ? employees?.map((employee) => (
                     <TableCell align='center'
                                key={employee.id}
                                sx={{
-                                 position: 'relative',
-                                 borderRight: '1px solid lightgray', minWidth: 100,
+                                 backgroundColor: 'background.paper',
+                                 zIndex: 2,
+                                 // position: 'relative',
+                                 borderRight: '1px solid lightgray',
+                                 minWidth: 100,
                                  py: 0.5,
                                  px: 1,
                                }}>
-                      <Typography variant='body2' sx={{mx: 1.5}}>{employee.info.name}</Typography>
+                      <Typography variant='body2' sx={{mx: 1.5}}>
+                        {employee.info.name}
+                      </Typography>
                       <IconButton color='error' size='small'
                                   onClick={() => handleRemoveEmployee(employee.id)}
                                   sx={{
@@ -680,7 +736,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     <TableCell align='center'
                                key={`${item.employeeName}-${idx}`}
                                sx={{
-                                 position: 'relative',
+                                 backgroundColor: 'background.paper',
+                                 zIndex: 2,
+                                 // position: 'relative',
                                  borderRight: '1px solid lightgray', minWidth: 100,
                                  py: 0.5,
                                  px: 1
@@ -736,10 +794,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       }
                       return (
                         <TableCellForPayroll value={row.format ? row.format(value) : value || ''}
+                                             validation={value === '-'}
                                              disabled={row.disabled || false}
+                                             disabledTextColor='black'
                                              name={row.id}
                                              onChange={(e) => handlePaymentInput(e, item.id)}
-                                             colIdx={colIdx}
+                                             colIdx={colIdx + 1}
                                              rowIdx={row.disabled ? undefined : rowIdx + delta}
                                              maxColLen={listToPaymentRender.length}
                                              maxRowLen={13}
@@ -751,22 +811,30 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 ))}
                 {/* deduction */}
                 {deduction?.map((dec, decIdx) => (
-                  <TableRow key={`${dec.purpose}-${decIdx}`}>
-                    <TableCell
-                      key={dec.purpose}
+                  <TableRow key={`purpose-${decIdx}`}>
+                    {/*<TableCell
                       sx={{borderRight: '1px solid lightgray', py: 0}}
                     >
                       {dec.purpose}
-                    </TableCell>
+                    </TableCell>*/}
+                    <TableCellForPayroll value={dec.purpose}
+                                         align='left'
+                                         onChange={(e) => handleDeductionPurposeChange(e, decIdx)}
+                                         colIdx={0}
+                                         rowIdx={decIdx + 8}
+                                         maxColLen={listToPaymentRender.length}
+                                         maxRowLen={16}
+                    />
                     {listToPaymentRender.map((item, colIdx: number) => (
                       <TableCellForPayroll key={`${item.id}-${colIdx + 100}`}
                                            value={formatCurrency(formData[colIdx]?.deductionDetail[decIdx]?.value) ?? ''}
+                                           validation={formData[colIdx]?.deductionDetail[decIdx]?.value === '-'}
                                            name={dec.purpose}
-                                           onChange={(e) => handleDeductionChange(e, item.id)}
-                                           colIdx={colIdx}
+                                           onChange={(e) => handleDeductionChange(e, item.id, decIdx)}
+                                           colIdx={colIdx + 1}
                                            rowIdx={decIdx + 8}
                                            maxColLen={listToPaymentRender.length}
-                                           maxRowLen={13}
+                                           maxRowLen={16}
                       />
                     ))}
                   </TableRow>
@@ -782,20 +850,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     <TableCellForPayroll value={calculatedWages[colIdx]?.totalDeductions.toLocaleString() || '0'}
                                          key={`지급액계-${colIdx + 100}`}
                                          disabled={true}
-                                         maxRowLen={15}
+                                         disabledTextColor='black'
+                                         maxRowLen={18}
 
                     />
-                    /*<TableCell key={`지급액계-${colIdx + 100}`} align="center"
-                               sx={{borderRight: '1px solid lightgray', py: 0, my: 0}}
-                    >
-                      <Input fullWidth
-                             disableUnderline
-                             disabled
-                             value={calculatedWages[colIdx]?.totalDeductions.toLocaleString() || '0'}
-                             sx={{py: 0, my: 0, '& input': {textAlign: 'right'}}}
-                      >
-                      </Input>
-                    </TableCell>*/
                   ))}
                 </TableRow>
 
@@ -810,6 +868,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                     <TableCellForPayroll value={calculatedWages[colIdx]?.totalSalary.toLocaleString() || '0'}
                                          key={`수령액-${colIdx + 100}`}
                                          disabled={true}
+                                         disabledTextColor='black'
                     />
                   ))}
                 </TableRow>
@@ -822,11 +881,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                     payrollRegisterId={payrollId}
                                     onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
                                     onClose={() => setIsConfirmDialogOpen(false)}/>
-        <DeductionList isOpened={deductionDialogProps.isOpen}
-                       defaultDeductionList={deductionDialogProps.defaultList}
-                       onClose={() => setDeductionDialogProps(prev => ({...prev, isOpen: false}))}
-                       onSuccess={() => setRefreshKey(prev => prev + 1)}
-        />
 
         {/* 합산 */}
         <Box sx={{mt: 1}}>
@@ -877,6 +931,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 <TableBody>
                   {leftLedger?.map((item, idx) => (
                     <TableRow key={`left-${idx}`}>
+                      {/* 항목 */}
                       <TableCellForPayroll name='purpose'
                                            value={(item).purpose || ''}
                                            align='left'
@@ -885,13 +940,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            rowIdx={100 + idx}
                                            maxColLen={8}
                       />
-                      <TableCellForPayroll value={formatCurrency((item).value) ?? '-'}
+                      {/* 금액 */}
+                      <TableCellForPayroll value={formatCurrency((item).value) ?? ''}
+                                           validation={(item).value === '-'}
                                            name='value'
                                            onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
                                            colIdx={1}
                                            rowIdx={100 + idx}
                                            maxColLen={8}
                       />
+                      {/* 지출일 */}
                       <TableCellForPayroll value={(item).group ?? '-'}
                                            name='group'
                                            onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
@@ -901,6 +959,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            align='center'
                                            cellW='20%'
                       />
+                      {/* 메모 */}
                       <TableCellForPayroll value={(item).memo ?? '-'}
                                            name='memo'
                                            onChange={(e) => handleLedgerInputChange(e, 'left', idx)}
@@ -937,6 +996,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 <TableBody>
                   {rightLedger?.map((item, idx) => (
                     <TableRow key={`right-${idx}`}>
+                      {/* 항목 */}
                       <TableCellForPayroll name='purpose'
                                            value={(item).purpose || ''}
                                            align='left'
@@ -945,13 +1005,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            rowIdx={100 + idx}
                                            maxColLen={8}
                       />
-                      <TableCellForPayroll value={formatCurrency((item).value) ?? '-'}
+                      {/* 금액 */}
+                      <TableCellForPayroll value={formatCurrency((item).value) ?? ''}
+                                           validation={item.value === '-'}
                                            name='value'
                                            onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
                                            colIdx={5}
                                            rowIdx={100 + idx}
                                            maxColLen={8}
                       />
+                      {/* 지출일 */}
                       <TableCellForPayroll value={(item).group ?? '-'}
                                            name='group'
                                            onChange={(e) => handleLedgerInputChange(e, 'right', idx)}
@@ -961,6 +1024,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            align='center'
                                            cellW='20%'
                       />
+                      {/* 메모 */}
                       <TableCellForPayroll value={(item).memo ?? '-'}
                                            name='memo'
                                            onChange={(e) => handleLedgerInputChange(e, 'right', idx)}

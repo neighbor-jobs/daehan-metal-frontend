@@ -71,6 +71,8 @@ export const companySalesDocDef = (companySalesData) => {
  * 월별매입조회
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
+  console.log(data);
+  const bankData = data.bankArr?.map((b) => `${b.bankName} : ${b.accountNumber}`).join(' ');
   return {
     pageSize: 'A4', // A4 크기 유지
     pageMargins: [25, 20, 25, 20], // 좌 25, 상 20, 우 25, 하 20
@@ -82,7 +84,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
         marginBottom: 5,
       },
       {
-        text: `T ${data.telNumber}  F ${data.subTelNumber}  HP ${data.phoneNumber}  ${data.bankName} ${data.accountNumber}`,
+        text: `T ${data.telNumber}  F ${data.subTelNumber}  HP ${data.phoneNumber}  ${bankData}`,
         style: {
           fontSize: 8,
         },
@@ -688,11 +690,21 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
 
   for (let i = 0; i < payments.length; ++i) {
     const payment = payments[i]
+    const salary = Math.ceil(Number(payment.salary) / 10) * 10;
+    const totalSalary = Math.ceil((salary - Number(payment.deduction)) / 10) * 10;
     headers[0].push({text: payment.employeePosition, style: 'cell', alignment: 'center', margin: [0, 6, 0, 6]})
     employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
 
-    salaryDetails['기본급'].push({text: `${formatCurrency(payment.paymentDetail.pay)} 원`, style: 'cell', alignment: 'center'})
-    salaryDetails['시급'].push({text: `${formatCurrency(payment.paymentDetail.hourlyWage)} 원`, style: 'cell', alignment: 'center'})
+    salaryDetails['기본급'].push({
+      text: `${formatCurrency(payment.paymentDetail.pay)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['시급'].push({
+      text: `${formatCurrency(payment.paymentDetail.hourlyWage)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
     salaryDetails['연장 근무시간'].push({
       text: `${payment.paymentDetail.extendWorkingTime}시간`,
       style: 'cell',
@@ -718,10 +730,26 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
       style: 'cell',
       alignment: 'center'
     })
-    salaryDetails['식대'].push({text: `${formatCurrency(payment.paymentDetail.mealAllowance)} 원`, style: 'cell', alignment: 'center'})
-    deductions.push({text: `${formatCurrency(payment.deduction)} 원`, style: 'cell', alignment: 'center'})
-    salarys.push({text: `${formatCurrency(payment.salary)} 원`, style: 'cell', alignment: 'center'})
-    totalSalarys.push({text: `${formatCurrency(payment.totalSalary)} 원`, style: 'cell', alignment: 'center'})
+    salaryDetails['식대'].push({
+      text: `${formatCurrency(payment.paymentDetail.mealAllowance)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    deductions.push({
+      text: `${formatCurrency(payment.deduction)} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salarys.push({
+      text: `${salary.toLocaleString()} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    totalSalarys.push({
+      text: `${totalSalary.toLocaleString()} 원`,
+      style: 'cell',
+      alignment: 'center'
+    })
 
     for (let j = 0; j < payment.deductionDetail.length; ++j) {
       deductionDetails[payment.deductionDetail[j]['purpose']].push({
@@ -767,31 +795,64 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
  * ledger 생성
  */
 const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
-  const payingExpensesData: any[][] = []
-  let data: any[][] = [[], []]
+  const items = financialLedgerData.payingExpenses || [];
+  const LEFT_ROWS = 15;
+  const TABLE_WIDTHS: (string | number)[] = [
+    '15%', '13%', '11%', '11%',
+    '15%', '13%', '11%', '11%',
+  ];
 
-  for (let i = 0; i < financialLedgerData.payingExpenses.length; ++i) {
-    const payingExpenses = financialLedgerData.payingExpenses[i]
-    data[0].push({text: payingExpenses['purpose'], style: 'subheader', alignment: 'center', valign: 'center'})
-    data[1].push({text: `${formatCurrency(payingExpenses['value'])} 원`, style: 'cell', alignment: 'center'})
+  // 좌/우 리스트로 분리
+  const leftList = items.slice(0, LEFT_ROWS);
+  const rightList = items.slice(LEFT_ROWS);
 
-    if (data[0].length > 7) {
-      payingExpensesData.push(data)
-      data = [[], []]
+  // 표 헤더: 8열(4열*2세트)
+  const headerRow = [
+    { text: '항목', style: 'subheader', alignment: 'center' },
+    { text: '금액', style: 'subheader', alignment: 'center' },
+    { text: '지출일', style: 'subheader', alignment: 'center' },
+    { text: '메모', style: 'subheader', alignment: 'center' },
+    { text: '항목', style: 'subheader', alignment: 'center' },
+    { text: '금액', style: 'subheader', alignment: 'center' },
+    { text: '지출일', style: 'subheader', alignment: 'center' },
+    { text: '메모', style: 'subheader', alignment: 'center' },
+  ];
+
+  // 2개 항목씩 한 행으로(좌 4열 + 우 4열)
+  const bodyRows: any[][] = [headerRow];
+  const maxRows = Math.max(leftList.length, rightList.length);
+
+  const fmtItem = (it?: any) => {
+    if (!it) {
+      return [
+        { text: '', style: 'cell', noWrap: true },
+        { text: '', style: 'cell', alignment: 'right' },
+        { text: '', style: 'cell', alignment: 'center' },
+        { text: '', style: 'cell' },
+      ];
     }
-  }
+    const purpose = it.purpose ?? it.name ?? '';
+    const valueRaw = it.value ?? it.amount;
+    const valueTxt =
+      valueRaw != null && valueRaw !== ''
+        ? `${formatCurrency(String(valueRaw))} 원`
+        : '';
+    const group = it.group ?? it.groupName ?? '';
+    const memo = it.memo ?? it.note ?? '';
+    return [
+      { text: purpose, style: 'cell' , noWrap: true},
+      { text: valueTxt, style: 'cell', alignment: 'right' },
+      { text: group, style: 'cell', alignment: 'center' },
+      { text: memo, style: 'cell', alignment: 'center' },
+    ];
+  };
 
-  if (data[0].length > 0 && data[0].length < 8) {
-    for (let i = 0; i < 8; ++i) {
-      if (!data[0][i]) {
-        data[0][i] = {}
-        data[1][i] = ''
-      }
-    }
-    payingExpensesData.push(data)
+  for (let r = 0; r < maxRows; r++) {
+    bodyRows.push([
+      ...fmtItem(leftList[r]),
+      ...fmtItem(rightList[r]),
+    ]);
   }
-
-  const paymentsColumns = [...payingExpensesData.flatMap((data) => [data[0], data[1]])]
 
   const groups = Object.keys(financialLedgerData.calcGroups)
   const groupCalcs = [[], []]
@@ -826,8 +887,8 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
     },
     {
       table: {
-        widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
-        body: paymentsColumns,
+        widths: TABLE_WIDTHS,
+        body: bodyRows,
       },
       layout: customTableLayout,
       margin: [0, 0, 0, 10],
@@ -886,7 +947,8 @@ const getSalaryContent = (data: Payment): any[]  => {
   let deductions: any[][] = []
   let deduction:
     any[][] = [[], []]
-
+  const salary = Math.ceil(Number(data.salary) / 10) * 10;
+  const totalSalary = Math.ceil((salary - Number(data.deduction)) / 10) * 10;
   console.log(data);
 
   for (let i = 0; i < data.deductionDetail.length; ++i) {
@@ -1013,9 +1075,9 @@ const getSalaryContent = (data: Payment): any[]  => {
             {text: '실수령액', alignment: 'center'},
           ],
           [
-            {text: `${formatCurrency(data.salary)} 원`, alignment: 'right'},
+            {text: `${salary.toLocaleString()} 원`, alignment: 'right'},
             {text: `${formatCurrency(data.deduction)} 원`, alignment: 'right'},
-            {text: `${formatCurrency(data.totalSalary)} 원`, alignment: 'right'},
+            {text: `${totalSalary.toLocaleString()} 원`, alignment: 'right'},
           ],
         ]
       },

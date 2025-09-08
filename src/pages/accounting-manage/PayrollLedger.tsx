@@ -16,7 +16,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/ko';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import React, {Fragment, useEffect, useState} from 'react';
+import React, {Fragment, useEffect, useMemo, useRef, useState} from 'react';
 import {DeductionTableRow, PaymentTableRow} from '../../types/tableColumns.ts';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
@@ -30,7 +30,7 @@ import AddPayment from './AddPayment.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import cacheManager from '../../utils/cacheManager.ts';
 
-const leftRows = [
+const paymentRows = [
   {
     id: PaymentTableRow.PAY,
     label: '기본급',
@@ -83,43 +83,8 @@ const leftRows = [
     minWidth: 100,
     format: formatCurrency
   },
-  /* 여기부터 */
-  {
-    id: DeductionTableRow.INCOME_TAX,
-    label: '소득세',
-    minWidth: 100,
-    format: formatCurrency
-  },
-  {
-    id: DeductionTableRow.RESIDENT_TAX,
-    label: '주민세',
-    minWidth: 100,
-    format: formatCurrency
-  },
-  {
-    id: DeductionTableRow.HEALTH_INSURANCE,
-    label: '건강보험료(요양포함)',
-    minWidth: 100,
-    format: formatCurrency
-  },
-  {
-    id: DeductionTableRow.NATIONAL_PENSION,
-    label: '국민연금',
-    minWidth: 100,
-    format: formatCurrency
-  },
-  {
-    id: DeductionTableRow.EMPLOYMENT_INSURANCE,
-    label: '고용보험',
-    minWidth: 100,
-    format: formatCurrency
-  }, {
-    id: DeductionTableRow.YEAR_END_ADJUSTMENT,
-    label: '작년연말정산',
-    minWidth: 100,
-    format: formatCurrency
-  },
-  /* 여기까지 바뀔 수 있음.. */
+];
+const tailRows = [
   {
     id: DeductionTableRow.DEDUCTION,
     label: '지급액계',
@@ -133,6 +98,7 @@ const leftRows = [
     format: formatCurrency
   }
 ];
+
 
 const PayrollLedger = (): React.JSX.Element => {
   const navigate = useNavigate();
@@ -148,12 +114,10 @@ const PayrollLedger = (): React.JSX.Element => {
   const [standardAt, setStandardAt] = useState<string>(paramStandardAt || dayjs().format('YYYY-MM-01'));
   const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false)
 
+  const refreshKeyRef = useRef(0);
   const {showAlert} = useAlertStore();
 
-  const isDeductionRowId = (id: string | number): id is DeductionTableRow => {
-    return Object.values(DeductionTableRow).includes(id as DeductionTableRow);
-  };
-
+  // api
   const getPayroll = async (date: string = standardAt) => {
     let list: string;
     try {
@@ -214,9 +178,29 @@ const PayrollLedger = (): React.JSX.Element => {
     }
   }
 
+  const buildRowsFromPayments = (payments: Payment[]) => {
+    let deductionRows = [];
+    if (payments && payments.length > 0) {
+      const rep = payments.reduce((acc, p) =>
+        (p.deductionDetail?.length ?? 0) > (acc?.deductionDetail?.length ?? 0) ? p : acc, payments[0]);
+      deductionRows = (rep.deductionDetail ?? []).map((d) => ({
+        id: `DEDUCTION`,
+        label: d.purpose,
+        minWidth: 100,
+        format: formatCurrency,
+      }));
+    }
+    return deductionRows;
+  }
+  const decRows = useMemo(() => {
+    return buildRowsFromPayments(payments);
+  }, [payments]);
+
   useEffect(() => {
     if (paramStandardAt)
       getPayroll(paramStandardAt);
+    else
+      getPayroll(standardAt)
   }, []);
 
   // debug
@@ -257,7 +241,10 @@ const PayrollLedger = (): React.JSX.Element => {
           </Box>
           <Box>
             <Button variant='outlined'
-                    onClick={() => setIsOpenedAddPayments(true)}
+                    onClick={() => {
+                      refreshKeyRef.current += 1;  // 강제 리마운트
+                      setIsOpenedAddPayments(true)
+                    }}
                     disabled={payments.length === 0}   // 급여명세가 없으면 disabled = true
             >
               급여명세 내역 추가
@@ -273,12 +260,13 @@ const PayrollLedger = (): React.JSX.Element => {
           <TableContainer
             component={Box}
             sx={{
+              maxHeight: '70vh',
               border: '1px solid',
               borderColor: 'lightgray',
               borderRadius: 1,
             }}
           >
-            <Table size='small'>
+            <Table size='small' stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{borderRight: '1px solid lightgray'}}/>
@@ -295,7 +283,7 @@ const PayrollLedger = (): React.JSX.Element => {
               </TableHead>
               <TableBody>
                 {/* payment */}
-                {leftRows.map((row, rowIdx) => (
+                {[...paymentRows, ...decRows, ...tailRows]?.map((row, rowIdx) => (
                   <TableRow key={rowIdx}>
                     <TableCell
                       sx={{borderRight: '1px solid lightgray', py: 0.5}}
@@ -305,13 +293,12 @@ const PayrollLedger = (): React.JSX.Element => {
                     </TableCell>
                     {payments.map((payment, colIdx) => {
                       let value = payment.paymentDetail[row.id];
-                      if (row.id === PaymentTableRow.SALARY
-                        || row.id === PaymentTableRow.TOTAL_SALARY
-                        || row.id === DeductionTableRow.DEDUCTION
-                      ) value = payment[row.id];
-                      else if (isDeductionRowId(row.id)) {
+                      if (row.id === DeductionTableRow.DEDUCTION)
+                        value = payment[row.id];
+                      else if (row.id === PaymentTableRow.TOTAL_SALARY || row.id === PaymentTableRow.SALARY)
+                        value = Math.ceil((Number(payment[row.id]) / 10)) * 10;
+                      else if (row.id === 'DEDUCTION')
                         value = payment.deductionDetail[rowIdx - 9]?.['value'];
-                      }
                       return (
                         <TableCellForPayroll value={row.format ? row.format(value) : String(value)}
                                              key={`${payment.id}-${colIdx}`}
@@ -503,12 +490,17 @@ const PayrollLedger = (): React.JSX.Element => {
 
       {/* 개별 급여명세 추가 */}
       <AddPayment
+        key={refreshKeyRef.current}
         isOpened={isOpenedAddPayments}
         onClose={() => setIsOpenedAddPayments(false)}
         onSuccess={async () => await getPayroll()}
         payrollRegisterId={payrollId}
         payments={payments}
         prevLedger={ledger}
+        prevDeduction={decRows?.map(d => ({
+          purpose: d.label,
+          value: '0'
+        }))}
       />
 
       {/* 버튼들 */}

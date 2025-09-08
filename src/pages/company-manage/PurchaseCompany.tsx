@@ -176,7 +176,7 @@ const PurchaseCompany = (): React.JSX.Element => {
                            onClose={() => setOpen(false)}
                            prevFormData={formData}
                            onSuccess={async () => await fetchPurchaseCompanies()}
-
+                           key={isEditing ? `edit-${formData.name}` : 'create'}
       />
 
       {/* 은행 관련 dialog */}

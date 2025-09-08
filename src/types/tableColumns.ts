@@ -48,8 +48,10 @@ export const defaultDeductionList = [
   '건강보험료(요양포함)',
   '국민연금',
   '고용보험',
-  '작년연말정산'
+  '작년연말정산',
 ]
+
+export const TOTAL_DEDUCTION_ROWS = 9;
 
 /*
 * ==================== 근무자 관리 ========================

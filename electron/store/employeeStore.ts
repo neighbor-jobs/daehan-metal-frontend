@@ -385,7 +385,7 @@ export const validateEmployeesAgainstAPI = async () => {
   const apiEmployees = await fetchEmployees();
 
   if (!Array.isArray(apiEmployees)) {
-    console.error('API 데이터 불러오기 실패');
+    console.error('employee API 데이터 불러오기 실패');
     return;
   }
 

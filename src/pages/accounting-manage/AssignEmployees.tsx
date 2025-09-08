@@ -117,10 +117,10 @@ const AssignEmployees = ({
         </List>
 
         <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 2 }}>
-          <Button onClick={onClose} color='error' variant='outlined'>
+          <Button onClick={onClose} color='error' variant='outlined' size='small'>
             취소
           </Button>
-          <Button onClick={handleApply} variant="outlined">
+          <Button onClick={handleApply} variant="outlined" size='small'>
             적용
           </Button>
         </Stack>

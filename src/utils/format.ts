@@ -1,6 +1,8 @@
 /** string param 원화 표기 */
-export const formatCurrency = (value: string) =>
-  new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Math.floor(Number(value)));
+export const formatCurrency = (value: string) => {
+  if (typeof value === 'string' && value.trim() === '-') return '-';
+  return new Intl.NumberFormat('ko-KR', {maximumFractionDigits: 0}).format(Number(value))
+};
 
 export const formatDecimal = (value: string, digits: number = 3) =>
   Number(value).toFixed(digits);
@@ -83,10 +85,69 @@ export const formatStringDate = (date: string): string => {
   return digitsOnly.slice(0, 8).replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 };
 
+/** NaN 방지 */
+export const toNum = (v: string | number | undefined | null) => Number(v ?? 0) || 0;
+
 /** 계좌 번호 입력 포맷팅 : 숫자랑 -(하이픈)만 허용 */
 export const formatAccountNumber = (accountNumber: string) => {
   return accountNumber.replace(/[^\d-]/g, '');
 }
+
+/** 가격 입력 포맷팅
+ * @param {string} value - 원본 문자열 값
+ * @param {number} type - 0: 빈칸 허용, 1: 기본값 '0'
+ * @return {string} price - 가격
+ * */
+export const formatInputPrice = (value: string, type: number): string => {
+  if (!value) return type === 1 ? '0' : '';
+
+  // 숫자와 -부호만 남김
+  let newValue = value.replace(/[^0-9-]/g, '');
+
+  // 마이너스 부호는 맨 앞에만 허용 (중간 이후의 '-'는 제거)
+  if (newValue.includes('-')) {
+    newValue = '-' + newValue.replace(/-/g, '');
+  }
+
+  // 앞자리 0 제거 (단, '0'은 허용)
+  if (newValue && newValue !== '0') {
+    newValue = newValue.replace(/^(-?)0+/, '$1'); // 부호 보존하면서 0 제거
+  }
+  return newValue;
+}
+
+/** 수량 입력 포맷팅
+ * @param {string} value - 원본 문자열 값
+ * @param {number} baseQuality - 기본 수량 (빈 값일 때 대체값)
+ * @return {string} quantity - 포맷팅된 수량
+ */
+export const formatInputQuality = (value: string, baseQuality: number): string => {
+  if (!value) return baseQuality.toString();
+
+  // 숫자와 '.'만 남김
+  let newValue = value.replace(/[^0-9.]/g, '');
+
+  // 소수점 여러 개 입력되면 첫 번째만 허용
+  const parts = newValue.split('.');
+  if (parts.length > 2) {
+    newValue = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  // "." 단독 입력은 "0."으로 변환
+  if (newValue === '.') {
+    newValue = '0.';
+  }
+
+  // 앞자리 0 제거 (단, "0" 또는 "0.xxx"는 허용)
+  if (/^0\d/.test(newValue)) {
+    newValue = newValue.replace(/^0+/, '');
+    if (newValue.startsWith('.')) {
+      newValue = '0' + newValue;
+    }
+  }
+
+  return newValue;
+};
 
 export const formatVatRate = (input: string) => {
   return input + '%';

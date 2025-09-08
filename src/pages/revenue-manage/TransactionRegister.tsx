@@ -113,7 +113,6 @@ const TransactionRegister = ({
                                dialogType,
                                isOpen,
                                onClose,
-                               onSuccess,
                                salesCompanyList,
                                productList,
                                prevChoices,
@@ -230,8 +229,6 @@ const TransactionRegister = ({
   ) => {
     const {name, value} = e.target;
 
-    /*const isValidNumberInput = /^(\d+)?(\.\d*)?$/.test(value);
-    if (!isValidNumberInput && value !== '') return;*/
     // 숫자와 소숫점만 남김
     let newValue = value.replace(/[^0-9.]/g, '');
     // 앞자리 0 제거 (단, '0', '0.'은 허용)
@@ -320,7 +317,11 @@ const TransactionRegister = ({
         showAlert(`${res.data.message}`, 'error');
         return;
       }
-      if (onSuccess) onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
+/*
+      if (onSuccess) {
+        onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
+      }
+*/
 
       // scale cache data update
       updatedChoices.map((c: Choice) => {
@@ -334,22 +335,23 @@ const TransactionRegister = ({
 
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({
-        companyId: '',
+        // companyId: '',
+        // companyName: "",
+        // createdAt: prev.createdAt,
+        // sequence: 1,
+        ...prev,
         locationName: [] as string[],
-        companyName: "",
         payingAmount: "0",
-        sequence: 1,
-        createdAt: prev.createdAt,
       }))
     } catch (err) {
       showAlert(`${err}`, 'error');
     }
-    onClose();
     return {...data, ...amountInfo};
   }
 
   const handlePrint = async () => {
     const data = await register();
+    // console.log(data);
     if (window.ipcRenderer && data) {
       try {
         await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data});
@@ -380,6 +382,7 @@ const TransactionRegister = ({
   }, [dialogType, prevFormData]);
 
   // debug
+
   return (
     <>
       {/* 거래 등록 Dialog */}
@@ -612,7 +615,7 @@ const TransactionRegister = ({
                                onChange={(e) => handleChoiceChange(e, rowIndex)}
                                data-table-input/>
                       </TableCell>
-                      {/* 재료단가/재료비 */}
+                      {/* 재료단가 */}
                       <TableCell>
                         <Input size='small'
                                disableUnderline
@@ -628,6 +631,7 @@ const TransactionRegister = ({
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                data-table-input/>
                       </TableCell>
+                      {/* 재료비 */}
                       <TableCell>
                         <Input size='small'
                                disableUnderline
@@ -639,7 +643,7 @@ const TransactionRegister = ({
                                }}
                                data-table-input/>
                       </TableCell>
-                      {/* 가공단가/가공비 */}
+                      {/* 가공단가 */}
                       <TableCell>
                         <Input size='small'
                                disableUnderline
@@ -669,6 +673,7 @@ const TransactionRegister = ({
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
                                name='manufactureAmount'/>
                       </TableCell>
+                      {/* 가공비 */}
                       <TableCell>
                         <Input size='small'
                                disableUnderline
@@ -685,7 +690,7 @@ const TransactionRegister = ({
                                name='sum'
                                disableUnderline
                                fullWidth
-                               disabled
+                               // disabled
                                value={
                                  (
                                    Math.round(Number(choice.rawMatAmount) * choice.quantity) +
@@ -693,7 +698,8 @@ const TransactionRegister = ({
                                  ).toLocaleString('ko-KR')
                                }
                                inputProps={{
-                                 sx: {textAlign: 'right'},
+                                 sx: {textAlign: 'right', color: 'black'},
+                                 disabled: true,
                                }}/>
                       </TableCell>
                       <TableCell>
@@ -732,7 +738,14 @@ const TransactionRegister = ({
                 <TextField size='small'
                            variant="outlined"
                            value={totalSales.toLocaleString()}
-                           disabled/>
+                           disabled
+                           sx={{
+                             "& .MuiInputBase-input.Mui-disabled": {
+                               WebkitTextFillColor: "black", // 크롬/사파리 대응
+                               color: "black" // 파이어폭스 등 기본 컬러
+                             }
+                           }}
+                />
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <InputLabel sx={{fontSize: 'small',}}>입금액</InputLabel>

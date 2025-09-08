@@ -354,11 +354,10 @@ const RevenueMain = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2} align='left'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</TableCell>
-                <TableCell colSpan={2} align='left'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</TableCell>
-                <TableCell colSpan={2} align='left'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</TableCell>
-                <TableCell colSpan={3}
-                           align='left'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</TableCell>
+                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</Typography></TableCell>
+                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</Typography></TableCell>
+                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</Typography></TableCell>
+                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</Typography></TableCell>
               </TableRow>
             </TableFooter>
           </Table>

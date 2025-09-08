@@ -35,7 +35,7 @@ const schema = {
             properties: {
               scaleName: {type: 'string'},
               prevRawMatAmount: {type: ['string', 'null'], default: '0'},
-              prevManufactureAmount: {type: ['string', 'null'], default: 0},
+              prevManufactureAmount: {type: ['string', 'null'], default: '0'},
             },
             required: ['scaleName'],
             additionalProperties: false
@@ -57,7 +57,7 @@ const amountStore = new Store({
 
 // 제품 목록 전체 조회
 export const getProducts = (): Product[] =>
-  amountStore.get('products', []) as Product[];
+  structuredClone(amountStore.get('products', []) as Product[]);
 
 // 제품 목록 전체 덮어쓰기
 export const replaceProducts = (products: Product[]): void =>
@@ -66,20 +66,20 @@ export const replaceProducts = (products: Product[]): void =>
 // 제품 추가
 export const addProduct = (product: Product): void => {
   const current = getProducts();
-  amountStore.set('products', [...current, product]);
+  setProductsSafely([...current, product]);
 };
 
 // 제품 수정
 export const updateProduct = (index: number, newData: Partial<Product>): void => {
   const current = getProducts();
   current[index] = {...current[index], ...newData};
-  amountStore.set('products', current);
+  setProductsSafely(current);
 };
 
 // 제품 삭제
 export const removeProduct = (prodId: string): void => {
   const current = getProducts();
-  amountStore.set('products', current.filter((p) => p.prodId !== prodId));
+  setProductsSafely(current.filter((p) => p.prodId !== prodId));
 };
 
 // scale 조회
@@ -97,7 +97,7 @@ export const addScale = (productId: string, scale: Scale): void => {
   if (productIdx === -1) return;
 
   products[productIdx].scales = [...(products[productIdx].scales || []), scale];
-  amountStore.set('products', products);
+  setProductsSafely(products);
 };
 
 // scale 수정
@@ -113,11 +113,9 @@ export const updateScale = (
   const scaleIdx = products[productIdx].scales?.findIndex((s: Scale) => s.scaleName === scaleName);
   if (scaleIdx === -1) return;
 
-  products[productIdx].scales[scaleIdx] = {
-    ...products[productIdx].scales[scaleIdx],
-    ...newData
-  };
-  amountStore.set('products', products);
+  const next = structuredClone(products);
+  next[productIdx].scales![scaleIdx] = { ...next[productIdx].scales![scaleIdx], ...newData };
+  setProductsSafely(next);
 };
 
 // scale 삭제
@@ -129,7 +127,7 @@ export const removeScale = (productId: string, scaleName: string): void => {
   products[productIdx].scales = products[productIdx].scales?.filter(
     (s: Scale) => s.scaleName !== scaleName
   );
-  amountStore.set('products', products);
+  setProductsSafely(products);
 };
 
 // 최초 실행 시 API 에서 데이터 받아오기
@@ -312,29 +310,46 @@ export const removeScale = (productId: string, scaleName: string): void => {
 *
 * */
 
+type FetchResult = { ok: true; products: ApiProduct[] } | { ok: false; reason: string };
+
+const isApiProduct = (v: any): v is ApiProduct =>
+  v && typeof v.id === 'string' && typeof v.name === 'string';
+
 export const fetchAllProducts = async () => {
-  const allProducts: ApiProduct[] = [];
   try {
     const firstRes = await axios.get('http://localhost:3000/product?page=1&orderBy=asc');
-    const {products, totalPages} = firstRes.data.data;
-    allProducts.push(...products);
+    const { products, totalPages } = firstRes.data?.data ?? {};
+    if (!Array.isArray(products) || typeof totalPages !== 'number') {
+      return { ok: false, reason: 'invalid shape' };
+    }
+    const all: ApiProduct[] = [];
+    for (const p of products) if (isApiProduct(p)) all.push(p);
 
     for (let page = 2; page <= totalPages; page++) {
       const res = await axios.get(`http://localhost:3000/product?page=${page}&orderBy=asc`);
-      allProducts.push(...res.data.data.products);
+      const chunk = res.data?.data?.products ?? [];
+      if (!Array.isArray(chunk)) return { ok: false, reason: 'invalid page shape' };
+      for (const p of chunk) if (isApiProduct(p)) all.push(p);
     }
+
+    return { ok: true, products: all } as FetchResult;
   } catch {
     console.error('❌ fail fetching products');
+    return { ok: false, reason: 'network error' } as FetchResult;
   }
-  return allProducts;
 };
 
 export const initializeProducts = async () => {
   const products = getProducts();
   if (products?.length > 0) return;
-  const apiProducts = await fetchAllProducts();
-  const transformed = apiProducts.map(transformApiProduct);
-  amountStore.set('products', transformed);
+
+  const res: any = await fetchAllProducts();
+  if (!res.ok) {
+    console.warn('initializeProducts skipped: API not available, keep local empty cache');
+    return; // 빈 캐시 유지 (최초 구동인데 서버가 죽었을 때)
+  }
+  const transformed = res.products.map(transformApiProduct);
+  setProductsSafely(transformed);
 };
 
 export const transformApiProduct = (apiProduct: ApiProduct): Product => ({
@@ -359,17 +374,38 @@ export const validateProductsAgainstAPI = async (options: {
   }>;
 }> => {
   const storedProducts = getProducts();
-  const apiProducts = await fetchAllProducts();
-  const mismatches = [];
+  const apiRes: any = await fetchAllProducts();
+
+  // 🔒 가장 중요한 방어선: API 실패/비정상 → 로컬 변경 금지
+  if (!apiRes.ok) {
+    console.warn('validate skipped: API unreachable or invalid -> DO NOT TOUCH LOCAL');
+    return { mismatches: [] };
+  }
+  const apiProducts = apiRes.products;
+
+  // 추가 방어선: 로컬에 데이터가 있는데 API 결과가 0개면, 서버 문제로 보고 변경 금지
+  if (storedProducts.length > 0 && apiProducts.length === 0) {
+    console.warn('validate aborted: local>0 but api=0 -> suspicious, keep local as-is');
+    return { mismatches: [] };
+  }
+
+  const mismatches: Array<{
+    productId: string;
+    field: 'prodName' | 'scales';
+    storedValue: any;
+    apiValue: any;
+  }> = [];
+
+  // 머지 작업은 메모리에서 먼저 계산 후, 마지막에 한 번에 커밋
+  let next = structuredClone(storedProducts);
 
   // 1. 기존 제품 검사
   for (const storedProd of storedProducts) {
-    const apiProd = apiProducts.find(p => p.id === storedProd.prodId);
+    const apiProd = apiRes.find(p => p.id === storedProd.prodId);
 
     if (!apiProd) {
       if (options.removeOrphaned) {
-        removeProduct(storedProd.prodId);
-        // console.log('삭제한 고아 cache data: ', storedProducts.indexOf(storedProd))
+        next = next.filter(p => p.prodId !== storedProd.prodId);
       }
       continue;
     }
@@ -384,21 +420,14 @@ export const validateProductsAgainstAPI = async (options: {
       });
 
       if (options.autoFix) {
-        updateProduct(storedProducts.indexOf(storedProd), {
-          prodName: apiProd.name
-        });
-/*
-        console.log('api-cache data 에서 불일치한 prodName: ',
-          storedProducts.indexOf(storedProd), {
-          prodName: apiProd.name
-        })
-*/
+        const idx: number = next.findIndex(p => p.prodId === storedProd.prodId);
+        if (idx !== -1) next[idx] = { ...next[idx], prodName: apiProd.name };
       }
     }
 
     // scales 검사
-    const apiScaleNames = new Set(apiProd.scales);
-    const storedScaleNames = new Set(storedProd.scales.map(s => s.scaleName));
+    const apiScaleNames: Set<any> = new Set(apiProd.scales);
+    const storedScaleNames: Set<any> = new Set(storedProd.scales.map(s => s.scaleName));
 
     // 누락된 scale
     for (const scaleName of apiScaleNames) {
@@ -411,27 +440,26 @@ export const validateProductsAgainstAPI = async (options: {
         });
 
         if (options.autoFix) {
-          addScale(storedProd.prodId, {
-            scaleName,
-            prevRawMatAmount: '0',
-            prevManufactureAmount: '0'
-          });
-/*
-          console.log(storedProd.prodName, '의 누락된 scale 추가: ', {
-            scaleName,
-            prevRawMatAmount: '0',
-            prevManufactureAmount: '0'
-          })
-*/
+          const idx = next.findIndex(p => p.prodId === storedProd.prodId);
+          if (idx !== -1) {
+            const cur: Scale[] = next[idx].scales ?? [];
+            next[idx] = {
+              ...next[idx],
+              scales: [...cur, { scaleName, prevRawMatAmount: '0', prevManufactureAmount: '0' }]
+            };
+          }
         }
       }
     }
 
-    // 삭제된 scale
-    for (const scaleName of storedScaleNames) {
-      if (!apiScaleNames.has(scaleName) && options.autoFix) {
-        removeScale(storedProd.prodId, scaleName);
-        // console.log('삭제된 scale: ', storedProd.prodName, '의 ', scaleName);
+    // API에 없는 scale 제거
+    if (options.autoFix) {
+      const idx = next.findIndex(p => p.prodId === storedProd.prodId);
+      if (idx !== -1) {
+        next[idx] = {
+          ...next[idx],
+          scales: (next[idx].scales ?? []).filter(s => apiScaleNames.has(s.scaleName))
+        };
       }
     }
   }
@@ -439,11 +467,27 @@ export const validateProductsAgainstAPI = async (options: {
   // 2. 신규 제품 추가
   if (options.autoFix) {
     for (const apiProd of apiProducts) {
-      if (!storedProducts.some(p => p.prodId === apiProd.id)) {
-        addProduct(transformApiProduct(apiProd));
-        // console.log('신규 product 추가: ', transformApiProduct(apiProd));
+      if (!next.some(p => p.prodId === apiProd.id)) {
+        next.push(transformApiProduct(apiProd));
       }
     }
   }
+
+  // 원자적 커밋
+  if (options.autoFix || options.removeOrphaned) {
+    setProductsSafely(next);
+  }
+
   return { mismatches };
+};
+
+const setProductsSafely = (next: Product[]) => {
+  const backup = amountStore.get('products', []) as Product[];
+  try {
+    amountStore.set('products', next);
+  } catch (e) {
+    // 롤백
+    amountStore.set('products', backup);
+    throw e;
+  }
 };

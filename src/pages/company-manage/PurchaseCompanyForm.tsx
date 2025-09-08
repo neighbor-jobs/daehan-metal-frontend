@@ -61,11 +61,11 @@ const PurchaseCompanyForm = ({
       return;
     }
     const data = {
-      telNumber: formData.telNumber.length > 0 ? formData.telNumber : undefined,
-      phoneNumber: formData.phoneNumber.length > 0 ? formData.phoneNumber : undefined,
-      subTelNumber: formData.subTelNumber.length > 0 ? formData.subTelNumber : undefined,
-      businessNumber: formData.businessNumber.length > 0 ? formData.businessNumber : undefined,
-      address: formData.address.length > 0 ? formData.address : undefined,
+      telNumber: formData.telNumber?.length > 0 ? formData.telNumber : undefined,
+      phoneNumber: formData.phoneNumber?.length > 0 ? formData.phoneNumber : undefined,
+      subTelNumber: formData.subTelNumber?.length > 0 ? formData.subTelNumber : undefined,
+      businessNumber: formData.businessNumber?.length > 0 ? formData.businessNumber : undefined,
+      address: formData.address?.length > 0 ? formData.address : undefined,
     }
     try {
       if (isEditing) {
@@ -80,6 +80,7 @@ const PurchaseCompanyForm = ({
         });
       }
       if (onSuccess) onSuccess();
+      setFormData(defaultFormData);
       onClose();
     } catch (err) {
       if (err.status === 400) {

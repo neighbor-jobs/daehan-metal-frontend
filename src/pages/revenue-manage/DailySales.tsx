@@ -207,11 +207,10 @@ const DailySales = () => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={4}>합계</TableCell>
-                <TableCell align='right'>{`총재료비: ${formatCurrency(amount.totalRawMatAmount)}`}</TableCell>
-                <TableCell align='right'>{`총가공비: ${formatCurrency(amount.totalManufactureAmount)}`}</TableCell>
-                <TableCell align='right'>총합</TableCell>
-                <TableCell align='right'>{(Number(amount.totalManufactureAmount) + Number(amount.totalRawMatAmount)).toLocaleString()}</TableCell>
+                <TableCell colSpan={6}>합계</TableCell>
+                <TableCell align='left' colSpan={2}><Typography variant='body2' color='blue'>{`${formatCurrency(amount.totalRawMatAmount)}`}</Typography></TableCell>
+                <TableCell align='right'><Typography variant='body2' color='darkorange'>{`${formatCurrency(amount.totalManufactureAmount)}`}</Typography></TableCell>
+              <TableCell align='right'><Typography variant='body2' color='black'>{`${(Number(amount.totalManufactureAmount) + Number(amount.totalRawMatAmount)).toLocaleString()}`}</Typography></TableCell>
               </TableRow>
             </TableFooter>
           </Table>

@@ -66,6 +66,21 @@ export const arrowNavAtRegister = (
 
 export const focusByCell = (row: number, col: number) => {
   const selector = `[data-row-index="${row}"][data-col-index="${col}"]`;
-  const nextEl = document.querySelector<HTMLElement>(selector);
-  if (nextEl) nextEl.focus();
+  // const nextEl = document.querySelector<HTMLElement>(selector);
+  const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector);
+  if (!el) return;
+
+  // 스크롤 튐 방지
+  el.focus();
+  const len = el.value?.length ?? 0;
+  const placeCaret = () => el.setSelectionRange(len, len);
+
+  // 포커스 직후 같은 프레임에 selectionRange가 먹지 않는 경우가 있어
+  // 다음 페인트 타이밍에 커서를 이동시킵니다.
+  if ('requestAnimationFrame' in window) {
+    requestAnimationFrame(placeCaret);
+  } else {
+    setTimeout(placeCaret, 0);
+  }
+  // if (nextEl) nextEl.focus();
 }

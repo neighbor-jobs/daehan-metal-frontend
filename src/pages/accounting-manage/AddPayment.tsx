@@ -25,7 +25,7 @@ import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {PostDeductionDetail, PostPayment, PostPaymentDetail} from '../../types/payrollReq.ts';
 import {defaultDeductionList, PaymentTableRow, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency} from '../../utils/format.ts';
+import {formatCurrency, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 import {Ledger, PatchLedger} from '../../types/ledger.ts';
 
@@ -37,6 +37,7 @@ interface AddPaymentProps {
   payments?: Payment[];
   payrollRegisterId?: string;
   prevLedger?: Ledger;
+  prevDeduction?: PostDeductionDetail[];
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -139,9 +140,10 @@ const AddPayment = ({
                       isOpened,
                       payments,
                       prevLedger,
+                      prevDeduction,
                       payrollRegisterId,
                       onClose,
-                      onSuccess
+                      onSuccess,
                     }: AddPaymentProps): React.JSX.Element => {
   /*
           "payments": [
@@ -208,7 +210,7 @@ const AddPayment = ({
     employeeName: '',
     startWorkingAt: '',
     paymentDetail: defaultPaymentDetail,
-    deductionDetail: defaultDeductionDetail,
+    deductionDetail: prevDeduction || defaultDeductionDetail,
     payrollRegisterId: payrollRegisterId,
   });
   const [calculatedWages, setCalculatedWages] = useState<any>({});
@@ -229,22 +231,17 @@ const AddPayment = ({
 
   const handlePaymentInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
-    let onlyNums = value.replace(/[^0-9.]/g, '');
+    let onlyNums: string;
 
-    // 소수점이 2개 이상 입력된 경우 첫 번째만 남기고 제거
-    const parts = onlyNums.split('.');
-    if (parts.length > 2) {
-      onlyNums = parts[0] + '.' + parts.slice(1).join('');
-    }
-
-    // 숫자만 입력된 경우, 앞에 0이 여러 개 붙는 것을 방지
-    if (onlyNums && onlyNums !== '.' && !onlyNums.endsWith('.')) {
-      onlyNums = String(Number(onlyNums));
-      // 소수점 이하가 있으면 원래 값 유지
-      if (value.includes('.')) {
-        onlyNums = value;
-      }
-    }
+    if (name === PaymentTableRow.EXTEND_WORKING_TIME
+      || name === PaymentTableRow.EXTEND_WORKING_MULTI
+      || name === PaymentTableRow.DAY_OFF_WORKING_TIME
+      || name === PaymentTableRow.DAY_OFF_WORKING_MULTI
+      || name === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI
+    ) onlyNums = formatInputQuality(value, 0);
+    else if (name === PaymentTableRow.PAY
+      || name === PaymentTableRow.MEAL_ALLOWANCE
+    ) onlyNums = formatInputPrice(value, 0);
 
     setFormData(prev => ({
       ...prev,
@@ -257,8 +254,8 @@ const AddPayment = ({
 
   const handleDeductionInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = e.target;
-    let onlyNums = value.replace(/[^0-9]/g, '');
-    if (onlyNums.length > 0) onlyNums = String(Number(onlyNums));
+    const onlyNums = formatInputPrice(value, 1)
+
     setFormData(prev => ({
       ...prev,
       deductionDetail: prev.deductionDetail.map((d) =>
@@ -346,7 +343,7 @@ const AddPayment = ({
   }, [payments]);
 
   useEffect(() => {
-    const hw = Number(formData.paymentDetail.workingDay) === 0 ? 0 : Math.round(Number(formData.paymentDetail.pay) / Number(formData.paymentDetail.workingDay));
+    const hw = Number(formData.paymentDetail.workingDay) === 0 ? 0 : Math.ceil((Number(formData.paymentDetail.pay) / Number(formData.paymentDetail.workingDay)) / 10) * 10;
     const ew = Math.round(hw * Number(formData.paymentDetail.extendWorkingMulti) * Number(formData.paymentDetail.extendWorkingTime));
     const dw = Math.round(hw * Number(formData.paymentDetail.dayOffWorkingMulti) * Number(formData.paymentDetail.dayOffWorkingTime));
     const al = Math.round(hw * 8 * Number(formData.paymentDetail.annualLeaveAllowanceMulti));
@@ -360,9 +357,9 @@ const AddPayment = ({
       extendWokringWage: ew,
       dayOffWorkingWage: dw,
       annualLeaveAllowance: al,
-      totalPayment: totalPayments,
+      totalPayment: Math.ceil(totalPayments / 10) * 10,
       totalDeductions: totalDeductions,
-      totalSalary: totalPayments - totalDeductions
+      totalSalary: Math.ceil((totalPayments - totalDeductions) / 10) * 10
     };
     setCalculatedWages(newWages);
   }, [formData])
@@ -477,7 +474,7 @@ const AddPayment = ({
                 )
               })}
               {/* deduction */}
-              {defaultDeductionDetail?.map((dec, decIdx) => {
+              {formData?.deductionDetail?.map((dec, decIdx) => {
                 return (
                   <TableRow key={decIdx + 100}>
                     <TableCell

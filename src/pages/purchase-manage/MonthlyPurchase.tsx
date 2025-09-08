@@ -79,6 +79,7 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
+    typoSx: {color: 'red'},
   },
   {
     id: MonthlyPurchaseColumn.PAYABLE_BALANCE,
@@ -120,6 +121,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
 
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
+    console.log(selectedCompany);
     if (!selectedCompany) {
       setFormData(prev => ({
         ...prev,
@@ -137,8 +139,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
       telNumber: selectedCompany.info?.telNumber || '',
       subTelNumber: selectedCompany.info?.subTelNumber || '',
       phoneNumber: selectedCompany.info?.phoneNumber || '',
-      bankName: selectedCompany.bank?.bankName || '',
-      accountNumber: selectedCompany.bank?.accountNumber || ''
+      bankArr: selectedCompany.bank || [],
     });
   }, [purchaseCompanyList]);
 
@@ -279,7 +280,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                     align={column.align}
                     style={{minWidth: column.minWidth}}
                   >
-                    {column.label}
+                    <Typography variant='body2' sx={column.typoSx}>{column.label}</Typography>
                   </TableCell>
                 ))}
                 <TableCell sx={{width: 2}}/>
@@ -290,21 +291,36 @@ const MonthlyPurchase = (): React.JSX.Element => {
                 monthlyPurchase.map((row, rowIndex) => {
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
-                      <TableCell>{(row.createdAt).split('T')[0]}</TableCell>
-                      <TableCell>{row.productName}</TableCell>
-                      <TableCell align='right'>{row.quantity.toFixed(3)}</TableCell>
-                      <TableCell align='right'>{formatCurrency(row.unitPrice)}</TableCell>
-                      <TableCell
-                        align='right'>{(Number(row.totalRawMatAmount) + Number(row.totalManufactureAmount)).toLocaleString()}</TableCell>
-                      <TableCell align='right'>{formatCurrency(row.totalVatPrice)}</TableCell>
-                      <TableCell align='right'>{formatCurrency(row.totalPrice)}</TableCell>
-
-                      {/* 합계 */}
+                      <TableCell>
+                        {(row.createdAt).split('T')[0]}
+                      </TableCell>
+                      {/* 품명 */}
+                      <TableCell sx={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+                        {row.productName}
+                      </TableCell>
+                      {/* 수량 */}
                       <TableCell align='right'>
-                        <Typography>
-
-                        </Typography>
-                        {formatCurrency(row.productPrice)}
+                        {row.quantity.toFixed(3)}
+                      </TableCell>
+                      {/* 단가 */}
+                      <TableCell align='right'>
+                        {formatCurrency(row.unitPrice)}
+                      </TableCell>
+                      {/* 매입 금액 */}
+                      <TableCell align='right'>
+                        {(Number(row.totalRawMatAmount) + Number(row.totalManufactureAmount)).toLocaleString()}
+                      </TableCell>
+                      {/* 매입 세액 */}
+                      <TableCell align='right'>
+                        {formatCurrency(row.totalVatPrice)}
+                      </TableCell>
+                      {/* 총합 */}
+                      <TableCell align='right'>
+                        <Typography variant='body2'>{formatCurrency(row.totalPrice)}</Typography>
+                      </TableCell>
+                      {/* 입금액 */}
+                      <TableCell align='right'>
+                        <Typography variant='body2' color='red'>{formatCurrency(row.productPrice)}</Typography>
                       </TableCell>
                       <TableCell align='right'>
                         {formatCurrency(row.payableBalance)}
@@ -333,10 +349,18 @@ const MonthlyPurchase = (): React.JSX.Element => {
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={4}>합계</TableCell>
-                <TableCell align='right'>{totals.purchase.toLocaleString()}</TableCell>
-                <TableCell align='right'>{totals.vat.toLocaleString()}</TableCell>
-                <TableCell align='right'>{totals.total.toLocaleString()}</TableCell>
-                <TableCell align='right'>{totals.paying.toLocaleString()}</TableCell>
+                <TableCell align='right'>
+                  <Typography variant='body2' color='black'>{totals.purchase.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography variant='body2' color='black'>{totals.vat.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography variant='body2' color='black'>{totals.total.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography variant='body2' color='red'>{totals.paying.toLocaleString()}</Typography>
+                </TableCell>
                 <TableCell align='right'></TableCell>
               </TableRow>
             </TableFooter>

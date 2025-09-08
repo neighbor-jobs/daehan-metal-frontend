@@ -143,6 +143,7 @@ const SalesCompany = (): React.JSX.Element => {
                         onSuccess={async () => {
                           await fetchSalesCompanies();
                         }}
+                        key={isEditing ? `edit-${formData.companyName}` : 'create'}
       />
       <Box sx={{
         display: 'flex',
