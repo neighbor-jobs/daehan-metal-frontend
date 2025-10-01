@@ -48,6 +48,12 @@ import {
   replaceEmployees, updateEmployees,
   validateEmployeesAgainstAPI
 } from './store/employeeStore.ts';
+import {
+  abcInitializeProducts,
+  abcValidateAgainstAPI, addProductByCompany, AmountPair, getPrevAmountByCompany,
+  getProductsByCompany,
+  ProductByCompany, removeCompanyPrevAmount, removeProductByCompany, setPrevAmountByCompany
+} from './store/amountByCompanyStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -134,6 +140,13 @@ app.whenReady().then(async () => {
   // employees
   await initEmployee();
   await validateEmployeesAgainstAPI();
+
+  // amount by company
+  await abcInitializeProducts();
+  await abcValidateAgainstAPI({
+    autoFix: true,
+    removeOrphaned: true,
+  });
 });
 
 // 데이터 가져오기
@@ -169,7 +182,7 @@ ipcMain.handle('add-location', (_event, {companyId, location}) => {
 ipcMain.handle('clear-sales-company', () => companyStore.clearCache());
 
 /*
-* ======================== 품목 관련 ==========================
+* ======================== 품목 가격 관련 ==========================
 * */
 
 // products CRUD
@@ -210,6 +223,56 @@ ipcMain.handle('scales:update', (_event, productId, scaleName, newData) => {
 ipcMain.handle('scales:remove', (_event, productId, scaleName) => {
   removeScale(productId, scaleName);
   return {success: true};
+});
+
+/*
+* ======================== 거래처별 최근 거래값 캐싱 (amountByCompanyStore) ==========================
+* */
+
+// products (시험용 스토어) CRUD
+ipcMain.handle('abc:products:get', () => getProductsByCompany());
+
+ipcMain.handle('abc:products:add', (_event, product: ProductByCompany) => {
+  addProductByCompany(product);
+  return { success: true };
+});
+
+ipcMain.handle('abc:products:remove', (_event, prodId: string) => {
+  removeProductByCompany(prodId);
+  return { success: true };
+});
+
+// 검증/동기화 (이름/스케일만 API와 맞춤; 금액 데이터는 로컬 소유)
+ipcMain.handle('abc:products:validate', async (_event, options?: {
+  baseUrl?: string;
+  orderBy?: 'asc' | 'desc';
+  autoFix?: boolean;
+  removeOrphaned?: boolean;
+}) => {
+  return await abcValidateAgainstAPI(options);
+});
+
+// 직전값 조회: companyName 있으면 거래처별, 없으면 디폴트
+ipcMain.handle('abc:prev:get', (_event, productId: string, scaleName: string, companyName?: string) => {
+  return getPrevAmountByCompany(productId, scaleName, companyName);
+});
+
+// 직전값 저장: opts.companyName 있으면 거래처별, asDefault=true면 디폴트
+ipcMain.handle('abc:prev:set', (
+  _event,
+  productId: string,
+  scaleName: string,
+  value: AmountPair,
+  opts?: { companyName?: string; asDefault?: boolean; touchUpdatedAt?: boolean }
+) => {
+  setPrevAmountByCompany(productId, scaleName, value, opts);
+  return { success: true };
+});
+
+// 특정 거래처의 직전값 삭제 (스케일 단위)
+ipcMain.handle('abc:prev:remove', (_event, productId: string, scaleName: string, companyName: string) => {
+  removeCompanyPrevAmount(productId, scaleName, companyName);
+  return { success: true };
 });
 
 /*

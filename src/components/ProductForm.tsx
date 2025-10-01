@@ -100,6 +100,9 @@ const ProductForm = ({
         })
         if (onSuccess) onSuccess();
         onClose();
+
+        // 기존 코드 주석 처리
+/*
         if (isDupName) {
           res.data.data.scales?.forEach((scale: string) => {
             cacheManager.addScale(res.data.data.id, {
@@ -119,6 +122,26 @@ const ProductForm = ({
             prodName: res.data.data.name,
             scales: scaleList || [],
           })
+        }
+*/
+        // ===== amountByCompanyStore 기반으로 교체 =====
+        if (isDupName) {
+          // 기존 품목에 스케일 추가된 상황 → 서버를 진리 소스로 동기화
+          await cacheManager.validateProductsByCompany(true, true);
+        } else {
+          // 신규 품목 → 시험 스토어에 직접 추가
+          const scaleList =
+            (res.data.data.scales ?? []).map((scale: string) => ({
+              scaleName: scale,
+              // amountByCompany 기본 구조
+              prevDefault: {rawMatAmount: '0', manufactureAmount: '0'},
+              prevByCompany: {}
+            }));
+          await cacheManager.addProductByCompany({
+            prodId: res.data.data.id,
+            prodName: res.data.data.name,
+            scales: scaleList
+          });
         }
       } catch (err) {
         showAlert('등록에 실패했습니다. 다시 시도해 주세요.', 'error');
@@ -157,11 +180,15 @@ const ProductForm = ({
       }
 
       try {
+/*
         await cacheManager.updateScale(
           productName,
           updateScaleName.prevName,
           {scaleName: updateScaleName.newName}
         )
+*/
+        // ===== amountByCompanyStore로 동기화 =====
+        await cacheManager.validateProductsByCompany(true, true);
       }
       catch (err) {
         // console.log(err);

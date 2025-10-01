@@ -219,7 +219,9 @@ const TransactionRegister = ({
     );
   };
 
-  const handleScaleChange = (index: number, newValue: string | null, prodName: string | null) => {
+  const handleScaleChange = async (index: number, newValue: string | null, prodName: string | null) => {
+    // 기존 amount cache 코드 주석처리
+/*
     for (const product of productListState) {
       if (product.name === prodName) {
         const matchedScale = product.scales?.find(s => s === newValue);
@@ -247,6 +249,33 @@ const TransactionRegister = ({
             });
         }
       }
+    }
+*/
+    const found = productListState.find(p => p.name === prodName);
+    const productId = found?.id;
+    if (!productId) {
+      setChoices((prev) => prev.map((c, i) => i === index ? { ...c, scale: newValue || '' } : c));
+      return;
+    }
+
+    try {
+      const prev = await cacheManager.getPrevAmountByCompany(productId, newValue, formData.companyName); // ✅ 거래처별→디폴트
+      setChoices((prevChoices) =>
+        prevChoices.map((choice, i) =>
+          i === index
+            ? {
+              ...choice,
+              scale: newValue,
+              rawMatAmount: prev?.rawMatAmount ?? '0',
+              manufactureAmount: prev?.manufactureAmount ?? '0',
+            }
+            : choice
+        )
+      );
+    } catch {
+      setChoices((prev) =>
+        prev.map((c, i) => (i === index ? { ...c, scale: newValue, rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount } : c))
+      );
     }
   };
 
@@ -370,7 +399,8 @@ const TransactionRegister = ({
       if (onSuccess && dialogType === 'edit') {
         onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
       }
-      // scale cache data update
+      // 기존 scale cache data update 주석처리
+/*
       updatedChoices.map((c: Choice) => {
         if (c.scale) {
           cacheManager.updateScale(c.productName, c.scale, {
@@ -379,6 +409,29 @@ const TransactionRegister = ({
           })
         }
       })
+*/
+      // ===== amountByCompanyStore로 교체: 거래처별 + (선택) 디폴트 업데이트 =====
+      for (const c of updatedChoices) {
+        if (!c.productName || !c.scale) continue;
+        const product = productListState.find((p: Product) => p.name === c.productName);
+        if (!product) continue;
+
+        // 거래처별 직전값 저장
+        await cacheManager.setPrevAmountByCompany(
+          product.id,
+          c.scale,
+          { rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount },
+          { companyName: formData.companyName }
+        );
+
+        // 필요하면 디폴트도 함께 갱신하고 싶을 때 사용 (원치 않으면 주석)
+        await cacheManager.setPrevAmountByCompany(
+          product.id,
+          c.scale,
+          { rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount },
+          { asDefault: true }
+        );
+      }
 
       setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setFormData((prev) => ({

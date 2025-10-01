@@ -118,7 +118,11 @@ const ProductMain = (): React.JSX.Element => {
       } catch {
         showAlert('규격 삭제에 실패했습니다. 재시도 해주세요.', 'error');
       }
-      await cacheManager.removeScale(id, scale);
+      // 기존 amountStore 로컬 삭제
+      // await cacheManager.removeScale(id, scale); // 🔧 주석 처리
+
+      // ▶ amountByCompany: API 기준으로 로컬 시험 스토어 동기화(스케일 제거 반영)
+      await cacheManager.validateProductsByCompany(true, true); // ✅ 교체
     } else {
       // 품목 삭제
       try {
@@ -126,7 +130,12 @@ const ProductMain = (): React.JSX.Element => {
       } catch {
         showAlert('품목 삭제에 실패했습니다. 재시도 해주세요.', 'error')
       }
-      await cacheManager.removeProduct(id);
+
+      // 기존 amountStore 로컬 삭제
+      // await cacheManager.removeProduct(id); // 🔧 주석 처리
+
+      // ▶ amountByCompany: 시험 스토어에서 해당 품목 제거
+      await cacheManager.removeProductByCompany(id); // ✅ 교체
     }
     showAlert('삭제 완료', 'success');
     const res = await getProductList(page.page);

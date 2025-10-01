@@ -199,7 +199,7 @@ export const dailySalesDocDef = (dailySalesData) => {
  * 거래처별 매출현황
  */
 export const companySalesDocDef = (companySalesData) => {
-  console.log('printData: ', companySalesData);
+  // console.log('printData: ', companySalesData);
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     pageMargins: [10, 20, 10, 10],
@@ -459,7 +459,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
  * 거래처별 매출집계
  */
 export const companySalesSumDocDef = (companySalesSumData) => {
-  console.log(companySalesSumData)
+  // console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     pageMargins: [10, 20, 10, 10],
@@ -531,7 +531,7 @@ export const companySalesSumDocDef = (companySalesSumData) => {
  * 품목별 매출집계
  */
 export const itemSalesSumDocDef = (itemSalesSumData) => {
-  console.log(itemSalesSumData);
+  // console.log(itemSalesSumData);
   /* {
   data: [
     {
@@ -891,7 +891,7 @@ const basicInvoiceTable = (data, index) => {
   ]
 }
 */
-  console.log(data);
+  // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
   const totalRowsNum = data.sales.length > 15 ? 25 : 15;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
@@ -1393,7 +1393,7 @@ const getSalaryContent = (data: Payment): any[] => {
     any[][] = [[], []]
   const salary = Math.ceil(Number(data.salary) / 10) * 10;
   const totalSalary = Math.ceil((salary - Number(data.deduction)) / 10) * 10;
-  console.log(data);
+  // console.log(data);
 
   for (let i = 0; i < data.deductionDetail.length; ++i) {
     const deductionDetail = data.deductionDetail[i];

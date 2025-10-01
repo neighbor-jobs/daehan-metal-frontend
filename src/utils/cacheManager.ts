@@ -82,6 +82,51 @@ export const cacheManager = {
   },
 
   /*
+* ================================ 거래처별 품목 캐시 (amountByCompanyStore) ===============================
+* */
+
+  /** 거래처별 캐시용 제품 전체 조회 */
+  async getProductsByCompany() {
+    return await window.ipcRenderer.invoke('abc:products:get');
+  },
+
+  /** 거래처별 캐시용 제품 추가 */
+  async addProductByCompany(product: any) {
+    return await window.ipcRenderer.invoke('abc:products:add', product);
+  },
+
+  /** 거래처별 캐시용 제품 삭제 */
+  async removeProductByCompany(prodId: string) {
+    return await window.ipcRenderer.invoke('abc:products:remove', prodId);
+  },
+
+  /** 거래처별 제품 목록 검증 및 동기화 */
+  async validateProductsByCompany(autoFix: boolean, removeOrphaned: boolean) {
+    return await window.ipcRenderer.invoke('abc:products:validate', {
+      autoFix,
+      removeOrphaned,
+    });
+  },
+
+  /** 거래처별 직전 입력값 조회 (거래처 없으면 디폴트 반환) */
+  async getPrevAmountByCompany(productId: string, scaleName: string, companyName?: string) {
+    return await window.ipcRenderer.invoke('abc:prev:get', productId, scaleName, companyName);
+  },
+
+  /** 거래처별 직전 입력값 저장
+   * @param opts.companyName 지정 시 해당 거래처 전용
+   * @param opts.asDefault true면 디폴트로 저장
+   */
+  async setPrevAmountByCompany(productId: string, scaleName: string, value: any, opts?: { companyName?: string; asDefault?: boolean; touchUpdatedAt?: boolean }) {
+    return await window.ipcRenderer.invoke('abc:prev:set', productId, scaleName, value, opts);
+  },
+
+  /** 특정 거래처의 특정 스케일 직전값 삭제 */
+  async removeCompanyPrevAmount(productId: string, scaleName: string, companyName: string) {
+    return await window.ipcRenderer.invoke('abc:prev:remove', productId, scaleName, companyName);
+  },
+
+  /*
   * ================================ 회계 관련 ===============================
   * */
   async getLedgers() {
