@@ -2,7 +2,7 @@
 import {
   Autocomplete,
   Box,
-  Button,
+  Button, IconButton,
   InputLabel,
   Pagination,
   Paper,
@@ -31,6 +31,7 @@ import PrintButton from '../../layout/PrintButton.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {Choice} from '../../types/transactionRegisterReq.ts';
+import CloseIcon from '@mui/icons-material/Close';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -172,7 +173,13 @@ const RevenueMain = (): React.JSX.Element => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const simplifiedReport = latestReports?.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => rest);
+    const simplifiedReport = latestReports?.map(({
+                                                   receiptId,
+                                                   locationNames,
+                                                   companyName,
+                                                   createdAt,
+                                                   ...rest
+                                                 }) => rest);
     setEndSeq(res.data.data.endSequence);
     setReport(latestReports);
     setReportId(res.data.data.id);
@@ -214,7 +221,39 @@ const RevenueMain = (): React.JSX.Element => {
         sequence: 1,
       }))
     } catch {
-      showAlert('삭제 실패', 'error');
+      showAlert('삭제 실패. 재시도 해주세요', 'error');
+    }
+  }
+
+  const deleteRow = async (idx: number) => {
+    try {
+      if (!reportId || !formData.companyName || !formData.startAt) {
+        showAlert('삭제할 대상을 다시 선택해 주세요.', 'warning');
+        return;
+      }
+      if (idx < 0 || idx >= prevChoices?.length) {
+        showAlert('잘못된 행 인덱스입니다.', 'error');
+        return;
+      }
+
+      /* 해당 row가 없는 choices */
+      const nextChoices = prevChoices
+        .filter((_, i) => i !== idx)
+        .map((c) => ({...c, stocks: 0, unitWeight: "0"}))
+      const updateData = {
+        id: reportId,
+        companyName: formData.companyName,
+        createdAt: formData.startAt,
+        locationNames: report[0]?.locationNames || [],
+        payingAmount: amount.totalPayingAmount,
+        sales: nextChoices,
+      }
+      console.log('updateData: ', updateData);
+      await axiosInstance.patch('/receipt', updateData);
+
+      getReceipt(formData.companyName, formData.startAt, formData.sequence);
+    } catch {
+      showAlert('수정 실패. 재시도 해주세요.', 'error')
     }
   }
 
@@ -336,6 +375,7 @@ const RevenueMain = (): React.JSX.Element => {
                   </TableCell>
                 ))}
                 <TableCell align='right'>금액</TableCell>
+                <TableCell />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -368,6 +408,11 @@ const RevenueMain = (): React.JSX.Element => {
                           ).toLocaleString('ko-KR')
                         }
                       </TableCell>
+                      <TableCell sx={{padding: 0}}>
+                        <IconButton size='small'>
+                          <CloseIcon fontSize='small' onClick={() => deleteRow(rowIndex)} />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -375,10 +420,26 @@ const RevenueMain = (): React.JSX.Element => {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</Typography></TableCell>
-                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</Typography></TableCell>
-                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</Typography></TableCell>
-                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</Typography></TableCell>
+                <TableCell colSpan={2} align='left'>
+                  <Typography variant='body2' color='black'>
+                    {`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}
+                  </Typography>
+                </TableCell>
+                <TableCell colSpan={3} align='left'>
+                  <Typography variant='body2' color='black'>
+                    {`매출액: ${formatCurrency(amount.totalSalesAmount)}`}
+                  </Typography>
+                </TableCell>
+                <TableCell colSpan={3} align='left'>
+                  <Typography variant='body2' color='black'>
+                    {`입금액: ${formatCurrency(amount.totalPayingAmount)}`}
+                  </Typography>
+                </TableCell>
+                <TableCell colSpan={4} align='left'>
+                  <Typography variant='body2' color='black'>
+                    {`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}
+                  </Typography>
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>
@@ -437,6 +498,7 @@ const RevenueMain = (): React.JSX.Element => {
                              payingAmount: amount.totalPayingAmount,
                            }}
                            prevChoices={prevChoices}
+                           prevAmount={amount}
                            onSuccess={async (companyName: string, startAt: string, sequence: number = 1) => {
                              await getReceipt(companyName, startAt, sequence);
                              setFormData({
