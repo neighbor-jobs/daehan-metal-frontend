@@ -1,5 +1,6 @@
 /** string param 원화 표기 */
-export const formatCurrency = (value: string) => {
+export const formatCurrency = (value: string | null | undefined) => {
+  if (value === null || value === undefined) return '';
   if (typeof value === 'string' && value.trim() === '-') return '-';
   return new Intl.NumberFormat('ko-KR', {maximumFractionDigits: 0}).format(Number(value))
 };
