@@ -51,6 +51,7 @@ interface TransactionRegisterProps {
   productList: Product[];
   prevChoices?: Choice[] | [];
   prevFormData?: any;
+  prevAmount?: any;
 }
 
 const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
@@ -128,13 +129,14 @@ const TransactionRegister = ({
                                dialogType,
                                isOpen,
                                onClose,
+                               onSuccess,
                                salesCompanyList,
                                productList,
                                prevChoices,
-                               prevFormData
+                               prevFormData,
+                               prevAmount
                              }: TransactionRegisterProps): React.JSX.Element => {
-  // TODO: footer 항상 보이도록 고정
-  // TODO: 품목별로 세액, 운임비란 추가
+  // TODO: 미수금 내역 창 열고 닫을 때랑 submit 완료 후 맞는지 검증해야 함
   const [choices, setChoices] = useState<Choice[]>(dialogType === 'create' ?
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
@@ -159,6 +161,7 @@ const TransactionRegister = ({
     return selectedCompany?.locationName || [];
   }, [formData.companyName, salesCompanyList]);
 
+  // TODO: 계산 방법 물어본 후 변경가능성 있음
   const totalSales = useMemo(() => {
     return choices.reduce((acc, choice) => {
       const quantity = Number(choice.quantity) || 0;
@@ -166,7 +169,7 @@ const TransactionRegister = ({
       const manufacture = Number(choice.manufactureAmount) || 0;
       const vat= Number(choice.vatAmount) || 0;
       const delivery = Number(choice.deliveryCharge) || 0;
-      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + vat + delivery;
+      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + (vat + delivery) * quantity;
       return acc + total;
     }, 0);
   }, [choices]);
@@ -340,6 +343,7 @@ const TransactionRegister = ({
           carryoverAmount: res.data.data?.outstandingAmount,
           totalSalesAmount: res.data.data?.receipt.totalAmount,
         }
+        setOutstanding(Number(res.data.data?.outstandingAmount));
       } else {
         res = await axiosInstance.patch('/receipt', {
           id: prevFormData.id,
@@ -348,7 +352,11 @@ const TransactionRegister = ({
           companyName: formData.companyName,
           createdAt: formData.createdAt,
           sales: updatedChoices.filter((c) => c.productName.length > 0),
-        })
+        });
+        amountInfo = {
+          carryoverAmount: String(outstanding),
+          totalSalesAmount: totalSales,
+        }
       }
       if (res.data.statusCode === 204) {
         showAlert('입력 필드를 재확인 해주세요.', 'info');
@@ -358,12 +366,10 @@ const TransactionRegister = ({
         return;
       }
       showAlert('거래등록에 성공했습니다.', 'success')
-/*
-      if (onSuccess) {
+
+      if (onSuccess && dialogType === 'edit') {
         onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
       }
-*/
-
       // scale cache data update
       updatedChoices.map((c: Choice) => {
         if (c.scale) {
@@ -384,6 +390,7 @@ const TransactionRegister = ({
         locationName: [] as string[],
         payingAmount: "0",
       }))
+      if (dialogType === 'edit') onClose();
     } catch (err) {
       showAlert(`${err}`, 'error');
     }
@@ -419,11 +426,14 @@ const TransactionRegister = ({
   useEffect(() => {
     if (dialogType === 'edit' && prevFormData) {
       setFormData(prevFormData);
+      setOutstanding(Number(prevAmount.carryoverAmount));
+    } else {
+      fetchOutstanding(formData.companyName, formData.createdAt);
     }
   }, [dialogType, prevFormData]);
 
   // debug
-  // console.log(choices);
+  console.log('choices: ', choices, 'formData: ',formData);
 
   return (
     <>
@@ -464,6 +474,7 @@ const TransactionRegister = ({
                         views={['day']}
                         format="YYYY/MM/DD"
                         defaultValue={dayjs()}
+                        disabled={dialogType === 'edit'}
                         onChange={(value) => {
                           if (value && dayjs(value).isValid()) {
                             setFormData(prev => ({
@@ -499,6 +510,7 @@ const TransactionRegister = ({
                         onChange={handleCompanyChange}
                         value={formData.companyName}
                         sx={{width: 200}}
+                        disabled={dialogType === 'edit'}
                         renderInput={(params) =>
                           <TextField {...params}
                                      sx={{minWidth: 150}}
@@ -853,7 +865,7 @@ const TransactionRegister = ({
                 <InputLabel sx={{fontSize: 'small',}}>미수계</InputLabel>
                 <TextField size='small'
                            variant="outlined"
-                           value={(outstanding - Number(formData.payingAmount)).toLocaleString()}
+                           value={(outstanding + totalSales - Number(formData.payingAmount)).toLocaleString()}
                            slotProps={{
                              htmlInput: {disabled: true}
                            }}
