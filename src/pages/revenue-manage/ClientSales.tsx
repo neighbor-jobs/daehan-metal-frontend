@@ -22,14 +22,16 @@ import React, {useCallback, useEffect, useState} from 'react';
 import dayjs from 'dayjs';
 import {AxiosResponse} from 'axios';
 import axiosInstance from '../../api/axios.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
+import {formatCurrency} from '../../utils/format.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
+import {DailySalesReceiptItem, DailySalesReportsItem} from '../../types/RevenueRes.ts';
 
 const columns: readonly TableColumns<ClientSalesColumn>[] = [
   {
     id: ClientSalesColumn.DATE,
     label: '날짜',
     minWidth: 100,
+    format: (value: string) => value?.split('T')[0]
   },
   {
     id: ClientSalesColumn.PRODUCT_NAME,
@@ -46,7 +48,6 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     label: '수량',
     minWidth: 100,
     align: 'right',
-    format: formatDecimal,
   },
   {
     id: ClientSalesColumn.TOTAL_RAW_MAT_AMOUNT,
@@ -54,7 +55,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     minWidth: 100,
     align: 'right',
     typoSx: {color: 'blue'},
-    format: (value: number) => value.toLocaleString(),
+    format: (value: number) => value?.toLocaleString(),
   },
   {
     id: ClientSalesColumn.TOTAL_MANUFACTURE_AMOUNT,
@@ -62,8 +63,22 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
     minWidth: 100,
     align: 'right',
     typoSx: {color: 'darkorange'},
-    format: (value: number) => value.toLocaleString(),
+    format: (value: number) => value?.toLocaleString(),
   },
+  {
+    id: ClientSalesColumn.VAT_AMOUNT,
+    label: '세액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
+    id: ClientSalesColumn.DELIVERY_CHARGE,
+    label: '운임비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  }
 ];
 
 const ClientSales = (): React.JSX.Element => {
@@ -84,6 +99,7 @@ const ClientSales = (): React.JSX.Element => {
     companyName: string;
     startAt: string;
     endAt: string;
+    outstandingBeforeOneDay: number;
   } | null>(null);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState<boolean>(false);
   const {showAlert} = useAlertStore();
@@ -136,39 +152,51 @@ const ClientSales = (): React.JSX.Element => {
       manuAmount = Number(salesAmount?.totalManufactureAmount || 0);
     }
 
+    const initOutstanding = carryoverAmount + rawAmount + manuAmount;
     let outstanding = carryoverAmount + rawAmount + manuAmount;
     setOutstandingBeforeOneDay(outstanding);
 
-    const data = (res.data.data.reports?.map((item) => {
-      const raw = Number(item.rawMatAmount) || 0;
-      const manu = Number(item.manufactureAmount) || 0;
-      const quantity = item.quantity;
+    const receipts: DailySalesReceiptItem[] = res.data.data?.receipts;
+    const data = receipts?.flatMap((item: DailySalesReceiptItem) => {
+      const sales = item.reports.map((r: DailySalesReportsItem) => {
+        const totalRaw: number = Math.round(Number(r.rawMatAmount) * r.quantity);
+        const totalManufacture: number = Math.trunc(Number(r.manufactureAmount) * r.quantity);
+        const totalAmount: number = Number(r.vatAmount) + Number(r.deliveryCharge) + totalRaw + totalManufacture
+        outstanding = isNaN(outstanding) ? totalAmount : outstanding + totalAmount;
+        return {
+          ...r,
+          rawMatAmount: totalRaw,
+          manufactureAmount: totalManufacture,
+          amount: totalAmount,
+          remainingAmount: outstanding
+        };
+      });
 
-      const materialPrice = Math.round(raw * quantity);
-      const processingPrice = Math.trunc(manu * quantity);
-      const total = materialPrice + processingPrice;
+      if (!item.payingAmount || item.payingAmount === '0')
+        return [...sales];
 
-      outstanding = isNaN(outstanding) ? total : outstanding + total;
-
-      return {
-        'createdAt': item.createdAt.split('T')[0],
-        'productName': item.productName,
-        'scale': item.scale,
-        'quantity': item.quantity,
-        'rawMatAmount': materialPrice,
-        'manufactureAmount': processingPrice,
-        'amount': total,
-        'remainingAmount': outstanding,
+      outstanding -= Number(item.payingAmount);
+      const paying = {
+        createdAt: sales[0]?.createdAt,
+        companyName: sales[0]?.companyName,
+        productName: '입금액',
+        scale: '',
+        amount: -Number(item.payingAmount),
+        remainingAmount: outstanding
       }
-    }) ?? []).sort((a, b) => {
+      // console.log([...sales, paying]);
+      return [...sales, paying];
+    })/* ?? []).sort((a, b) => {
       return dayjs(a.createdAt).diff(dayjs(b.createdAt))
-    });
+    });*/
+
     setReports(data);
     setPrintData({
       data,
       companyName: companyName,
       startAt: date.startAt.format('YYYY-MM-DD'),
       endAt: date.endAt.format('YYYY-MM-DD'),
+      outstandingBeforeOneDay: initOutstanding
     })
   }
 
@@ -235,7 +263,7 @@ const ClientSales = (): React.JSX.Element => {
       </Box>
 
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer>
+        <TableContainer sx={{maxHeight: '80vh', overflow: 'auto'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -260,6 +288,8 @@ const ClientSales = (): React.JSX.Element => {
               <TableRow>
                 <TableCell/>
                 <TableCell align='left'>전일이월</TableCell>
+                <TableCell/>
+                <TableCell/>
                 <TableCell/>
                 <TableCell/>
                 <TableCell/>
@@ -291,13 +321,22 @@ const ClientSales = (): React.JSX.Element => {
                 );
               })}
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell>합계 :</TableCell>
-                <TableCell align='right'>매출액계 : </TableCell>
-                <TableCell align='right'>{formatCurrency(amount.totalSalesAmount)}</TableCell>
-                <TableCell align='right'>수금액계 : </TableCell>
-                <TableCell align='right'>{formatCurrency(amount.totalPayingAmount)}</TableCell>
+                <TableCell colSpan={4}>합계 :</TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>매출액계 : </Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{formatCurrency(amount.totalSalesAmount)}</Typography>
+                  </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>수금액계 : </Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{formatCurrency(amount.totalPayingAmount)}</Typography>
+                </TableCell>
+                <TableCell colSpan={2} />
               </TableRow>
             </TableFooter>
           </Table>

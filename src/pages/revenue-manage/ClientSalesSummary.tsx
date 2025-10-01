@@ -46,6 +46,20 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
     format: formatCurrency
   },
   {
+    id: ClientSalesSummaryColumn.TOTAL_VAT_AMOUNT,
+    label: '세액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
+    id: ClientSalesSummaryColumn.TOTAL_DELIVERY_CHARGE,
+    label: '운임비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
     id: ClientSalesSummaryColumn.TOTAL_PAYING_AMOUNT,
     label: '입금액',
     minWidth: 100,
@@ -87,6 +101,8 @@ const ClientSalesSummary = (): React.JSX.Element => {
         'company-name': item.companyName,
         'material-price': raw,
         'processing-price': manu,
+        'vat-price': item.totalVatAmount,
+        'delivery-charge' : item.totalDeliveryCharge,
         'paying-amount': item.totalPayingAmount,
         'total-amount': raw + manu,
         'remaining-amount': raw + manu - Number(item.totalPayingAmount),
@@ -125,7 +141,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer sx={{maxHeight: 440}}>
+        <TableContainer sx={{maxHeight: '80vh', overflow: 'auto'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -148,9 +164,9 @@ const ClientSalesSummary = (): React.JSX.Element => {
             </TableHead>
             <TableBody>
               {clientSalesSumList &&
-                clientSalesSumList.map((row) => {
+                clientSalesSumList.map((row, idx) => {
                   return (
-                    <TableRow hover role="checkbox" tabIndex={-1}>
+                    <TableRow hover role="checkbox" tabIndex={-1} key={`${row.id}-${idx}`}>
                       {columns.map((column) => {
                         const value = row[column.id];
                         return (
@@ -178,7 +194,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
                   );
                 })}
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
                 <TableCell>합계</TableCell>
                 <TableCell align='right'>재료비</TableCell>
@@ -191,7 +207,10 @@ const ClientSalesSummary = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={printData}></PrintButton>
+
+      <Box sx={{m: 1}}>
+        <PrintButton printData={printData}></PrintButton>
+      </Box>
     </Box>
   )
 }

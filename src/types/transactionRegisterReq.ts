@@ -7,7 +7,9 @@ export type Choice = {
   rawMatAmount: string,
   manufactureAmount: string,
   vCutAmount?: string,
-  vCut?: string ,
+  vCut?: string,
+  vatAmount?: string,
+  deliveryCharge?: string,
   productLength?: string
 };
 
@@ -23,6 +25,8 @@ export const defaultChoice: Choice = {
   quantity: 0,
   rawMatAmount: '0',
   manufactureAmount: '0',
+  vatAmount: '0',
+  deliveryCharge: '0',
 };
 
 export const defaultAmount: Amount = {

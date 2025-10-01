@@ -77,6 +77,20 @@ const columns: readonly TableColumns<ItemSalesColumn>[] = [
     format: formatCurrency,
   },
   {
+    id: ItemSalesColumn.TOTAL_VAT_AMOUNT,
+    label: '세액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: ItemSalesColumn.TOTAL_DELIVERY_CHARGE,
+    label: '운임비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
     id: ItemSalesColumn.TOTAL_SALES_AMOUNT,
     label: '매출액',
     minWidth: 100,
@@ -99,6 +113,8 @@ const ItemSales = (): React.JSX.Element => {
   const [sum, setSum] = useState({
     manuSum: 0,
     rawSum: 0,
+    vatSum: 0,
+    delSum: 0,
     sum: 0,
   })
   const [isAutocomplete, setAutocomplete] = useState({
@@ -129,23 +145,29 @@ const ItemSales = (): React.JSX.Element => {
       : `receipt/product/report?productName=${formData.productName}&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`
 
     const res: AxiosResponse = await axiosInstance.get(url);
-    const sortedList = res.data.data?.sort((a, b) => {
+    const reports = res.data.data?.flatMap((i) => i.reports || []);
+    // console.log(reports);
+    const sortedList = reports?.sort((a, b) => {
       return dayjs(a.salesReport.createdAt).diff(dayjs(b.salesReport.createdAt))
     });
 
-    let m: number = 0, r: number = 0, s: number = 0;
+    let m: number = 0, r: number = 0, s: number = 0, v: number = 0, d: number = 0;
     setProductReports(sortedList.map((item) => {
       r += Number(item.totalRawMatAmount);
       m += Number(item.totalManufactureAmount);
       s += Number(item.totalSalesAmount);
+      v += Number(item.totalVatAmount);
+      d += Number(item.totalDeliveryCharge);
       return {
         ...item.salesReport,
         totalManufactureAmount: item.totalManufactureAmount,
         totalRawMatAmount: item.totalRawMatAmount,
         totalSalesAmount: item.totalSalesAmount,
+        totalDeliveryCharge: item.totalDeliveryCharge,
+        totalVatAmount: item.totalVatAmount,
       }
     }));
-    setSum({manuSum: m, rawSum: r, sum: s,});
+    setSum({manuSum: m, rawSum: r, vatSum: v, delSum: d, sum: s,});
   }
 
   useEffect(() => {
@@ -248,7 +270,7 @@ const ItemSales = (): React.JSX.Element => {
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer sx={{maxHeight: 440}}>
+        <TableContainer sx={{overflow: 'auto', maxHeight: '80vh'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -290,15 +312,24 @@ const ItemSales = (): React.JSX.Element => {
                 );
               })}
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell colSpan={2}></TableCell>
-                <TableCell align='right'>재료비합계</TableCell>
-                <TableCell align='right'>{sum.rawSum.toLocaleString()}</TableCell>
-                <TableCell align='right'>가공비합계</TableCell>
-                <TableCell align='right'>{sum.manuSum.toLocaleString()}</TableCell>
-                <TableCell align='right'>매출액합계</TableCell>
-                <TableCell align='right'>{sum.sum.toLocaleString()}</TableCell>
+                <TableCell colSpan={4}>합계</TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{sum.rawSum.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right' colSpan={2}>
+                  <Typography color='black' fontSize={13}>{sum.manuSum.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{sum.vatSum.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{sum.delSum.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{sum.sum.toLocaleString()}</Typography>
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>

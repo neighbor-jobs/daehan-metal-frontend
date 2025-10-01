@@ -8,7 +8,8 @@ import {
   TableContainer,
   TableFooter,
   TableHead,
-  TableRow, Typography
+  TableRow,
+  Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker';
 
@@ -69,6 +70,20 @@ const columns: readonly TableColumns<ItemSalesSummaryColumn>[] = [
     format: formatCurrency
   },
   {
+    id: ItemSalesSummaryColumn.TOTAL_VAT_AMOUNT,
+    label: '세액',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
+    id: ItemSalesSummaryColumn.TOTAL_DELIVERY_CHARGE,
+    label: '운임비',
+    minWidth: 100,
+    align: 'right',
+    format: formatCurrency
+  },
+  {
     id: ItemSalesSummaryColumn.TOTAL_SALES_AMOUNT,
     label: '금액',
     minWidth: 100,
@@ -87,6 +102,8 @@ const ItemSalesSummary = (): React.JSX.Element => {
     countSum: 0,
     rawSum: 0,
     manuSum: 0,
+    vatSum: 0,
+    delSum: 0,
     sum: 0,
   });
   const [printData, setPrintData] = useState<{
@@ -102,17 +119,21 @@ const ItemSalesSummary = (): React.JSX.Element => {
 
   const getItemSalesSumList = async () => {
     const res: AxiosResponse = await axiosInstance.get(`receipt/product/summary/report?orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
-    let c: number = 0, r: number = 0, m: number = 0, s: number = 0;
+    let c: number = 0, r: number = 0, m: number = 0, v: number = 0, d: number = 0, s: number = 0;
     const data = res.data.data.map((item) => {
       c += item.salesReport.quantity;
       r += Number(item.totalRawMatAmount);
       m += Number(item.totalManufactureAmount);
       s += Number(item.totalSalesAmount);
+      v += Number(item.totalVatAmount);
+      d += Number(item.totalDeliveryCharge)
       return {
         ...item.salesReport,
         totalManufactureAmount: item.totalManufactureAmount,
         totalRawMatAmount: item.totalRawMatAmount,
         totalSalesAmount: item.totalSalesAmount,
+        totalDeliveryCharge: item.totalDeliveryCharge,
+        totalVatAmount: item.totalVatAmount,
       }
     });
     setItemSalesSumList(data);
@@ -125,6 +146,8 @@ const ItemSalesSummary = (): React.JSX.Element => {
       countSum: c,
       rawSum: r,
       manuSum: m,
+      vatSum: v,
+      delSum: d,
       sum: s,
     })
   }
@@ -153,7 +176,7 @@ const ItemSalesSummary = (): React.JSX.Element => {
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden'}}>
-        <TableContainer>
+        <TableContainer sx={{overflow: 'auto', maxHeight: '80vh'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -195,21 +218,42 @@ const ItemSalesSummary = (): React.JSX.Element => {
                 );
               })}
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell colSpan={2}>합계</TableCell>
-                <TableCell align='right'>{tableFooter.countSum.toFixed(3)}</TableCell>
+                <TableCell colSpan={2}><Typography color='black' fontSize={13}>합계</Typography></TableCell>
+                {/* 수량 합계 */}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.countSum.toFixed(3)}</Typography></TableCell>
                 <TableCell align='right'></TableCell>
-                <TableCell align='right'>{tableFooter.rawSum.toLocaleString()}</TableCell>
+                {/* 재료비 합계 */}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.rawSum.toLocaleString()}</Typography></TableCell>
                 <TableCell align='right'></TableCell>
-                <TableCell align='right'>{tableFooter.manuSum.toLocaleString()}</TableCell>
-                <TableCell align='right'>{tableFooter.sum.toLocaleString()}</TableCell>
+                {/* 가공비 합계 */}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.manuSum.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 세액 합계*/}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.vatSum.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 운임비 합계*/}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.delSum.toLocaleString()}</Typography>
+                </TableCell>
+                {/* 금액 합계 */}
+                <TableCell align='right'>
+                  <Typography color='black' fontSize={13}>{tableFooter.sum.toLocaleString()}</Typography>
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={printData}></PrintButton>
+
+      <Box sx={{m: 1}}>
+        <PrintButton printData={printData}></PrintButton>
+      </Box>
     </Box>
   )
 }

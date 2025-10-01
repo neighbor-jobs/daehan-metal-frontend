@@ -30,7 +30,7 @@ import axiosInstance from '../../api/axios.ts';
 import PrintButton from '../../layout/PrintButton.tsx';
 import getAllProducts from '../../api/getAllProducts.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
-import {Choice} from '../../types/transactionRegisterTypes.ts';
+import {Choice} from '../../types/transactionRegisterReq.ts';
 
 const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
@@ -47,26 +47,27 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     id: RevenueMainColumn.LOCATION_NAMES,
     label: '현장명',
     minWidth: 140,
+    typoSx: {whiteSpace: 'pre-line'},
     format: (value: string[] | undefined) => value?.length > 0 ? value.join(', ') : ''
   },
   {
     id: RevenueMainColumn.QUANTITY,
     label: '수량',
-    minWidth: 80,
+    minWidth: 60,
     align: 'right',
     format: formatDecimal,
   },
   {
     id: RevenueMainColumn.RAW_MAT_AMOUNT,
     label: '재료단가',
-    minWidth: 100,
+    minWidth: 70,
     align: 'right',
     format: formatCurrency,
   },
   {
     id: RevenueMainColumn.TOTAL_RAW_MAT_AMOUNT,
     label: '재료비',
-    minWidth: 100,
+    minWidth: 90,
     align: 'right',
     typoSx: {color: 'blue'},
     format: (amount: number) => amount?.toLocaleString(undefined, {maximumFractionDigits: 0})
@@ -74,17 +75,31 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
   {
     id: RevenueMainColumn.MANUFACTURE_AMOUNT,
     label: '가공단가',
-    minWidth: 100,
+    minWidth: 70,
     align: 'right',
     format: formatCurrency,
   },
   {
     id: RevenueMainColumn.TOTAL_MANUFACTURE_AMOUNT,
     label: '가공비',
-    minWidth: 100,
+    minWidth: 90,
     align: 'right',
     typoSx: {color: 'darkorange'},
     format: (amount: number) => Math.floor(amount)?.toLocaleString()
+  },
+  {
+    id: RevenueMainColumn.VAT_AMOUNT,
+    label: '세액',
+    minWidth: 80,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: RevenueMainColumn.DELIVERY_CHARGE,
+    label: '운임비',
+    minWidth: 80,
+    align: 'right',
+    format: formatCurrency,
   }
 ];
 
@@ -145,15 +160,19 @@ const RevenueMain = (): React.JSX.Element => {
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
       return;
     }
-    const latestReports = res.data.data?.reports?.map((report) => ({
-      ...report,
-      totalRawMatAmount: Number(report.rawMatAmount) * report.quantity,
-      totalManufactureAmount: Number(report.manufactureAmount) * report.quantity,
-    }));
+    let vatSum = 0, delSum = 0;
+    const latestReports = res.data.data?.reports?.map((report) => {
+      vatSum += Number(report.vatAmount);
+      delSum += Number(report.deliveryCharge);
+      return {
+        ...report,
+        totalRawMatAmount: Number(report.rawMatAmount) * report.quantity,
+        totalManufactureAmount: Number(report.manufactureAmount) * report.quantity,
+      }
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const simplifiedReport = latestReports.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => rest);
-
+    const simplifiedReport = latestReports?.map(({receiptId, locationNames, companyName, createdAt, ...rest}) => rest);
     setEndSeq(res.data.data.endSequence);
     setReport(latestReports);
     setReportId(res.data.data.id);
@@ -342,8 +361,10 @@ const RevenueMain = (): React.JSX.Element => {
                       <TableCell align='right'>
                         {
                           (
-                            Math.round(Number(row.rawMatAmount) * row.quantity) +
-                            Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                            Math.round(Number(row.rawMatAmount) * row.quantity)
+                            + Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                            + Number(row.vatAmount) * row.quantity
+                            + Number(row.deliveryCharge) * row.quantity
                           ).toLocaleString('ko-KR')
                         }
                       </TableCell>
@@ -355,8 +376,8 @@ const RevenueMain = (): React.JSX.Element => {
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`전미수: ${formatCurrency(amount.carryoverAmount) || ''}`}</Typography></TableCell>
-                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</Typography></TableCell>
-                <TableCell colSpan={2} align='left'><Typography variant='body2' color='black'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</Typography></TableCell>
+                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`매출액: ${formatCurrency(amount.totalSalesAmount)}`}</Typography></TableCell>
+                <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`입금액: ${formatCurrency(amount.totalPayingAmount)}`}</Typography></TableCell>
                 <TableCell colSpan={3} align='left'><Typography variant='body2' color='black'>{`미수계: ${(Number(amount.carryoverAmount) + Number(amount.totalSalesAmount) - Number(amount.totalPayingAmount)).toLocaleString()}`}</Typography></TableCell>
               </TableRow>
             </TableFooter>
