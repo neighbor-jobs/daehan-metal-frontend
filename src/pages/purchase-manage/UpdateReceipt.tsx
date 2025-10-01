@@ -1,16 +1,25 @@
 import {
-  Box, Button, Checkbox,
+  Box,
+  Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton, Input,
-  Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  IconButton,
+  Input,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import React, {useEffect, useState} from 'react';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal, formatVatRate} from '../../utils/format.ts';
+import {formatCurrency, formatDecimal, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
 import {moveFocusToNextInput} from '../../utils/focus.ts';
 import {GetVendorReceiptResData} from '../../types/vendorRes.ts';
 import axiosInstance from '../../api/axios.ts';
@@ -51,30 +60,29 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     format: formatCurrency,
   },
   {
-    id: PurchaseRegisterColumn.PRODUCT_PRICE,
-    label: '입금액',
+    id: PurchaseRegisterColumn.VAT_AMOUNT,
+    label: '세액',
+    minWidth: 70,
+    align: 'right',
+  },
+  {
+    id: PurchaseRegisterColumn.VAT,
+    label: '',
+    minWidth: 30,
+  },
+  {
+    id: PurchaseRegisterColumn.TOTAL_AMOUNT,
+    label: '합계',
     minWidth: 100,
     align: 'right',
     format: formatCurrency,
   },
   {
-    id: PurchaseRegisterColumn.VAT,
-    label: '세금',
-    minWidth: 70,
-    align: 'center',
-  },
-  {
-    id: PurchaseRegisterColumn.VAT_RATE,
-    label: '세금비율',
-    minWidth: 30,
+    id: PurchaseRegisterColumn.PRODUCT_PRICE,
+    label: '입금액',
+    minWidth: 100,
     align: 'right',
-    format: formatVatRate,
-  },
-  {
-    id: PurchaseRegisterColumn.IS_PAYING,
-    label: '입금',
-    minWidth: 30,
-    align: 'center',
+    format: formatCurrency,
   },
 ];
 const UpdateReceipt = ({
@@ -84,13 +92,14 @@ const UpdateReceipt = ({
                          onSuccess,
                          prevFormData
                        }: UpdateReceiptProps): React.JSX.Element => {
+  // 세액은 반올림
   const [formData, setFormData] = useState({
     receiptId: prevFormData?.id || '',
     companyName: '',
     productName: prevFormData?.productName || '',
     productPrice: prevFormData?.productPrice || '0',      // 입금액
     manufactureAmount: "0",
-    rawMatAmount: prevFormData?.totalRawMatAmount || '0', // 단가
+    rawMatAmount: prevFormData?.unitPrice || '0', // 단가
     quantity: prevFormData?.quantity || 0,
     vatRate: 0.1,
     vat: prevFormData?.vat ?? true,
@@ -98,11 +107,39 @@ const UpdateReceipt = ({
   });
   const {showAlert, openAlert} = useAlertStore();
 
+  // 금액 계산
+  const qtyNum = Number(formData.quantity) || 0;
+  const unitNum = Number(formData.rawMatAmount) || 0;
+  const price = Math.round(unitNum * qtyNum);
+  const vatAmount = formData.vat === true ? Math.round(price * formData.vatRate) : 0;
+  const total = price + vatAmount;
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [event.target.name]: event.target.value
-    }))
+    const {name, value} = event.target;
+    const priceFields = [
+      'rawMatAmount',
+      'productPrice',
+      'manufactureAmount',
+    ];
+    if (priceFields.includes(name)) {
+      const numericValue = formatInputPrice(value, 0);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else if (name === 'quantity' || name === 'vatRate') {
+      const numericValue = formatInputQuality(value, 0);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [event.target.name]: event.target.value
+      }))
+
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,8 +151,10 @@ const UpdateReceipt = ({
   };
 
   const handleSubmit = async () => {
+    let isPaying = formData.isPaying;
+    if (formData.productPrice && formData.productPrice !== '0') isPaying = true;
     // 입금일 때, 입금액 필수
-    if (formData.isPaying) {
+    if (isPaying) {
       if (!formData.productPrice || formData.productPrice.trim() === '') {
         showAlert(`입금 항목의 입금액은 필수입니다.`, 'info');
         return;
@@ -134,20 +173,19 @@ const UpdateReceipt = ({
       }
     }
     try {
-      if (formData.isPaying) {
+      if (isPaying) {
         await axiosInstance.patch('/vendor/receipt', {
           ...formData,
           companyName: companyName,
           quantity: Number(formData.quantity),
-          rawMatAmount: undefined,
-          manufactureAmount: undefined,
+          isPaying: isPaying
         });
       } else {
         await axiosInstance.patch('/vendor/receipt',{
           ...formData,
           quantity: Number(formData.quantity),
           companyName: companyName,
-          productPrice: undefined,
+          isPaying: isPaying
         });
       }
       if (onSuccess) onSuccess();
@@ -157,7 +195,6 @@ const UpdateReceipt = ({
     }
   }
 
-
   useEffect(() => {
     if (!isOpen || !prevFormData) return;
     setFormData({
@@ -166,7 +203,7 @@ const UpdateReceipt = ({
       productName: prevFormData.productName || '',
       productPrice: prevFormData.productPrice || '0',
       manufactureAmount: "0",
-      rawMatAmount: prevFormData.totalRawMatAmount || '0',
+      rawMatAmount: prevFormData.unitPrice || '0',
       quantity: prevFormData.quantity || 0,
       vatRate: 0.1,
       vat: prevFormData?.vat ?? true,
@@ -174,7 +211,7 @@ const UpdateReceipt = ({
     });
   }, [isOpen, prevFormData]);
 
-  // console.log('formData: ', formData);
+  console.log('formData: ', formData);
 
   return (
     <Dialog open={isOpen}
@@ -254,78 +291,87 @@ const UpdateReceipt = ({
                   <TableCell>
                     {/* 단가 */}
                     <Input size='small'
-                           disableUnderline={formData.isPaying}
-                           disabled={formData.isPaying}
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
                              'data-input-id': `rawMatAmount`,
                              onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`rawMatAmount`);
+                               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                 const el = document.querySelector<HTMLInputElement>('[data-input-id="productPrice"]');
+                                 el?.focus();
+                               }
                              }
                            }}
                            name='rawMatAmount'
-                           value={formData.rawMatAmount}
+                           value={formatCurrency(formData.rawMatAmount)}
                            onChange={(event) => handleInputChange(event)}
                            data-table-input/>
                   </TableCell>
                   <TableCell>
-                    {/* 재료비 */}
+                    {/* 매입금액 */}
                     <Input size='small'
                            disableUnderline
-                           disabled
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
+                             disabled: true,
                              'data-input-id': `totalRawMatAmount`,
                            }}
                            name='totalRawMatAmount'
                            value={((parseFloat(formData.rawMatAmount || '0') || 0) * (formData.quantity || 0)).toLocaleString()}
-                           data-table-input/>
+                           data-table-input
+                    />
+                  </TableCell>
+                  {/* 매입세액 */}
+                  <TableCell align='right'>
+                    <Input size='small'
+                           disableUnderline
+                           value={vatAmount.toLocaleString()}
+                           inputProps={{
+                             sx: {textAlign: 'right', color: 'black'},
+                             disabled: true,
+                           }}
+                    />
+                  </TableCell>
+                  {/* 과세 여부 */}
+                  <TableCell align="left" sx={{padding: 0, margin: 0}}>
+                    <Checkbox
+                      name="vat"
+                      size='small'
+                      checked={!!formData.vat}
+                      onChange={handleCheckboxChange}
+                      sx={{padding: 0}}
+                    />
+                  </TableCell>
+                  {/* 합계 */}
+                  <TableCell align='right'>
+                    <Input size='small'
+                           disableUnderline
+                           value={total.toLocaleString()}
+                           inputProps={{
+                             sx: {textAlign: 'right', fontSize: 15},
+                             disabled: true,
+                             'data-input-id': `totalPrice`,
+                           }}
+                    />
                   </TableCell>
                   {/* 입금액 */}
                   <TableCell align='right'>
                     <Input size='small'
-                           disabled={!formData.isPaying}
                            disableUnderline={!formData.isPaying}
                            inputProps={{
                              sx: {textAlign: 'right'},
+                             'data-input-id': `productPrice`,
+                             onKeyDown: async (e) => {
+                               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                 e.preventDefault();
+                                 await handleSubmit();
+                               }                             }
                            }}
                            name='productPrice'
                            onChange={(e) => handleInputChange(e)}
-                           value={formData.productPrice}
-                           data-table-input/>
-                  </TableCell>
-                  {/* 세금 */}
-                  <TableCell align='center'>
-                    <Checkbox size='small'
-                              onChange={(e) => handleCheckboxChange(e)}
-                              name='vat'
-                              disabled={formData.isPaying}
-                              checked={formData.vat}
-                    />
-                  </TableCell>
-                  {/* 세금 비율 */}
-                  <TableCell>
-                    <Input size='small'
-                           disableUnderline
-                           disabled={!formData.vat || formData.isPaying}
-                           fullWidth
-                           value={formData.vatRate}
-                           inputProps={{
-                             sx: {textAlign: 'right'},
-                           }}
-                           name='vatRate'
-                           onChange={(e) => {
-                             handleInputChange(e);
-                           }}
-                           data-table-input/>
-                  </TableCell>
-                  {/* 입금 여부 */}
-                  <TableCell align='center'>
-                    <Checkbox size='small'
-                              onChange={(e) => handleCheckboxChange(e)}
-                              name='isPaying'
+                           value={formatCurrency(formData.productPrice)}
+                           data-table-input
                     />
                   </TableCell>
                 </TableRow>
