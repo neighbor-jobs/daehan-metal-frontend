@@ -10,7 +10,7 @@ import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {
   companyListDocRef,
   companySalesDocDef,
-  companySalesSumDocDef,
+  companySalesSumDocDef, dailySalesDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
   outstandingAmountDocDef,
@@ -276,6 +276,9 @@ ipcMain.handle('generate-and-open-pdf',
       switch (printType) {
         case RevenueManageMenuType.SalesDetail:
           docDefinition = invoiceDocDef(data);
+          break;
+        case RevenueManageMenuType.DailySales:
+          docDefinition = dailySalesDocDef(data);
           break;
         case RevenueManageMenuType.ClientSalesSummary:
           docDefinition = companySalesSumDocDef(data);

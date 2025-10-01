@@ -2,18 +2,212 @@ import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts';
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
+// TODO: 매출조회쪽에 세액&운임비 포함
+// TODO: 일별매출현황 템플릿 제작
+// TODO: 기본 border 얇기 0.4로 변경
+
 /**
- * 거래처별 매출현황
+ * 일별매출현황
  */
-export const companySalesDocDef = (companySalesData) => {
-  // console.log('printData: ', companySalesData);
+export const dailySalesDocDef = (dailySalesData) => {
+  // console.log(dailySalesData)
+  /* data
+  {
+  startAt: {
+    '$L': 'en',
+    '$u': undefined,
+    '$d': 2025-09-30T19:06:41.136Z,
+    '$y': 2025,
+    '$M': 9,
+    '$D': 1,
+    '$W': 3,
+    '$H': 4,
+    '$m': 6,
+    '$s': 41,
+    '$ms': 136,
+    '$x': {},
+    '$isDayjsObject': true
+  },
+  endAt: {
+    '$L': 'en',
+    '$u': undefined,
+    '$d': 2025-09-30T19:06:41.136Z,
+    '$y': 2025,
+    '$M': 9,
+    '$D': 1,
+    '$W': 3,
+    '$H': 4,
+    '$m': 6,
+    '$s': 41,
+    '$ms': 136,
+    '$x': {},
+    '$isDayjsObject': true
+  },
+  dailySalesList: [
+    {
+      companyName: '(ㄱ)',
+      manufactureAmount: '1000',
+      rawMatAmount: '2090',
+      productLength: '0',
+      productName: '0',
+      quantity: 2,
+      scale: '2x2',
+      vCut: '0',
+      vCutAmount: '0',
+      vatAmount: '600',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalRawMatAmount: 4180,
+      totalManufactureAmount: 2000
+    },
+    {
+      companyName: '(ㄱ)',
+      manufactureAmount: '5000',
+      rawMatAmount: '3000',
+      productLength: '0',
+      productName: '000',
+      quantity: 1,
+      scale: '11',
+      vCut: '0',
+      vCutAmount: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalRawMatAmount: 3000,
+      totalManufactureAmount: 5000
+    },
+    {
+      createdAt: '2025-10-01T00:00:00.000Z',
+      companyName: '(ㄱ)',
+      productName: '입금액',
+      scale: '',
+      payingAmount: '30000'
+    }
+  ],
+  amount: {
+    totalManufactureAmount: '7000',
+    totalRawMatAmount: '7180',
+    totalVatAmount: '1200',
+    totalDeliveryCharge: '0',
+    totalPayingAmount: 30000
+  }
+}
+  * */
   const today = new Date();
+  const totalAmount =
+    Number(dailySalesData.amount.totalRawMatAmount)
+    + Number(dailySalesData.amount.totalManufactureAmount)
+    + Number(dailySalesData.amount.totalVatAmount)
+    + Number(dailySalesData.amount.totalDeliveryCharge)
+    - dailySalesData.amount.totalPayingAmount
   const docDef: TDocumentDefinitions = {
+    pageMargins: [10, 20, 10, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
       ],
-      margin: [40, 10, 40, 0], // 좌우 여백 조정
+      margin: [5, 10, 5, 0], // 좌우 여백 조정
+    }),
+    content: [
+      {
+        text: `일별 매출 현황`,
+        style: 'header',
+        alignment: 'center',
+      },
+      {
+        text: `검색기간: ${dailySalesData.startAt} ~ ${dailySalesData.endAt}`,
+        style: 'subheader',
+        alignment: 'center',
+      },
+      {
+        text: `출력일자: ${today.toLocaleString('ko-KR')}`,
+        style: {
+          fontSize: 8,
+          marginBottom: 5,
+        }
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: ['auto', '*', '*', '*', 30, 40, 40, 30, 30, '*'],
+          body: [
+            ['날짜', '거래처명', '품명', '규격', '수량', '재료비', '가공비', '세액', '운임비', '금액'].map(header => ({
+              text: header,
+              alignment: 'center'
+            })),
+            // eslint-disable-next-line no-unsafe-optional-chaining
+            ...dailySalesData.dailySalesList?.map((item) => {
+              /* 입금인지 아닌지 구분 */
+              let amount: number;
+              if (item.payingAmount) amount = -Number(item.payingAmount);
+              else amount = item.totalRawMatAmount + item.totalManufactureAmount + Number(item.vatAmount) + Number(item.deliveryCharge)
+
+              /* 수량 소숫점 표시 */
+              const quantity = item.productName === '입금액' ? '' : Number(item['quantity']).toFixed(3).replace(/\.?0+$/, '')
+              return [
+                {text: item['createdAt']?.split('T')[0], style: 'tableText'}, // 날짜
+                {text: item['companyName'], style: 'tableText'}, // 거래처명
+                {text: item['productName'], style: 'tableText'}, // 품명
+                {text: item['scale'], style: 'tableText'}, // 규격
+                {text: quantity, alignment: 'right', style: 'tableText'}, // 수량
+                {text: formatCurrency(item['totalRawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
+                {text: formatCurrency(item['totalManufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
+                {text: formatCurrency(item['vatAmount']), alignment: 'right', style: 'tableText'}, // 세액
+                {text: formatCurrency(item['deliveryCharge']), alignment: 'right', style: 'tableText'}, // 운임비
+                {text: amount.toLocaleString(), alignment: 'right'}, // 금액
+              ]
+            }),
+            [
+              {text: '합계'},
+              {text: ''},
+              {text: ''},
+              {text: ''},
+              {text: ''},
+              {text: formatCurrency(dailySalesData.amount.totalRawMatAmount), alignment: 'right', style: 'tableText'},
+              {
+                text: formatCurrency(dailySalesData.amount.totalManufactureAmount),
+                alignment: 'right',
+                style: 'tableText'
+              },
+              {text: formatCurrency(dailySalesData.amount.totalVatAmount), alignment: 'right', style: 'tableText'},
+              {text: formatCurrency(dailySalesData.amount.totalDeliveryCharge), alignment: 'right', style: 'tableText'},
+              {text: totalAmount.toLocaleString(), alignment: 'right', style: 'tableText'},
+            ]
+          ],
+        },
+        layout: {
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0.4,
+        },
+        margin: [0, 0, 0, 0]
+      },
+    ],
+    defaultStyle: {
+      font: 'Pretendard',
+      fontSize: 8,
+    },
+    styles: {
+      header: {fontSize: 14,},
+      subheader: {fontSize: 10, marginBottom: 20},
+    }
+  }
+  return docDef;
+}
+
+
+/**
+ * 거래처별 매출현황
+ */
+export const companySalesDocDef = (companySalesData) => {
+  console.log('printData: ', companySalesData);
+  const today = new Date();
+  const docDef: TDocumentDefinitions = {
+    pageMargins: [10, 20, 10, 10],
+    header: (currentPage, pageCount) => ({
+      columns: [
+        {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
+      ],
+      margin: [5, 10, 5, 0], // 좌우 여백 조정
     }),
     content: [
       {
@@ -36,23 +230,54 @@ export const companySalesDocDef = (companySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', 'auto', '*', '*', '*', '*', '*'],
+          widths: ['auto', '*', '*', 30, 40, 40, '*', '*', '*'],
           body: [
-            ['날짜', '품명', '규격', '수량', '재료비', '가공비', '금액', '잔액'].map(header => ({
+            ['날짜', '품명', '규격', '수량', '재료비', '가공비', '금액', '수금액', '잔액'].map(header => ({
               text: header,
+              alignment: 'center'
             })),
-            ...companySalesData.data.map((item) => [
-              {text: item['createdAt'], style: 'tableText'}, // 날짜
-              {text: item['productName'], style: 'tableText'}, // 품명
-              {text: item['scale'], style: 'tableText'}, // 규격
-              {text: item['quantity'].toFixed(3), alignment: 'right', style: 'tableText'}, // 수량
-              {text: formatCurrency(item['rawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
-              {text: formatCurrency(item['manufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
-              {text: item['amount'].toLocaleString(), alignment: 'right', style: 'tableText'}, // 금액
-              {text: item['remainingAmount'].toLocaleString(), alignment: 'right'}, // 잔액
-            ]),
+            [
+              {text: '', style: 'tableText'}, // 날짜
+              {text: '전일이월', style: 'tableText'}, // 품명
+              {text: '', style: 'tableText'}, // 규격
+              {text: '', alignment: 'right', style: 'tableText'}, // 수량
+              {text: '', alignment: 'right', style: 'tableText'}, // 재료비
+              {text: '', alignment: 'right', style: 'tableText'}, // 가공비
+              {text: '', alignment: 'right', style: 'tableText'}, // 금액
+              {text: '', alignment: 'right', style: 'tableText'}, // 수금액
+              {text: companySalesData.outstandingBeforeOneDay?.toLocaleString(), alignment: 'right'}, // 잔액
+            ],
+            ...companySalesData.data.map((item) => {
+              let payingAmount, rawMatAmount, manufactureAmount, amount, quantity = '';
+              if (item.productName === '입금액') {
+                payingAmount = -item.amount;
+              } else {
+                quantity = item.quantity;
+                rawMatAmount = item.rawMatAmount;
+                manufactureAmount = item.manufactureAmount;
+                amount = rawMatAmount + manufactureAmount + Number(item.vatAmount) + Number(item.deliveryCharge);
+              }
+              const createdAt: string = item.createdAt?.split('T')[0] || '';
+
+              return [
+                {text: createdAt, style: 'tableText'}, // 날짜
+                {text: item['productName'], style: 'tableText'}, // 품명
+                {text: item['scale'], style: 'tableText'}, // 규격
+                {text: quantity, alignment: 'right', style: 'tableText'}, // 수량
+                {text: formatCurrency(item['rawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
+                {text: formatCurrency(item['manufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
+                {text: amount?.toLocaleString(), alignment: 'right', style: 'tableText'}, // 금액
+                {text: payingAmount?.toLocaleString(), alignment: 'right', style: 'tableText'}, // 수금액
+                {text: item['remainingAmount'].toLocaleString(), alignment: 'right'}, // 잔액
+              ]
+            }),
           ],
         },
+        layout: {
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0.4,
+        },
+        margin: [0, 0, 0, 0]
       },
     ],
     defaultStyle: {
@@ -71,7 +296,7 @@ export const companySalesDocDef = (companySalesData) => {
  * 월별매입조회
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
-  console.log(data);
+  // console.log(data);
   const bankData = data.bankArr?.map((b) => `${b.bankName} : ${b.accountNumber}`).join(' ');
   return {
     pageSize: 'A4', // A4 크기 유지
@@ -234,9 +459,10 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
  * 거래처별 매출집계
  */
 export const companySalesSumDocDef = (companySalesSumData) => {
-  // console.log(companySalesSumData)
+  console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
+    pageMargins: [10, 20, 10, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -264,21 +490,29 @@ export const companySalesSumDocDef = (companySalesSumData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', '*', '*', '*', '*',],
+          widths: ['*', '*', '*', '*', '*', '*', '*', '*'],
           body: [
-            ['거래처명', '재료비', '가공비', '입금액', '총액', '잔액'].map(header => ({
+            ['거래처명', '재료비', '가공비', '세액', '운임비', '입금액', '총액', '잔액'].map(header => ({
               text: header,
+              alignment: 'center',
             })),
             ...companySalesSumData.data.map((item: any) => [
               {text: item['company-name'], style: 'tableText'}, // 품명 (거래처명)
               {text: Number(item['material-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 재료비
               {text: Number(item['processing-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: Number(item['vat-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: Number(item['delivery-charge']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
               {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 총 금액
               {text: Number(item['total-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 수금액
               {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
           ],
         },
+        layout: {
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0.4,
+        },
+        margin: [0, 0, 0, 0]
       },
     ],
     defaultStyle: {
@@ -297,8 +531,177 @@ export const companySalesSumDocDef = (companySalesSumData) => {
  * 품목별 매출집계
  */
 export const itemSalesSumDocDef = (itemSalesSumData) => {
+  console.log(itemSalesSumData);
+  /* {
+  data: [
+    {
+      receiptId: 'c2e9c2b8-1867-44b4-ab58-e04d45792ec1',
+      companyName: '(ㄱ)',
+      productName: '0',
+      vCutAmount: '0',
+      rawMatAmount: '2090',
+      manufactureAmount: '1000',
+      quantity: 2,
+      productLength: '0',
+      scale: '2x2',
+      vCut: '0',
+      vatAmount: '600',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '2000',
+      totalRawMatAmount: '4180',
+      totalSalesAmount: '7380',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '1200'
+    },
+    {
+      receiptId: 'c2e9c2b8-1867-44b4-ab58-e04d45792ec1',
+      companyName: '(ㄱ)',
+      productName: '000',
+      vCutAmount: '0',
+      rawMatAmount: '3000',
+      manufactureAmount: '5000',
+      quantity: 1,
+      productLength: '0',
+      scale: '11',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '5000',
+      totalRawMatAmount: '3000',
+      totalSalesAmount: '8000',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '0'
+    },
+    {
+      receiptId: '76044338-7f58-4594-a4da-50504374fbdc',
+      companyName: '(ㄱ)',
+      productName: '00',
+      vCutAmount: '0',
+      rawMatAmount: '3000',
+      manufactureAmount: '14000',
+      quantity: 0,
+      productLength: '0',
+      scale: '2x2',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '0',
+      totalRawMatAmount: '0',
+      totalSalesAmount: '0',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '0'
+    },
+    {
+      receiptId: 'ac66ce9c-ee7a-4541-893f-6330b141aae9',
+      companyName: '(ㄱ)',
+      productName: '02',
+      vCutAmount: '0',
+      rawMatAmount: '1020',
+      manufactureAmount: '1800',
+      quantity: 6.833,
+      productLength: '0',
+      scale: '3x3',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '12299',
+      totalRawMatAmount: '6970',
+      totalSalesAmount: '32769',
+      totalDeliveryCharge: '13500',
+      totalVatAmount: '0'
+    },
+    {
+      receiptId: '5b26895b-ae90-406f-b750-5b5c56416392',
+      companyName: '후인건축',
+      productName: '00',
+      vCutAmount: '0',
+      rawMatAmount: '2000',
+      manufactureAmount: '9000',
+      quantity: 68,
+      productLength: '0',
+      scale: '11x1',
+      vCut: '0',
+      vatAmount: '1000',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '612000',
+      totalRawMatAmount: '136000',
+      totalSalesAmount: '768000',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '20000'
+    },
+    {
+      receiptId: '1aba9d4c-6c79-4619-a533-4b63b702095e',
+      companyName: '(ㄱ)',
+      productName: '0',
+      vCutAmount: '0',
+      rawMatAmount: '3000',
+      manufactureAmount: '4000',
+      quantity: 2,
+      productLength: '0',
+      scale: '1x1',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '8000',
+      totalRawMatAmount: '6000',
+      totalSalesAmount: '14000',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '0'
+    },
+    {
+      receiptId: '1aba9d4c-6c79-4619-a533-4b63b702095e',
+      companyName: '(ㄱ)',
+      productName: '01',
+      vCutAmount: '0',
+      rawMatAmount: '4000',
+      manufactureAmount: '5000',
+      quantity: 2,
+      productLength: '0',
+      scale: '',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '10000',
+      totalRawMatAmount: '8000',
+      totalSalesAmount: '18000',
+      totalDeliveryCharge: '0',
+      totalVatAmount: '0'
+    },
+    {
+      receiptId: '1aba9d4c-6c79-4619-a533-4b63b702095e',
+      companyName: '(ㄱ)',
+      productName: '하장스탓AB',
+      vCutAmount: '0',
+      rawMatAmount: '2020',
+      manufactureAmount: '0',
+      quantity: 3,
+      productLength: '0',
+      scale: 'EGI1.55TX4X4000',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '2000',
+      createdAt: '2025-10-01T00:00:00.000Z',
+      totalManufactureAmount: '0',
+      totalRawMatAmount: '6060',
+      totalSalesAmount: '12060',
+      totalDeliveryCharge: '6000',
+      totalVatAmount: '0'
+    }
+  ],
+  startAt: '2025-10-01',
+  endAt: '2025-10-01'
+}  * */
   const today = new Date();
   const docDef: TDocumentDefinitions = {
+    pageSize: 'A4',
+    pageMargins: [10, 20, 10, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -326,23 +729,31 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', 'auto', '10%', '*', '10%', '*', '*'],
+          widths: ['*', '*', 'auto', 40, 50, 40, 50, 40, 40, 50],
           body: [
-            ['품명', '규격', '수량', '재료단가', '재료비', '가공단가', '가공비', '금액'].map(header => ({
+            ['품명', '규격', '수량', '재료단가', '재료비', '가공단가', '가공비', '세액', '운임비', '금액'].map(header => ({
               text: header,
+              alignment: 'center',
             })),
             ...itemSalesSumData.data.map((item) => [
               {text: item['productName'], style: 'tableText'}, // 품명
               {text: item['scale'], style: 'tableText'}, // 규격
-              {text: formatDecimal(item['quantity']), style: 'tableText'}, // 수량
+              {text: formatDecimal(item['quantity']), style: 'tableText', alignment: 'right'}, // 수량
               {text: formatCurrency(item['rawMatAmount']), style: 'tableText', alignment: 'right'}, // 재료 단가
               {text: formatCurrency(item['totalRawMatAmount']), style: 'tableText', alignment: 'right'}, // 재료비
               {text: formatCurrency(item['manufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공 단가
               {text: formatCurrency(item['totalManufactureAmount']), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: formatCurrency(item['totalVatAmount']), style: 'tableText', alignment: 'right'}, // 가공비
+              {text: formatCurrency(item['totalDeliveryCharge']), style: 'tableText', alignment: 'right'}, // 가공비
               {text: formatCurrency(item['totalSalesAmount']), style: 'tableText', alignment: 'right'}, // 금액
             ]),
           ],
         },
+        layout: {
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0.4,
+        },
+        margin: [0, 0, 0, 0],
       },
     ],
     defaultStyle: {
@@ -480,7 +891,7 @@ const basicInvoiceTable = (data, index) => {
   ]
 }
 */
-  // console.log(data);
+  console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
   const totalRowsNum = data.sales.length > 15 ? 25 : 15;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
@@ -743,12 +1154,12 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     salarys.push({
       text: `${salary.toLocaleString()} 원`,
       style: 'cell',
-      alignment: 'center'
+      alignment: 'center',
     })
     totalSalarys.push({
       text: `${totalSalary.toLocaleString()} 원`,
       style: 'cell',
-      alignment: 'center'
+      alignment: 'center',
     })
 
     for (let j = 0; j < payment.deductionDetail.length; ++j) {
@@ -785,11 +1196,44 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
           // spacer,
         ],
       },
-      layout: customTableLayout,
+      layout: payrollLayout,
       margin: [0, 0, 0, 10],
     },
   ]
 }
+
+/** 급여대장 layout */
+const payrollLayout = {
+  hLineWidth: function (i: number, node: any) {
+    // i는 현재 그려지는 horizontal line의 index (row 사이사이)
+    // node.table.body.length = 전체 row 개수
+    const rowCount = node.table.body.length;
+
+    // 수령액계 row index
+    const salaryRowIndex = 10;
+    // 실수령액 row index
+    const totalSalaryRowIndex = rowCount - 1;
+
+    // 수령액계 row 아래줄, 실수령액 row 위/아래줄은 두껍게
+    if (i === salaryRowIndex
+      || i === salaryRowIndex + 1
+      || i === totalSalaryRowIndex
+      || i === totalSalaryRowIndex + 1
+    ) {
+      return 2; // 두께 2
+    }
+    return 1; // 기본 두께 1
+  },
+  vLineWidth: function () {
+    return 1; // 세로줄은 기본 두께
+  },
+  hLineColor: function () {
+    return 'black';
+  },
+  vLineColor: function () {
+    return 'black';
+  },
+};
 
 /**
  * ledger 생성
@@ -808,14 +1252,14 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
 
   // 표 헤더: 8열(4열*2세트)
   const headerRow = [
-    { text: '항목', style: 'subheader', alignment: 'center' },
-    { text: '금액', style: 'subheader', alignment: 'center' },
-    { text: '지출일', style: 'subheader', alignment: 'center' },
-    { text: '메모', style: 'subheader', alignment: 'center' },
-    { text: '항목', style: 'subheader', alignment: 'center' },
-    { text: '금액', style: 'subheader', alignment: 'center' },
-    { text: '지출일', style: 'subheader', alignment: 'center' },
-    { text: '메모', style: 'subheader', alignment: 'center' },
+    {text: '항목', style: 'subheader', alignment: 'center'},
+    {text: '금액', style: 'subheader', alignment: 'center'},
+    {text: '지출일', style: 'subheader', alignment: 'center'},
+    {text: '메모', style: 'subheader', alignment: 'center'},
+    {text: '항목', style: 'subheader', alignment: 'center'},
+    {text: '금액', style: 'subheader', alignment: 'center'},
+    {text: '지출일', style: 'subheader', alignment: 'center'},
+    {text: '메모', style: 'subheader', alignment: 'center'},
   ];
 
   // 2개 항목씩 한 행으로(좌 4열 + 우 4열)
@@ -825,10 +1269,10 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
   const fmtItem = (it?: any) => {
     if (!it) {
       return [
-        { text: '', style: 'cell', noWrap: true },
-        { text: '', style: 'cell', alignment: 'right' },
-        { text: '', style: 'cell', alignment: 'center' },
-        { text: '', style: 'cell' },
+        {text: '', style: 'cell', noWrap: true},
+        {text: '', style: 'cell', alignment: 'right'},
+        {text: '', style: 'cell', alignment: 'center'},
+        {text: '', style: 'cell'},
       ];
     }
     const purpose = it.purpose ?? it.name ?? '';
@@ -840,10 +1284,10 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
     const group = it.group ?? it.groupName ?? '';
     const memo = it.memo ?? it.note ?? '';
     return [
-      { text: purpose, style: 'cell' , noWrap: true},
-      { text: valueTxt, style: 'cell', alignment: 'right' },
-      { text: group, style: 'cell', alignment: 'center' },
-      { text: memo, style: 'cell', alignment: 'center' },
+      {text: purpose, style: 'cell', noWrap: true},
+      {text: valueTxt, style: 'cell', alignment: 'right'},
+      {text: group, style: 'cell', alignment: 'center'},
+      {text: memo, style: 'cell', alignment: 'center'},
     ];
   };
 
@@ -866,16 +1310,16 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
     })
   }
 
-/*
-  if (groupCalcs[0].length > 0 && groupCalcs[0].length < 8) {
-    for (let i = 0; i < 8; ++i) {
-      if (!groupCalcs[0][i]) {
-        groupCalcs[0][i] = {}
-        groupCalcs[1][i] = ''
+  /*
+    if (groupCalcs[0].length > 0 && groupCalcs[0].length < 8) {
+      for (let i = 0; i < 8; ++i) {
+        if (!groupCalcs[0][i]) {
+          groupCalcs[0][i] = {}
+          groupCalcs[1][i] = ''
+        }
       }
     }
-  }
-*/
+  */
 
   return [
     {
@@ -941,7 +1385,7 @@ export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitio
 /**
  * 급여명세서(1개)
  * */
-const getSalaryContent = (data: Payment): any[]  => {
+const getSalaryContent = (data: Payment): any[] => {
   const [year, month] = data.createdAt.split('-');
   const today = formatDate(new Date());
   let deductions: any[][] = []
@@ -991,7 +1435,12 @@ const getSalaryContent = (data: Payment): any[]  => {
     {
       columns: [
         {width: "20%", text: `${data.employeeName} 님`, style: 'subheader', fontSize: 12},
-        {width: "60%", text: `사번: ${data?.startWorkingAt?.split('T')[0] || ''}`, alignment: 'right', style: 'subheader'},
+        {
+          width: "60%",
+          text: `사번: ${data?.startWorkingAt?.split('T')[0] || ''}`,
+          alignment: 'right',
+          style: 'subheader'
+        },
       ],
       margin: [0, 0, 0, 10],
     },
@@ -1011,7 +1460,7 @@ const getSalaryContent = (data: Payment): any[]  => {
             {text: '식대', alignment: 'center'}
           ],
           [
-            {text:`${formatCurrency(data.paymentDetail.pay)} 원`, alignment: 'right'},
+            {text: `${formatCurrency(data.paymentDetail.pay)} 원`, alignment: 'right'},
             {text: `${formatCurrency(data.paymentDetail.hourlyWage)} 원`, alignment: 'right'},
             {text: `${formatCurrency(data.paymentDetail.mealAllowance)} 원`, alignment: 'right'},
           ],
@@ -1090,7 +1539,7 @@ const getSalaryContent = (data: Payment): any[]  => {
       style: 'footer',
     },
     // 마지막에 pageBreak 추가
-    { text: '', pageBreak: 'after' }
+    {text: '', pageBreak: 'after'}
   ];
 }
 
@@ -1120,10 +1569,10 @@ export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
       fontSize: 9,
     },
     styles: {
-      header: { fontSize: 14 },
-      subheader: { fontSize: 10, marginBottom: 5 },
-      cell: { fontSize: 9, margin: [0, 5, 0, 5] },
-      footer: { fontSize: 9, marginTop: 10 },
+      header: {fontSize: 14},
+      subheader: {fontSize: 10, marginBottom: 5},
+      cell: {fontSize: 9, margin: [0, 5, 0, 5]},
+      footer: {fontSize: 9, marginTop: 10},
     }
   };
 };
@@ -1144,10 +1593,18 @@ const customTableLayout = {
   vLineColor: function () {
     return 'black'; // 세로선 색상
   },
-  paddingLeft: function() { return 4; },
-  paddingRight: function() { return 4; },
-  paddingTop: function() { return 2; },
-  paddingBottom: function() { return 2; }
+  paddingLeft: function () {
+    return 4;
+  },
+  paddingRight: function () {
+    return 4;
+  },
+  paddingTop: function () {
+    return 2;
+  },
+  paddingBottom: function () {
+    return 2;
+  }
 };
 
 
