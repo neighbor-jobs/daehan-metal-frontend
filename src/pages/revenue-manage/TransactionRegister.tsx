@@ -27,7 +27,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import dayjs from 'dayjs';
-import {Choice, defaultChoice} from '../../types/transactionRegisterTypes.ts';
+import {Choice, defaultChoice} from '../../types/transactionRegisterReq.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
@@ -40,6 +40,7 @@ import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts
 import {Product} from '../../types/productRes.ts';
 import {moveFocusToNextInput} from '../../utils/focus.ts';
 import cacheManager from '../../utils/cacheManager.ts';
+import {CompanyOutstandingAmtRes} from '../../types/companyRes.ts';
 
 interface TransactionRegisterProps {
   dialogType: 'create' | 'edit';
@@ -66,7 +67,7 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
   {
     id: TransactionRegisterColumn.COUNT,
     label: '수량',
-    minWidth: 70,
+    minWidth: 50,
     align: 'right',
     format: formatDecimal,
   },
@@ -101,9 +102,23 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
     format: formatCurrency,
   },
   {
+    id: TransactionRegisterColumn.VAT_AMOUNT,
+    label: '세액단가',
+    minWidth: 70,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
+    id: TransactionRegisterColumn.DELIVERY_CHARGE,
+    label: '운임비단가',
+    minWidth: 70,
+    align: 'right',
+    format: formatCurrency,
+  },
+  {
     id: TransactionRegisterColumn.TOTAL_AMOUNT,
     label: '계',
-    minWidth: 90,
+    minWidth: 80,
     align: 'right',
     format: formatCurrency,
   },
@@ -118,6 +133,8 @@ const TransactionRegister = ({
                                prevChoices,
                                prevFormData
                              }: TransactionRegisterProps): React.JSX.Element => {
+  // TODO: footer 항상 보이도록 고정
+  // TODO: 품목별로 세액, 운임비란 추가
   const [choices, setChoices] = useState<Choice[]>(dialogType === 'create' ?
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
@@ -132,6 +149,7 @@ const TransactionRegister = ({
   } : prevFormData)
   const [newProductFormOpen, setNewProductFormOpen] = useState(false);
   const [productListState, setProductListState] = useState<Product[] | []>([]);
+  const [outstanding, setOutstanding] = useState(0);
 
   const {showAlert, openAlert} = useAlertStore();
   const companyInputRef = useRef<HTMLInputElement | null>(null);
@@ -146,7 +164,9 @@ const TransactionRegister = ({
       const quantity = Number(choice.quantity) || 0;
       const rawMat = Number(choice.rawMatAmount) || 0;
       const manufacture = Number(choice.manufactureAmount) || 0;
-      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity);
+      const vat= Number(choice.vatAmount) || 0;
+      const delivery = Number(choice.deliveryCharge) || 0;
+      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + vat + delivery;
       return acc + total;
     }, 0);
   }, [choices]);
@@ -166,8 +186,12 @@ const TransactionRegister = ({
       ...prev,
       companyId: selectedCompany ? selectedCompany.id : "",
       companyName: selectedCompany ? newValue : "",
-      locationName: [],
     }));
+    if (selectedCompany) {
+      fetchOutstanding(selectedCompany.companyName, formData.createdAt);
+    } else {
+      setOutstanding(0);
+    }
   }, [salesCompanyList]);
 
   const handleLocationChange = useCallback((_event, newValues: string[]) => {
@@ -254,6 +278,20 @@ const TransactionRegister = ({
   }
 
   // api
+  const fetchOutstanding = useCallback(async (companyName: string, startAt: string) => {
+    // companyName이 없으면 0 처리
+    if (!companyName) { setOutstanding(0); return; }
+    try {
+      const res: AxiosResponse = await axiosInstance.get('/company/receivable', {
+        params: { orderBy: 'asc', startAt: startAt}
+      });
+      const amt: CompanyOutstandingAmtRes = res.data.data?.find((c: CompanyOutstandingAmtRes) => c.companyName === companyName);
+      setOutstanding(Number(amt.outstandingAmount));
+    } catch (e) {
+      setOutstanding(0);
+    }
+  }, []);
+
   const getEndSeq = async (companyName: string, startAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(`/receipt/company/daily/sales/report?companyName=${companyName}&orderBy=asc&startAt=${startAt}&sequence=1`);
     return res.data?.data?.endSequence ?? null;
@@ -280,6 +318,8 @@ const TransactionRegister = ({
       quantity: Number(c.quantity),
       rawMatAmount: String(Number(c.rawMatAmount || '0')),
       manufactureAmount: String(Number(c.manufactureAmount || '0')),
+      vatAmount: String(Number(c.vatAmount || '0')),
+      deliveryCharge: String(Number(c.deliveryCharge || '0')),
       unitWeight: "0",
       stocks: 0,
       vCutAmount: "0",
@@ -317,6 +357,7 @@ const TransactionRegister = ({
         showAlert(`${res.data.message}`, 'error');
         return;
       }
+      showAlert('거래등록에 성공했습니다.', 'success')
 /*
       if (onSuccess) {
         onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
@@ -382,6 +423,7 @@ const TransactionRegister = ({
   }, [dialogType, prevFormData]);
 
   // debug
+  // console.log(choices);
 
   return (
     <>
@@ -525,7 +567,7 @@ const TransactionRegister = ({
               </LocalizationProvider>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{maxHeight: 400, overflow: 'auto'}}>
               <Table size='small'
                      sx={{
                        '& .MuiTableCell-root': {
@@ -569,7 +611,7 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 0,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true),
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6, true),
                                            ...params.inputProps
                                          }
                                        }}
@@ -591,7 +633,7 @@ const TransactionRegister = ({
                                          htmlInput: {
                                            'data-col-index': 1,
                                            'data-row-index': rowIndex,
-                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4, true),
+                                           onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6, true),
                                            ...params.inputProps
                                          }
                                        }}
@@ -608,7 +650,7 @@ const TransactionRegister = ({
                                  sx: {textAlign: 'right'},
                                  'data-col-index': 2,
                                  'data-row-index': rowIndex,
-                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6),
                                }}
                                value={choice.quantity}
                                name='quantity'
@@ -624,7 +666,7 @@ const TransactionRegister = ({
                                  sx: {textAlign: 'right'},
                                  'data-col-index': 3,
                                  'data-row-index': rowIndex,
-                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4),
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6),
                                }}
                                name='rawMatAmount'
                                value={formatCurrency(choice.rawMatAmount)}
@@ -653,21 +695,7 @@ const TransactionRegister = ({
                                  sx: {textAlign: 'right'},
                                  'data-col-index': 4,
                                  'data-row-index': rowIndex,
-                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                                   if (e.key === 'Enter') {
-                                     const nextRowIndex = choices.length; // 새로 추가될 행 index
-                                     addRow();
-
-                                     // 비동기 렌더링 후 focus 적용
-                                     setTimeout(() => {
-                                       focusByCell(nextRowIndex, 0);
-                                     }, 0);
-
-                                     e.preventDefault();
-                                   } else {
-                                     arrowNavAtRegister(e, 4);
-                                   }
-                                 }
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6)
                                }}
                                value={formatCurrency(choice.manufactureAmount)}
                                onChange={(event) => handleChoiceChange(event, rowIndex)}
@@ -684,6 +712,54 @@ const TransactionRegister = ({
                                  disabled: true,
                                }}/>
                       </TableCell>
+                      {/* 세액 */}
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               fullWidth
+                               data-table-input
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                                 'data-col-index': 5,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 6),
+                               }}
+                               value={formatCurrency(choice.vatAmount)}
+                               onChange={(event) => handleChoiceChange(event, rowIndex)}
+                               name='vatAmount'
+                        />
+                      </TableCell>
+                      {/* 운임비 */}
+                      <TableCell>
+                        <Input size='small'
+                               disableUnderline
+                               fullWidth
+                               data-table-input
+                               inputProps={{
+                                 sx: {textAlign: 'right'},
+                                 'data-col-index': 6,
+                                 'data-row-index': rowIndex,
+                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                   if (e.key === 'Enter') {
+                                     const nextRowIndex = choices.length; // 새로 추가될 행 index
+                                     addRow();
+
+                                     // 비동기 렌더링 후 focus 적용
+                                     setTimeout(() => {
+                                       focusByCell(nextRowIndex, 0);
+                                     }, 0);
+
+                                     e.preventDefault();
+                                   } else {
+                                     arrowNavAtRegister(e, 6);
+                                   }
+                                 }
+                               }}
+                               value={formatCurrency(choice.deliveryCharge)}
+                               onChange={(event) => handleChoiceChange(event, rowIndex)}
+                               name='deliveryCharge'
+                        />
+                      </TableCell>
                       {/* 계 */}
                       <TableCell>
                         <Input size='small'
@@ -693,8 +769,10 @@ const TransactionRegister = ({
                                // disabled
                                value={
                                  (
-                                   Math.round(Number(choice.rawMatAmount) * choice.quantity) +
-                                   Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
+                                   Math.round(Number(choice.rawMatAmount) * choice.quantity)
+                                   + Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
+                                   + Number(choice.vatAmount) * choice.quantity
+                                   + Number(choice.deliveryCharge) * choice.quantity
                                  ).toLocaleString('ko-KR')
                                }
                                inputProps={{
@@ -712,7 +790,7 @@ const TransactionRegister = ({
                     </TableRow>
                   ))}
                   <TableRow>
-                    <TableCell colSpan={8} align="center">
+                    <TableCell colSpan={11} align="center">
                       <Button
                         fullWidth
                         size="small"
@@ -728,10 +806,18 @@ const TransactionRegister = ({
               </Table>
             </TableContainer>
 
-            <Box display="flex" justifyContent="space-between" mt={2}>
+            <Box display="flex" justifyContent="space-between" mt={0.5}>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <InputLabel sx={{fontSize: 'small',}}>미수금</InputLabel>
-                <TextField size='small' variant="outlined" disabled/>
+                <TextField size='small'
+                           variant="outlined"
+                           value={outstanding.toLocaleString()}
+                           slotProps={{
+                             htmlInput: {
+                               disabled: true,
+                             }
+                           }}
+                />
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <InputLabel sx={{fontSize: 'small',}}>매출계</InputLabel>
@@ -741,8 +827,8 @@ const TransactionRegister = ({
                            disabled
                            sx={{
                              "& .MuiInputBase-input.Mui-disabled": {
-                               WebkitTextFillColor: "black", // 크롬/사파리 대응
-                               color: "black" // 파이어폭스 등 기본 컬러
+                               WebkitTextFillColor: "black",
+                               color: "black"
                              }
                            }}
                 />
@@ -765,11 +851,17 @@ const TransactionRegister = ({
               </Box>
               <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 <InputLabel sx={{fontSize: 'small',}}>미수계</InputLabel>
-                <TextField size='small' variant="outlined" disabled/>
+                <TextField size='small'
+                           variant="outlined"
+                           value={(outstanding - Number(formData.payingAmount)).toLocaleString()}
+                           slotProps={{
+                             htmlInput: {disabled: true}
+                           }}
+                />
               </Box>
             </Box>
 
-            <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
+            <Box display="flex" justifyContent="flex-end" gap={2} mt={0.5}>
               <Button variant="contained"
                       onClick={register}
               >

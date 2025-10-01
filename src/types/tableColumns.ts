@@ -76,6 +76,8 @@ export enum RevenueMainColumn {
   TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
   MANUFACTURE_AMOUNT = 'manufactureAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
+  VAT_AMOUNT = 'vatAmount',
+  DELIVERY_CHARGE = 'deliveryCharge',
   PRODUCT_LENGTH = 'productLength',
 }
 
@@ -87,6 +89,8 @@ export enum TransactionRegisterColumn {
   MATERIAL_TOTAL_PRICE = 'materialTotalPrice',
   PROCESSING_PRICE = 'processingPrice',
   PROCESSING_TOTAL_PRICE = 'processingTotalPrice',
+  VAT_AMOUNT = 'vatAmount',
+  DELIVERY_CHARGE = 'deliveryCharge',
   TOTAL_AMOUNT = 'totalAmount',
 }
 
@@ -100,6 +104,8 @@ export enum DailySalesColumn {
   MANUFACTURE_AMOUNT = 'manufactureAmount',
   TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
+  VAT_AMOUNT = 'vatAmount',
+  DELIVERY_CHARGE = 'deliveryCharge',
 }
 
 export enum ClientSalesColumn {
@@ -109,6 +115,8 @@ export enum ClientSalesColumn {
   QUANTITY = 'quantity',
   TOTAL_RAW_MAT_AMOUNT = 'rawMatAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'manufactureAmount',
+  VAT_AMOUNT = 'vatAmount',
+  DELIVERY_CHARGE = 'deliveryCharge',
   PRODUCT_LENGTH = 'productLength',
 }
 
@@ -117,6 +125,8 @@ export enum ClientSalesSummaryColumn {
   TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   TOTAL_PAYING_AMOUNT = 'totalPayingAmount',
+  TOTAL_VAT_AMOUNT = 'totalVatAmount',
+  TOTAL_DELIVERY_CHARGE = 'totalDeliveryCharge',
 }
 
 export enum ItemSalesColumn {
@@ -127,8 +137,10 @@ export enum ItemSalesColumn {
   TOTAL_RAW_MAT_AMOUNT = 'totalRawMatAmount',
   MANUFACTURE_AMOUNT = 'manufactureAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
-  PRODUCT_LENGTH = 'productLength',
+  TOTAL_VAT_AMOUNT = 'totalVatAmount',
+  TOTAL_DELIVERY_CHARGE = 'totalDeliveryCharge',
   TOTAL_SALES_AMOUNT = 'totalSalesAmount',
+  PRODUCT_LENGTH = 'productLength',
 }
 
 export enum ItemSalesSummaryColumn {
@@ -140,6 +152,8 @@ export enum ItemSalesSummaryColumn {
   MANUFACTURE_AMOUNT = 'manufactureAmount',
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   TOTAL_SALES_AMOUNT = 'totalSalesAmount',
+  TOTAL_VAT_AMOUNT = 'totalVatAmount',
+  TOTAL_DELIVERY_CHARGE = 'totalDeliveryCharge',
 }
 
 /*{
