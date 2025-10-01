@@ -270,7 +270,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
         </Button>
       </Box>
       <Paper sx={{width: '100%', overflow: 'hidden', flexGrow: 1}}>
-        <TableContainer>
+        <TableContainer sx={{overflow: 'auto', maxHeight: '80vh'}}>
           <Table stickyHeader aria-label="sticky table" size='small'>
             <TableHead>
               <TableRow>
@@ -346,7 +346,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                   );
                 })}
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
               <TableRow>
                 <TableCell colSpan={4}>합계</TableCell>
                 <TableCell align='right'>

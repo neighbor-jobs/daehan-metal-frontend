@@ -1,7 +1,7 @@
 import {
   Autocomplete,
   Box,
-  Button,
+  Button, Checkbox,
   IconButton,
   Input,
   InputLabel,
@@ -63,6 +63,12 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     label: '매입세액',
     minWidth: 100,
     align: 'right',
+  },
+  {
+    id: PurchaseRegisterColumn.VAT,
+    label: '',
+    minWidth: 30,
+    align: 'center',
   },
   {
     id: PurchaseRegisterColumn.TOTAL_AMOUNT,
@@ -255,6 +261,7 @@ const PurchaseMain = (): React.JSX.Element => {
 
     const transformedReceipts = receipts.map((item) => {
       let paying = false;
+      // productPrice 입금액으로 사용중
       if (item.productPrice && item.productPrice !== '0') paying = true;
       return {
         ...item,
@@ -280,7 +287,12 @@ const PurchaseMain = (): React.JSX.Element => {
       }
     }
 
-    const curTime = dayjs(header.createdAt);
+    const curTime = dayjs(header.createdAt)
+      .hour(dayjs().hour())
+      .minute(dayjs().minute())
+      .second(dayjs().second())
+      .add(9, 'hour');
+
     const apiReceipts = transformedReceipts.map((item, idx: number) => {
       if (item.isPaying) {
         return {
@@ -289,8 +301,6 @@ const PurchaseMain = (): React.JSX.Element => {
           vendorId: header.vendorId,
           companyName: header.companyName,
           quantity: 1,
-          rawMatAmount: undefined,
-          manufactureAmount: undefined,
         };
       } else {
         return {
@@ -376,7 +386,7 @@ const PurchaseMain = (): React.JSX.Element => {
   }, [showAlert, getPurchaseCompanyList])
 
   // debug
-  // console.log(receipts)
+  // console.log(curTime.toDate().toUTCString())
 
   return (
     <Box sx={{
@@ -450,7 +460,7 @@ const PurchaseMain = (): React.JSX.Element => {
         overflow: 'hidden',
         flexGrow: 1,
       }}>
-        <TableContainer>
+        <TableContainer sx={{overflow: 'auto', maxHeight: '80vh'}}>
           <Table size='small'
                  sx={{
                    '& .MuiTableCell-root': {
@@ -478,7 +488,7 @@ const PurchaseMain = (): React.JSX.Element => {
             <TableBody>
               {receipts && receipts.map((row, rowIndex) => {
                 const price = Math.round((parseFloat(row.rawMatAmount || '0') || 0) * (row.quantity || 0));
-                const vatAmount = Math.round(price * row.vatRate);
+                const vatAmount = row.vat ? Math.round(price * row.vatRate) : 0;
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                     {/* 품명 */}
@@ -565,6 +575,21 @@ const PurchaseMain = (): React.JSX.Element => {
                              }}
                       />
                     </TableCell>
+                    {/* 과세 여부 */}
+                    <TableCell align="left" sx={{padding: 0, margin: 0}}>
+                      <Checkbox
+                        name="vat"
+                        size='small'
+                        checked={!!row.vat}
+                        onChange={(e) => {
+                          const { checked } = e.target;
+                          setReceipts(prev =>
+                            prev.map((item, i) => i === rowIndex ? { ...item, vat: checked } : item)
+                          );
+                        }}
+                        sx={{padding: 0}}
+                      />
+                    </TableCell>
                     {/* 합계 */}
                     <TableCell align='right'>
                       <Input size='small'
@@ -629,7 +654,7 @@ const PurchaseMain = (): React.JSX.Element => {
                 </TableCell>
               </TableRow>
             </TableBody>
-            <TableFooter>
+            <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
               <TableRow>
                 <TableCell colSpan={3}>
                   <Typography variant='body2' color='black'>합계</Typography>
@@ -644,6 +669,7 @@ const PurchaseMain = (): React.JSX.Element => {
                   <Typography variant='body2' align='right'
                               color='black'>{totals.vatAmountSum?.toLocaleString()}</Typography>
                 </TableCell>
+                <TableCell />
                 {/* 총액 합계 */}
                 <TableCell>
                   <Typography variant='body1' align='right'
@@ -663,7 +689,7 @@ const PurchaseMain = (): React.JSX.Element => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 2,
+        marginTop: 1,
         gap: 3
       }}>
         <Button variant='contained'
