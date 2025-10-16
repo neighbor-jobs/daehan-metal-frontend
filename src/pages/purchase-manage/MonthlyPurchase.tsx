@@ -121,7 +121,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
 
   const handleCompanyChange = useCallback((_event, newValue: string | null) => {
     const selectedCompany = purchaseCompanyList.find((company) => company?.name === newValue);
-    console.log(selectedCompany);
+    // console.log(selectedCompany);
     if (!selectedCompany) {
       setFormData(prev => ({
         ...prev,
