@@ -180,7 +180,11 @@ const ClientSalesSummary = (): React.JSX.Element => {
                       })}
                       {/* 총액 */}
                       <TableCell align='right'>
-                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)).toLocaleString('ko-KR')}
+                        {(Number(row.totalManufactureAmount)
+                          + Number(row.totalRawMatAmount)
+                          + Number(row.totalVatAmount)
+                          + Number(row.totalDeliveryCharge))
+                          .toLocaleString('ko-KR')}
                       </TableCell>
                       {/* 입금액 */}
                       <TableCell align='right'>
@@ -188,7 +192,12 @@ const ClientSalesSummary = (): React.JSX.Element => {
                       </TableCell>
                       {/* 잔액 */}
                       <TableCell align='right'>
-                        {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount) - Number(row.totalPayingAmount)).toLocaleString('ko-KR')}
+                        {(Number(row.totalManufactureAmount)
+                          + Number(row.totalRawMatAmount)
+                          + Number(row.totalVatAmount)
+                          + Number(row.totalDeliveryCharge)
+                          - Number(row.totalPayingAmount))
+                          .toLocaleString('ko-KR')}
                       </TableCell>
                     </TableRow>
                   );
