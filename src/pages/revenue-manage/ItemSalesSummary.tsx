@@ -110,6 +110,11 @@ const ItemSalesSummary = (): React.JSX.Element => {
     data: any[];
     startAt: string;
     endAt: string;
+    rawSum: number,
+    manuSum: number,
+    vatSum: number,
+    delSum: number,
+    sum: number,
   } | null>(null);
 
   const handleDateChange = (start: dayjs.Dayjs | null, end: dayjs.Dayjs | null) => {
@@ -141,6 +146,11 @@ const ItemSalesSummary = (): React.JSX.Element => {
       data: data,
       startAt: date.startAt.format('YYYY-MM-DD'),
       endAt: date.endAt.format('YYYY-MM-DD'),
+      rawSum: r,
+      manuSum: m,
+      vatSum: v,
+      delSum: d,
+      sum: s,
     })
     setTableFooter({
       countSum: c,
