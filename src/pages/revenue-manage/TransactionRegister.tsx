@@ -140,6 +140,8 @@ const TransactionRegister = ({
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
   );
+
+  // TODO: 미수금 날짜 바꿨을 때 변경 안됨
   const [formData, setFormData] = useState(dialogType === 'create' ? {
     companyId: '',
     locationName: [] as string[],
@@ -153,6 +155,7 @@ const TransactionRegister = ({
   const [outstanding, setOutstanding] = useState(0);
 
   const {showAlert, openAlert} = useAlertStore();
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
   const companyInputRef = useRef<HTMLInputElement | null>(null);
 
   const locationOptions = useMemo(() => {
@@ -160,17 +163,32 @@ const TransactionRegister = ({
     return selectedCompany?.locationName || [];
   }, [formData.companyName, salesCompanyList]);
 
-  const totalSales = useMemo(() => {
-    return choices.reduce((acc, choice) => {
-      const quantity = Number(choice.quantity) || 0;
-      const rawMat = Number(choice.rawMatAmount) || 0;
-      const manufacture = Number(choice.manufactureAmount) || 0;
-      const vat= Number(choice.vatAmount) || 0;
-      const delivery = Number(choice.deliveryCharge) || 0;
-      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + vat + delivery;
-      return acc + total;
+  const sumMaterial = useMemo(() => {
+    return choices.reduce((acc, c) => {
+      const q = Number(c.quantity) || 0;
+      const raw = Number(c.rawMatAmount) || 0;
+      return acc + Math.round(raw * q);
     }, 0);
   }, [choices]);
+
+  const sumProcessing = useMemo(() => {
+    return choices.reduce((acc, c) => {
+      const q = Number(c.quantity) || 0;
+      const manu = Number(c.manufactureAmount) || 0;
+      return acc + Math.trunc(manu * q);
+    }, 0);
+  }, [choices]);
+
+  const sumVat = useMemo(() => {
+    return choices.reduce((acc, c) => acc + (Number(c.vatAmount) || 0), 0);
+  }, [choices]);
+
+  const sumDelivery = useMemo(() => {
+    return choices.reduce((acc, c) => acc + (Number(c.deliveryCharge) || 0), 0);
+  }, [choices]);
+
+  const totalSales = useMemo(() => sumMaterial + sumProcessing + sumVat + sumDelivery,
+    [sumMaterial, sumProcessing, sumVat, sumDelivery]);
 
   const productScaleMap = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -630,8 +648,13 @@ const TransactionRegister = ({
               </LocalizationProvider>
             </Box>
 
-            <TableContainer component={Paper} sx={{maxHeight: 400, overflow: 'auto'}}>
+            <TableContainer
+              component={Paper}
+              ref={tableContainerRef}
+              sx={{maxHeight: 400, overflow: 'auto'}}
+            >
               <Table size='small'
+                     stickyHeader
                      sx={{
                        '& .MuiTableCell-root': {
                          paddingY: '2px',
@@ -809,6 +832,8 @@ const TransactionRegister = ({
 
                                      // 비동기 렌더링 후 focus 적용
                                      setTimeout(() => {
+                                       const el = tableContainerRef.current;
+                                       if (el) el.scrollTo({ top: el.scrollHeight });
                                        focusByCell(nextRowIndex, 0);
                                      }, 0);
 
@@ -831,8 +856,7 @@ const TransactionRegister = ({
                                fullWidth
                                // disabled
                                value={
-                                 (
-                                   Math.round(Number(choice.rawMatAmount) * choice.quantity)
+                                 (Math.round(Number(choice.rawMatAmount) * choice.quantity)
                                    + Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
                                    + Number(choice.vatAmount)
                                    + Number(choice.deliveryCharge)
@@ -866,8 +890,45 @@ const TransactionRegister = ({
                     </TableCell>
                   </TableRow>
                 </TableBody>
-                <TableFooter>
+                <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
+                  <TableRow>
+                    {/* 품명, 규격, 수량, 재료단가 묶어서 라벨 */}
+                    <TableCell colSpan={3} sx={{borderTop: '0.5px solid lightgray'}}>
+                      <Typography variant="body2">합계</Typography>
+                    </TableCell>
 
+                    {/* 재료비 합 */}
+                    <TableCell align="right" colSpan={2} sx={{borderTop: '0.5px solid lightgray'}}>
+                      <Typography variant="body2" sx={{ color: 'blue' }}>
+                        {sumMaterial.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+
+                    {/* 가공비 합 */}
+                    <TableCell align="right" colSpan={2} sx={{borderTop: '0.5px solid lightgray'}}>
+                      <Typography variant="body2" sx={{ color: 'darkorange' }}>
+                        {sumProcessing.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+
+                    {/* 세액 합 */}
+                    <TableCell align="right" sx={{borderTop: '0.5px solid lightgray'}}>
+                      <Typography variant="body2" sx={{color: 'black'}}>
+                        {sumVat.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+
+                    {/* 운임비 합 */}
+                    <TableCell align="right" sx={{borderTop: '0.5px solid lightgray'}}>
+                      <Typography variant="body2" sx={{color: 'black'}}>
+                        {sumDelivery.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+
+                    {/* 삭제 컬럼 자리 */}
+                    <TableCell sx={{borderTop: '0.5px solid lightgray'}} />
+                    <TableCell sx={{borderTop: '0.5px solid lightgray'}} />
+                  </TableRow>
                 </TableFooter>
               </Table>
             </TableContainer>
