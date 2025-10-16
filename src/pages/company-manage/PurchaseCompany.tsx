@@ -69,6 +69,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   const [isBankEditing, setIsBankEditing] = useState(BankDialogType.CREATE);
   const [purchaseCompanyList, setPurchaseCompanyList] = useState<GetVendorResData[]>([]);
   const [formData, setFormData] = useState<PostVendorReqBody>({
+    id: undefined,
     name: '',
     phoneNumber: '',
     telNumber: '',
@@ -88,6 +89,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
+      id: undefined,
       name: '',
       phoneNumber: '',
       telNumber: '',
@@ -101,6 +103,7 @@ const PurchaseCompany = (): React.JSX.Element => {
   const handleEdit = (row: GetVendorResData) => {
     setIsEditing(true);
     setFormData({
+      id: row.id,
       name: row.name,
       phoneNumber: row.info.phoneNumber,
       telNumber: row.info.telNumber,

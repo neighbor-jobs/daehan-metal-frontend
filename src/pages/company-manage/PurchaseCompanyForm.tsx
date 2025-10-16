@@ -72,6 +72,7 @@ const PurchaseCompanyForm = ({
         await axiosInstance.patch('/vendor', {
           ...data,
           vendorName: formData.name,
+          id: formData?.id
         });
       } else {
         await axiosInstance.post('/vendor', {

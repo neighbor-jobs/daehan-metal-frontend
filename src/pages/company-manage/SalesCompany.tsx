@@ -71,6 +71,7 @@ const SalesCompany = (): React.JSX.Element => {
   });
   const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
   const [formData, setFormData] = useState({
+    id: undefined,
     companyName: '',
     ownerName: '',
     phoneNumber: '',
@@ -85,6 +86,7 @@ const SalesCompany = (): React.JSX.Element => {
   const handleCreate = () => {
     setIsEditing(false)
     setFormData({
+      id: undefined,
       companyName: '',
       ownerName: '',
       phoneNumber: '',
@@ -99,6 +101,7 @@ const SalesCompany = (): React.JSX.Element => {
   const handleEdit = (row) => {
     setIsEditing(true);
     setFormData({
+      id: row.id,
       companyName: row.companyName,
       ownerName: row.ownerName,
       phoneNumber: row.phoneNumber,

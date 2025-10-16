@@ -60,9 +60,9 @@ const SalesCompanyForm = ({
   const handleSubmit = async () => {
     const requiredFields = [
       { name: '거래처명', value: formData.companyName },
-      { name: '대표이름', value: formData.ownerName },
+      /*{ name: '대표이름', value: formData.ownerName },
       { name: '전화번호', value: formData.phoneNumber },
-      { name: '주소', value: formData.address },
+      { name: '주소', value: formData.address },*/
     ];
 
     const missingField = requiredFields.find(field => !field.value || field.value.trim() === '');
@@ -72,6 +72,7 @@ const SalesCompanyForm = ({
     }
 
     const data = {
+      id: formData?.id || undefined,
       companyName: formData.companyName,
       infoArgs: {
         ownerName: formData.ownerName,

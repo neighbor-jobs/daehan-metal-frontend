@@ -1,4 +1,5 @@
 export interface PostVendorReqBody {
+  id?: string | undefined;
   name: string,
   telNumber?: string | undefined,
   subTelNumber?: string | undefined,
