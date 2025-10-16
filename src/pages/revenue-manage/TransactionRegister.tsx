@@ -15,7 +15,7 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
+  TableContainer, TableFooter,
   TableHead,
   TableRow,
   TextField,
@@ -104,14 +104,14 @@ const columns: readonly TableColumns<TransactionRegisterColumn>[] = [
   },
   {
     id: TransactionRegisterColumn.VAT_AMOUNT,
-    label: '세액단가',
+    label: '세액',
     minWidth: 70,
     align: 'right',
     format: formatCurrency,
   },
   {
     id: TransactionRegisterColumn.DELIVERY_CHARGE,
-    label: '운임비단가',
+    label: '운임비',
     minWidth: 70,
     align: 'right',
     format: formatCurrency,
@@ -136,7 +136,6 @@ const TransactionRegister = ({
                                prevFormData,
                                prevAmount
                              }: TransactionRegisterProps): React.JSX.Element => {
-  // TODO: 미수금 내역 창 열고 닫을 때랑 submit 완료 후 맞는지 검증해야 함
   const [choices, setChoices] = useState<Choice[]>(dialogType === 'create' ?
     Array.from({length: 1}, () => ({...defaultChoice}))
     : prevChoices
@@ -161,7 +160,6 @@ const TransactionRegister = ({
     return selectedCompany?.locationName || [];
   }, [formData.companyName, salesCompanyList]);
 
-  // TODO: 계산 방법 물어본 후 변경가능성 있음
   const totalSales = useMemo(() => {
     return choices.reduce((acc, choice) => {
       const quantity = Number(choice.quantity) || 0;
@@ -868,6 +866,9 @@ const TransactionRegister = ({
                     </TableCell>
                   </TableRow>
                 </TableBody>
+                <TableFooter>
+
+                </TableFooter>
               </Table>
             </TableContainer>
 

@@ -89,6 +89,8 @@ const ClientSalesSummary = (): React.JSX.Element => {
     const data = res.data.data?.map((item) => {
       const raw = Number(item.totalRawMatAmount) || 0;
       const manu = Number(item.totalManufactureAmount) || 0;
+      const vat = Number(item.totalVatAmount) || 0;
+      const del = Number(item.totalDeliveryCharge) || 0;
 
       return {
         'company-name': item.companyName,
@@ -97,8 +99,8 @@ const ClientSalesSummary = (): React.JSX.Element => {
         'vat-price': item.totalVatAmount,
         'delivery-charge' : item.totalDeliveryCharge,
         'paying-amount': item.totalPayingAmount,
-        'total-amount': raw + manu,
-        'remaining-amount': raw + manu - Number(item.totalPayingAmount),
+        'total-amount': raw + manu + vat + del,
+        'remaining-amount': raw + manu + vat + del - Number(item.totalPayingAmount),
       }
     }) ?? [];
     setPrintData({
