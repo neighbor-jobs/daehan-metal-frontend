@@ -10,6 +10,7 @@ export interface DailySalesResData {
 export interface DailySalesReceiptItem {
   reports: DailySalesReportsItem[];
   payingAmount: string;
+  totalBalance?: number;
 }
 
 export interface DailySalesReportsItem {

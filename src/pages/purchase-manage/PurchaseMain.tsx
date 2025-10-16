@@ -362,7 +362,7 @@ const PurchaseMain = (): React.JSX.Element => {
           telNumber: companyInfo.info.telNumber,
           subTelNumber: companyInfo.info.subTelNumber || '',
           phoneNumber: companyInfo.info.phoneNumber || '',
-          bankName: companyInfo.bank?.bankName || '',
+          bankArr: companyInfo.bank || [],
           accountNumber: companyInfo.bank?.accountNumber || '',
           records: records
         });

@@ -56,7 +56,7 @@ class CompanyStore {
   public async fetchAndUpdateCompanies() {
     try {
       const response: AxiosResponse = await axios.get<SalesCompanyInfo[]>(
-        `https://saving-finer-fly.ngrok-free.app/company?orderBy=desc`
+        `http://localhost:3000/company?orderBy=desc`
       );
       this.replaceCache(response.data.data);
     } catch (error) {
