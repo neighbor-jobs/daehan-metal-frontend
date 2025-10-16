@@ -59,13 +59,6 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
     align: 'right',
     format: formatCurrency
   },
-  {
-    id: ClientSalesSummaryColumn.TOTAL_PAYING_AMOUNT,
-    label: '입금액',
-    minWidth: 100,
-    align: 'right',
-    format: formatCurrency
-  },
 ];
 
 
@@ -159,6 +152,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
                   </TableCell>
                 ))}
                 <TableCell align='right'>총액</TableCell>
+                <TableCell align='right'>입금액</TableCell>
                 <TableCell align='right'>잔액</TableCell>
               </TableRow>
             </TableHead>
@@ -185,6 +179,10 @@ const ClientSalesSummary = (): React.JSX.Element => {
                       {/* 총액 */}
                       <TableCell align='right'>
                         {(Number(row.totalManufactureAmount) + Number(row.totalRawMatAmount)).toLocaleString('ko-KR')}
+                      </TableCell>
+                      {/* 입금액 */}
+                      <TableCell align='right'>
+                        {Number(row.totalPayingAmount).toLocaleString('ko-KR')}
                       </TableCell>
                       {/* 잔액 */}
                       <TableCell align='right'>
