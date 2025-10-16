@@ -240,6 +240,8 @@ const DailySales = () => {
                           : (
                             Math.round(Number(row.rawMatAmount) * row.quantity)
                             + Math.trunc(Number(row.manufactureAmount) * row.quantity)
+                            + Number(row.vatAmount)
+                            + Number(row.deliveryCharge)
                           ).toLocaleString('ko-KR')
                         }
                       </TableCell>
