@@ -565,7 +565,7 @@ export const companySalesSumDocDef = (companySalesSumData) => {
           headerRows: 1,
           widths: ['*', '*', '*', '*', '*', '*', '*', '*'],
           body: [
-            ['거래처명', '재료비', '가공비', '세액', '운임비', '입금액', '총액', '잔액'].map(header => ({
+            ['거래처명', '재료비', '가공비', '세액', '운임비', '총액', '입금액', '잔액'].map(header => ({
               text: header,
               alignment: 'center',
             })),
@@ -575,8 +575,8 @@ export const companySalesSumDocDef = (companySalesSumData) => {
               {text: Number(item['processing-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
               {text: Number(item['vat-price']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
               {text: Number(item['delivery-charge']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 가공비
-              {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 총 금액
               {text: Number(item['total-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 수금액
+              {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 총 금액
               {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
           ],
