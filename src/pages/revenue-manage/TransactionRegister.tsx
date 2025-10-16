@@ -27,7 +27,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import dayjs from 'dayjs';
-import {Choice, defaultChoice, defaultFormData} from '../../types/transactionRegisterReq.ts';
+import {Choice, defaultChoice, makeDefaultFormData} from '../../types/transactionRegisterReq.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
@@ -471,7 +471,6 @@ const TransactionRegister = ({
 
   const handlePrint = async () => {
     const data = await register();
-    // console.log(data);
     if (window.ipcRenderer && data) {
       try {
         await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data});
@@ -492,7 +491,7 @@ const TransactionRegister = ({
 
     if (dialogType === 'create') {
       // create 기본 세팅
-      setFormData(defaultFormData);
+      setFormData(makeDefaultFormData());
       setChoices(Array.from({ length: 1 }, () => ({ ...defaultChoice })));
       setOutstanding(0);
     } else {
@@ -531,7 +530,7 @@ const TransactionRegister = ({
   }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);*/
 
   // debug
-  console.log('choices: ', choices, 'formData: ',formData);
+  // console.log('choices: ', choices, 'formData: ',formData);
 
   return (
     <>
@@ -571,10 +570,11 @@ const TransactionRegister = ({
                       <DesktopDatePicker
                         views={['day']}
                         format="YYYY/MM/DD"
-                        defaultValue={dayjs()}
                         disabled={dialogType === 'edit'}
+                        value={dayjs(formData.createdAt)}
                         onChange={(value) => {
                           if (value && dayjs(value).isValid()) {
+                            console.log(dayjs(value).format('YYYY-MM-DD'))
                             setFormData(prev => ({
                               ...prev,
                               createdAt: dayjs(value).format('YYYY-MM-DD'),

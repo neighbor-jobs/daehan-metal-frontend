@@ -42,6 +42,15 @@ export const defaultFormData = {
   createdAt: dayjs().format('YYYY-MM-DD'),
 };
 
+export const makeDefaultFormData = () => ({
+  companyId: '',
+  locationName: [] as string[],
+  companyName: '',
+  payingAmount: '0',
+  sequence: 1,
+  createdAt: dayjs().format('YYYY-MM-DD'),
+});
+
 export const defaultAmount: Amount = {
   cachedRawMatAmount: '0',
   cachedManufactureAmount: '0',
