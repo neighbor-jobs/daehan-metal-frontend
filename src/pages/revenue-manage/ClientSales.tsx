@@ -140,6 +140,8 @@ const ClientSales = (): React.JSX.Element => {
     // sales amount 조회
     let rawAmount = 0;
     let manuAmount = 0;
+    let vatAmount = 0;
+    let delAmount = 0;
 
     if (!isFirstDay) {
       const salesRes: AxiosResponse = await axiosInstance.get(
@@ -150,10 +152,12 @@ const ClientSales = (): React.JSX.Element => {
       );
       rawAmount = Number(salesAmount?.totalRawMatAmount || 0);
       manuAmount = Number(salesAmount?.totalManufactureAmount || 0);
+      vatAmount = Number(salesAmount?.totalVatAmount || 0);
+      delAmount = Number(salesAmount?.totalDeliveryCharge || 0);
     }
 
-    const initOutstanding = carryoverAmount + rawAmount + manuAmount;
-    let outstanding = carryoverAmount + rawAmount + manuAmount;
+    const initOutstanding = carryoverAmount + rawAmount + manuAmount + vatAmount + delAmount;
+    let outstanding = carryoverAmount + rawAmount + manuAmount + vatAmount + delAmount;
     setOutstandingBeforeOneDay(outstanding);
 
     const receipts: DailySalesReceiptItem[] = res.data.data?.receipts;
@@ -171,6 +175,7 @@ const ClientSales = (): React.JSX.Element => {
           remainingAmount: outstanding
         };
       });
+      // console.log('sales: ', sales);
 
       if (!item.payingAmount || item.payingAmount === '0')
         return [...sales];
@@ -182,7 +187,8 @@ const ClientSales = (): React.JSX.Element => {
         productName: '입금액',
         scale: '',
         amount: -Number(item.payingAmount),
-        remainingAmount: outstanding
+        remainingAmount: outstanding,
+        totalBalance: item.totalBalance
       }
       // console.log([...sales, paying]);
       return [...sales, paying];
@@ -297,7 +303,8 @@ const ClientSales = (): React.JSX.Element => {
                 <TableCell/>
                 <TableCell align='right'>{outstandingBeforeOneDay.toLocaleString()}</TableCell>
               </TableRow>
-              {reports && reports.map((row, rowIdx) => {
+              {reports && reports?.map((row, rowIdx) => {
+                const balance = row.productName === '입금액' ? row.totalBalance + outstandingBeforeOneDay : row.balance + outstandingBeforeOneDay;
                 return (
                   <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
                     {columns.map((column) => {
@@ -316,7 +323,8 @@ const ClientSales = (): React.JSX.Element => {
                       );
                     })}
                     <TableCell align='right'>{row.amount?.toLocaleString() ?? '-'}</TableCell>
-                    <TableCell align='right'>{row.remainingAmount?.toLocaleString() ?? '-'}</TableCell>
+                    {/*<TableCell align='right'>{row.remainingAmount?.toLocaleString() ?? '-'}</TableCell>*/}
+                    <TableCell align='right'>{balance?.toLocaleString() ?? '-'}</TableCell>
                   </TableRow>
                 );
               })}
@@ -342,7 +350,10 @@ const ClientSales = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <PrintButton printData={printData}/>
+
+      <Box sx={{m: 1}}>
+        <PrintButton printData={printData}/>
+      </Box>
     </Box>
   );
 }

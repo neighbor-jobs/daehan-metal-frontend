@@ -169,7 +169,7 @@ const TransactionRegister = ({
       const manufacture = Number(choice.manufactureAmount) || 0;
       const vat= Number(choice.vatAmount) || 0;
       const delivery = Number(choice.deliveryCharge) || 0;
-      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + (vat + delivery) * quantity;
+      const total = Math.round(rawMat * quantity) + Math.trunc(manufacture * quantity) + vat + delivery;
       return acc + total;
     }, 0);
   }, [choices]);
@@ -251,7 +251,7 @@ const TransactionRegister = ({
       }
     }
 */
-    const found = productListState.find(p => p.name === prodName);
+    const found = productListState.find((p: Product) => p.name === prodName);
     const productId = found?.id;
     if (!productId) {
       setChoices((prev) => prev.map((c, i) => i === index ? { ...c, scale: newValue || '' } : c));
@@ -836,8 +836,8 @@ const TransactionRegister = ({
                                  (
                                    Math.round(Number(choice.rawMatAmount) * choice.quantity)
                                    + Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
-                                   + Number(choice.vatAmount) * choice.quantity
-                                   + Number(choice.deliveryCharge) * choice.quantity
+                                   + Number(choice.vatAmount)
+                                   + Number(choice.deliveryCharge)
                                  ).toLocaleString('ko-KR')
                                }
                                inputProps={{

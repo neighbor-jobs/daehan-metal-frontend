@@ -200,6 +200,30 @@ export const dailySalesDocDef = (dailySalesData) => {
  */
 export const companySalesDocDef = (companySalesData) => {
   // console.log('printData: ', companySalesData);
+
+  // amount 가 재료비 + 가공비 (단가X)
+  const totalRawMatAmount = companySalesData.data?.reduce(
+    (acc, cur) => acc + (Number(cur.rawMatAmount) || 0),
+    0
+  );
+  const totalManuAmount = companySalesData.data?.reduce(
+    (acc, cur) => acc + (Number(cur.manufactureAmount) || 0),
+    0
+  );
+  const totalVatAmount = companySalesData.data?.reduce(
+    (acc, cur) => acc + (Number(cur.vatAmount) || 0),
+    0
+  );
+  const totalDeliveryCharge = companySalesData.data?.reduce(
+    (acc, cur) => acc + (Number(cur.deliveryCharge) || 0),
+    0
+  );
+  let totalPayingAmount = 0;
+  const totalAmount = companySalesData.data?.reduce(
+    (acc, cur) => acc + (Number(cur.amount) || 0),
+    0
+  );
+
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     pageMargins: [10, 20, 10, 10],
@@ -230,9 +254,9 @@ export const companySalesDocDef = (companySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', '*', 30, 40, 40, '*', '*', '*'],
+          widths: ['auto', '*', '*', 30, 40, 40, 40, 40, '*', '*', '*'],
           body: [
-            ['날짜', '품명', '규격', '수량', '재료비', '가공비', '금액', '수금액', '잔액'].map(header => ({
+            ['날짜', '품명', '규격', '수량', '재료비', '가공비','세액', '운임비', '금액', '수금액', '잔액'].map(header => ({
               text: header,
               alignment: 'center'
             })),
@@ -243,6 +267,8 @@ export const companySalesDocDef = (companySalesData) => {
               {text: '', alignment: 'right', style: 'tableText'}, // 수량
               {text: '', alignment: 'right', style: 'tableText'}, // 재료비
               {text: '', alignment: 'right', style: 'tableText'}, // 가공비
+              {text: '', alignment: 'right', style: 'tableText'}, // 세액
+              {text: '', alignment: 'right', style: 'tableText'}, // 운임비
               {text: '', alignment: 'right', style: 'tableText'}, // 금액
               {text: '', alignment: 'right', style: 'tableText'}, // 수금액
               {text: companySalesData.outstandingBeforeOneDay?.toLocaleString(), alignment: 'right'}, // 잔액
@@ -251,6 +277,7 @@ export const companySalesDocDef = (companySalesData) => {
               let payingAmount, rawMatAmount, manufactureAmount, amount, quantity = '';
               if (item.productName === '입금액') {
                 payingAmount = -item.amount;
+                totalPayingAmount += payingAmount;
               } else {
                 quantity = item.quantity;
                 rawMatAmount = item.rawMatAmount;
@@ -266,11 +293,24 @@ export const companySalesDocDef = (companySalesData) => {
                 {text: quantity, alignment: 'right', style: 'tableText'}, // 수량
                 {text: formatCurrency(item['rawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
                 {text: formatCurrency(item['manufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
+                {text: formatCurrency(item.vatAmount), alignment: 'right', style: 'tableText'}, // 세액
+                {text: formatCurrency(item.deliveryCharge), alignment: 'right', style: 'tableText'}, // 운임비
                 {text: amount?.toLocaleString(), alignment: 'right', style: 'tableText'}, // 금액
                 {text: payingAmount?.toLocaleString(), alignment: 'right', style: 'tableText'}, // 수금액
                 {text: item['remainingAmount'].toLocaleString(), alignment: 'right'}, // 잔액
               ]
             }),
+            [
+              { text: '합계', alignment: 'center', style: 'tableText' },
+              {}, {}, {},
+              { text: totalRawMatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalManuAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalVatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalDeliveryCharge.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalPayingAmount.toLocaleString(), alignment: 'right', style: 'tableText' }, // 수금액계
+              { text: '', style: 'tableText' },
+            ],
           ],
         },
         layout: {
@@ -296,7 +336,27 @@ export const companySalesDocDef = (companySalesData) => {
  * 월별매입조회
  */
 export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
+  // 합계 계산
+  const totalPurchaseAmount = data.records.reduce(
+    (acc, cur) => acc + (Number(cur.totalSalesAmount) || 0),
+    0
+  );
+  const totalVatAmount = data.records.reduce(
+    (acc, cur) => acc + (Number(cur.totalVatPrice) || 0),
+    0
+  );
+  const totalPayingAmount = data.records.reduce(
+    (acc, cur) => acc + (Number(cur.productPrice) || 0),
+    0
+  )
+  const totalSum = data.records.reduce(
+    (acc, cur) => acc + (Number(cur.totalPrice) || 0),
+    0
+  );
+
+  // debug
   // console.log(data);
+
   const bankData = data.bankArr?.map((b) => `${b.bankName} : ${b.accountNumber}`).join(' ');
   return {
     pageSize: 'A4', // A4 크기 유지
@@ -340,12 +400,12 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
                 alignment: 'right'
               }, // 단가
               {
-                text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '-',
+                text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '',
                 style: 'tableText',
                 alignment: 'right'
               }, // 매입금액
               {
-                text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '-',
+                text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '',
                 style: 'tableText',
                 alignment: 'right'
               }, // 매입세액
@@ -361,13 +421,26 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
               }, // 입금
               {text: Number(item.payableBalance).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
+            [
+              { text: '합계', alignment: 'center', style: 'tableText' },
+              {}, {}, {}, {},
+              { text: totalPurchaseAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalVatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalSum.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalPayingAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: '', style: 'tableText' },
+            ],
           ],
         },
+        layout: {
+          hLineWidth: () => 0.4,
+          vLineWidth: () => 0.4,
+        }
       },
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 7,
+      fontSize: 8,
     },
     styles: {
       header: {fontSize: 14},
@@ -531,7 +604,7 @@ export const companySalesSumDocDef = (companySalesSumData) => {
  * 품목별 매출집계
  */
 export const itemSalesSumDocDef = (itemSalesSumData) => {
-  // console.log(itemSalesSumData);
+  console.log(itemSalesSumData);
   /* {
   data: [
     {
@@ -747,6 +820,16 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
               {text: formatCurrency(item['totalDeliveryCharge']), style: 'tableText', alignment: 'right'}, // 가공비
               {text: formatCurrency(item['totalSalesAmount']), style: 'tableText', alignment: 'right'}, // 금액
             ]),
+            [
+              { text: '합계', alignment: 'center', style: 'tableText' },
+              {}, {}, {},
+              { text: itemSalesSumData.rawSum?.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: '', style: 'tableText' },
+              { text: itemSalesSumData.manuSum?.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: itemSalesSumData.vatSum?.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: itemSalesSumData.delSum?.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: itemSalesSumData.sum?.toLocaleString(), alignment: 'right', style: 'tableText' },
+            ]
           ],
         },
         layout: {
