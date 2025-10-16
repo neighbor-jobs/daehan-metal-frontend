@@ -948,37 +948,123 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
 const basicInvoiceTable = (data, index) => {
   /* data 형식 */
   /*
- {
-  companyId: 'bc93a48e-fd33-42bc-ba63-bee54f57a9f6',
-  locationName: [ 'dd' ],
-  companyName: '(주) 더아트팩토리리',
+  * {
+  locationName: [],
+  companyName: '(구,동성)경영산업',
   payingAmount: '0',
-  sequence: 6,
-  createdAt: '2025-04-20',
-  choices: [
+  carryoverAmount: '11503730',
+  totalSalesAmount: '22000',
+  createdAt: '2025-10-16',
+  sales: [
     {
-      bridgeId: 'b1fcabcf-a129-40c9-9ec4-1e661b5957c9',
-      productName: '티타블H/L',
-      quantity: 1.25,
-      productScale: '1.2TX4X3000',
-      productScaleSequence: 2
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '(구,동성)경영산업',
+      productName: '2B',
+      vCutAmount: '0',
+      rawMatAmount: '1000',
+      manufactureAmount: '1000',
+      quantity: 10,
+      productLength: '0',
+      scale: '0.3TX1X2',
+      vCut: '0',
+      vatAmount: '1000',
+      deliveryCharge: '1000',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: []
     }
-  ],
-  amount: [
+  ]
+}
+{
+  locationName: [],
+  companyName: '(구,동성)경영산업',
+  payingAmount: '0',
+  carryoverAmount: '11503730',
+  totalSalesAmount: '22000',
+  createdAt: '2025-10-16',
+  sales: [
     {
-      cachedRawMatAmount: '0',
-      cachedManufactureAmount: '0',
-      newRawMatAmount: '10000',
-      newManufactureAmount: '40900'
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '(구,동성)경영산업',
+      productName: '2B',
+      vCutAmount: '0',
+      rawMatAmount: '1000',
+      manufactureAmount: '1000',
+      quantity: 10,
+      productLength: '0',
+      scale: '0.3TX1X2',
+      vCut: '0',
+      vatAmount: '1000',
+      deliveryCharge: '1000',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: []
+    }
+  ]
+}
+[25649:1016/223155.283299:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+10:32:58 PM [vite] hmr update /src/pages/revenue-manage/RevenueMain.tsx
+{
+  locationName: [],
+  companyName: '(구,동성)경영산업',
+  payingAmount: '0',
+  carryoverAmount: '11503730',
+  totalSalesAmount: '22000',
+  createdAt: '2025-10-16',
+  sales: [
+    {
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '(구,동성)경영산업',
+      productName: '2B',
+      vCutAmount: '0',
+      rawMatAmount: '1000',
+      manufactureAmount: '1000',
+      quantity: 10,
+      productLength: '0',
+      scale: '0.3TX1X2',
+      vCut: '0',
+      vatAmount: '1000',
+      deliveryCharge: '1000',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: []
+    }
+  ]
+}
+{
+  locationName: [],
+  companyName: '(구,동성)경영산업',
+  payingAmount: '0',
+  carryoverAmount: '11503730',
+  totalSalesAmount: '22000',
+  createdAt: '2025-10-16',
+  sales: [
+    {
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '(구,동성)경영산업',
+      productName: '2B',
+      vCutAmount: '0',
+      rawMatAmount: '1000',
+      manufactureAmount: '1000',
+      quantity: 10,
+      productLength: '0',
+      scale: '0.3TX1X2',
+      vCut: '0',
+      vatAmount: '1000',
+      deliveryCharge: '1000',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: []
     }
   ]
 }
 */
-  // console.log(data);
+  console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.sales.length > 15 ? 25 : 15;
-  const shouldPageBreak = index === 1 && totalRowsNum === 25;
+  const totalRowsNum = data.sales.length > 13 ? 23 : 13;
+  const shouldPageBreak = index === 1 && totalRowsNum === 23;
+
+  // 합계 계산
   const sum = data.sales.map((item) => (Number(item.rawMatAmount) + Number(item.manufactureAmount)) * item.quantity)
+  const totalDeliveryCharge = data.sales.reduce((acc, cur) => acc + Number(cur.deliveryCharge || 0), 0);
+  const totalVatAmount= data.sales.reduce((acc, cur) => acc + Number(cur.vatAmount || 0), 0);
+
   const [firstRowNames, secondRowNames] =
     data.locationName.length > 3
       ? [data.locationName.slice(0, 3), data.locationName.slice(3)]
@@ -1054,6 +1140,16 @@ const basicInvoiceTable = (data, index) => {
             {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right'},
             {text: `${sum[index].toLocaleString('ko-KR')}`, alignment: 'right'},
           ]),
+          [
+            { text: '세액 합' },
+            '', '', '', '',
+            { text: `${formatCurrency(totalVatAmount)}`, alignment: 'right'},
+          ],
+          [
+            { text: '운임비 합'},
+            '', '', '', '',
+            { text: `${formatCurrency(totalDeliveryCharge)}`, alignment: 'right'},
+          ],
           ...Array.from({length: totalRowsNum - data.sales.length}, () =>
             Array.from({length: 6}, () => ({
               text: ' ',
