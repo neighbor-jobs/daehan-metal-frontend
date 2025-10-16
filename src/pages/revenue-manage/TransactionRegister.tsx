@@ -141,7 +141,6 @@ const TransactionRegister = ({
     : prevChoices
   );
 
-  // TODO: 미수금 날짜 바꿨을 때 변경 안됨
   const [formData, setFormData] = useState(dialogType === 'create' ? {
     companyId: '',
     locationName: [] as string[],
@@ -206,11 +205,7 @@ const TransactionRegister = ({
       companyId: selectedCompany ? selectedCompany.id : "",
       companyName: selectedCompany ? newValue : "",
     }));
-    if (selectedCompany) {
-      fetchOutstanding(selectedCompany.companyName, formData.createdAt);
-    } else {
-      setOutstanding(0);
-    }
+    if (!selectedCompany) setOutstanding(0);
   }, [salesCompanyList]);
 
   const handleLocationChange = useCallback((_event, newValues: string[]) => {
@@ -327,17 +322,25 @@ const TransactionRegister = ({
 
   // api
   const fetchOutstanding = useCallback(async (companyName: string, startAt: string) => {
-    // companyName이 없으면 0 처리
-    if (!companyName) { setOutstanding(0); return; }
+    if (!companyName || !startAt) {
+      setOutstanding(0);
+      return;
+    }
+    let aborted = false;
     try {
       const res: AxiosResponse = await axiosInstance.get('/company/receivable', {
-        params: { orderBy: 'asc', startAt: startAt}
+        params: { orderBy: 'asc', startAt }
       });
-      const amt: CompanyOutstandingAmtRes = res.data.data?.find((c: CompanyOutstandingAmtRes) => c.companyName === companyName);
-      setOutstanding(Number(amt.outstandingAmount));
-    } catch (e) {
-      setOutstanding(0);
+      if (aborted) return;
+
+      const amt: CompanyOutstandingAmtRes | undefined =
+        res.data.data?.find((c: CompanyOutstandingAmtRes) => c.companyName === companyName);
+
+      setOutstanding(Number(amt?.outstandingAmount ?? 0));
+    } catch {
+      if (!aborted) setOutstanding(0);
     }
+    return () => { aborted = true; };
   }, []);
 
   const getEndSeq = async (companyName: string, startAt: string) => {
@@ -500,6 +503,13 @@ const TransactionRegister = ({
       fetchOutstanding(formData.companyName, formData.createdAt);
     }
   }, [dialogType, prevFormData]);
+
+  useEffect(() => {
+    // edit 모드에서 거래처/날짜가 disabled라면 초기 1회만 불러오고 끝
+    if (dialogType === 'edit') return;
+
+    fetchOutstanding(formData.companyName, formData.createdAt);
+  }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);
 
   // debug
   console.log('choices: ', choices, 'formData: ',formData);
