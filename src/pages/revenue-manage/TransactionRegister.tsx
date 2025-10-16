@@ -27,7 +27,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DesktopDatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {formatCurrency, formatDecimal} from '../../utils/format.ts';
 import dayjs from 'dayjs';
-import {Choice, defaultChoice} from '../../types/transactionRegisterReq.ts';
+import {Choice, defaultChoice, defaultFormData} from '../../types/transactionRegisterReq.ts';
 import axiosInstance from '../../api/axios.ts';
 import {AxiosResponse} from 'axios';
 import {RevenueManageMenuType} from '../../types/headerMenu.ts';
@@ -488,6 +488,27 @@ const TransactionRegister = ({
   }, [productList]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    if (dialogType === 'create') {
+      // create 기본 세팅
+      setFormData(defaultFormData);
+      setChoices(Array.from({ length: 1 }, () => ({ ...defaultChoice })));
+      setOutstanding(0);
+    } else {
+      // edit 기본 세팅
+      if (prevFormData) setFormData(prevFormData);
+      if (prevChoices)  setChoices(prevChoices);
+      setOutstanding(Number(prevAmount?.carryoverAmount ?? 0));
+    }
+  }, [isOpen, dialogType, prevFormData, prevChoices, prevAmount]);
+
+  useEffect(() => {
+    if (dialogType === 'edit') return;
+    fetchOutstanding(formData.companyName, formData.createdAt);
+  }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);
+
+  /*useEffect(() => {
     if (dialogType === 'edit' && prevChoices) {
       setChoices(prevChoices);
     } else if (dialogType === 'create') {
@@ -505,11 +526,9 @@ const TransactionRegister = ({
   }, [dialogType, prevFormData]);
 
   useEffect(() => {
-    // edit 모드에서 거래처/날짜가 disabled라면 초기 1회만 불러오고 끝
     if (dialogType === 'edit') return;
-
     fetchOutstanding(formData.companyName, formData.createdAt);
-  }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);
+  }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);*/
 
   // debug
   console.log('choices: ', choices, 'formData: ',formData);

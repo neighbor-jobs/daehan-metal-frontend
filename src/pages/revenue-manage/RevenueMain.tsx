@@ -409,8 +409,8 @@ const RevenueMain = (): React.JSX.Element => {
                         }
                       </TableCell>
                       <TableCell sx={{padding: 0}}>
-                        <IconButton size='small'>
-                          <CloseIcon fontSize='small' onClick={() => deleteRow(rowIndex)} />
+                        <IconButton size='small' onClick={() => deleteRow(rowIndex)}>
+                          <CloseIcon fontSize='small' />
                         </IconButton>
                       </TableCell>
                     </TableRow>

@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 export type Choice = {
   quantity: number,
   productName: string,
@@ -29,6 +31,15 @@ export const defaultChoice: Choice = {
   manufactureAmount: '0',
   vatAmount: '0',
   deliveryCharge: '0',
+};
+
+export const defaultFormData = {
+  companyId: '',
+  locationName: [] as string[],
+  companyName: '',
+  payingAmount: '0',
+  sequence: 1,
+  createdAt: dayjs().format('YYYY-MM-DD'),
 };
 
 export const defaultAmount: Amount = {
