@@ -295,7 +295,7 @@ const RevenueMain = (): React.JSX.Element => {
               format="YYYY/MM/DD"
               defaultValue={dayjs()}
               value={dayjs(formData.startAt)}
-              onChange={(value) => setFormData(prev => ({...prev, startAt: value.format('YYYY-MM-DD')}))}
+              onChange={(value) => setFormData(prev => ({...prev, sequence: 1, startAt: value.format('YYYY-MM-DD')}))}
               slotProps={{
                 textField: {
                   size: 'small',
@@ -403,8 +403,8 @@ const RevenueMain = (): React.JSX.Element => {
                           (
                             Math.round(Number(row.rawMatAmount) * row.quantity)
                             + Math.trunc(Number(row.manufactureAmount) * row.quantity)
-                            + Number(row.vatAmount) * row.quantity
-                            + Number(row.deliveryCharge) * row.quantity
+                            + Number(row.vatAmount)
+                            + Number(row.deliveryCharge)
                           ).toLocaleString('ko-KR')
                         }
                       </TableCell>
