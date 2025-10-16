@@ -350,6 +350,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   }, []);
 
+  // api
   const submitPayroll = async () => {
     const data = formData.map((p) => ({
       ...p,
@@ -464,6 +465,19 @@ const NewPayrollLedger = (): React.JSX.Element => {
       showAlert('등록 실패', 'error');
     }
   }
+
+  const deletePayment = async () => {
+    try {
+      await axiosInstance.patch('/payroll/payment/pop', {
+        paymentId: selectedPaymentId,
+        payrollRegisterId: payrollId,
+      })
+    } catch {
+      showAlert('해당 사원 급여내역 삭제 실패', 'error')
+    }
+    showAlert('해당 사원의 급여내역을 삭제했습니다.', 'success');
+  }
+
 
   useEffect(() => {
     if (mode === 'create') {
@@ -877,10 +891,13 @@ const NewPayrollLedger = (): React.JSX.Element => {
           </TableContainer>
         </Box>
         <DeletePaymentConfirmDialog isOpen={isConfirmDialogOpen}
-                                    paymentId={selectedPaymentId}
-                                    payrollRegisterId={payrollId}
+                                    // paymentId={selectedPaymentId}
+                                    // payrollRegisterId={payrollId}
+                                    dialogContentText='정말 해당 사원의 급여내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
                                     onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
-                                    onClose={() => setIsConfirmDialogOpen(false)}/>
+                                    onClose={() => setIsConfirmDialogOpen(false)}
+                                    onClick={deletePayment}
+        />
 
         {/* 합산 */}
         <Box sx={{mt: 1}}>

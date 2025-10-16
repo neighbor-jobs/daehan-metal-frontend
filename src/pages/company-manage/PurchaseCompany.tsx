@@ -24,6 +24,7 @@ import {useAlertStore} from '../../stores/alertStore.ts';
 import BankForm from '../../components/BankForm.tsx';
 import {BankDialogType} from '../../types/dialogTypes.ts';
 import PurchaseCompanyForm from './PurchaseCompanyForm.tsx';
+import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
 
 const columns: readonly TableColumns<PurchaseCompanyColumn>[] = [
   {
@@ -84,6 +85,7 @@ const PurchaseCompany = (): React.JSX.Element => {
     accountOwner: '',
   });
   const [companyName, setCompanyName] = useState('');
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const {showAlert} = useAlertStore();
 
   const handleCreate = () => {
@@ -145,9 +147,14 @@ const PurchaseCompany = (): React.JSX.Element => {
   };
 
   const delPurchaseCompany = async (companyName: string) => {
-    await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
+    try {
+      await axiosInstance.delete(`/vendor?vendorName=${companyName}`);
+      showAlert('거래처 삭제 완료', 'success');
+      setIsConfirmDialogOpen(false);
+    } catch {
+      showAlert('거래처 삭제 실패', 'error');
+    }
     await fetchPurchaseCompanies();
-    showAlert('거래처 삭제 완료', 'success');
   }
 
   useEffect(() => {
@@ -284,7 +291,10 @@ const PurchaseCompany = (): React.JSX.Element => {
                         <EditIcon fontSize='small'/>
                       </IconButton>
                       <IconButton color='error' size='small'
-                                  onClick={() => delPurchaseCompany(row['name'])}>
+                                  onClick={() => {
+                                    setCompanyName(row['name'])
+                                    setIsConfirmDialogOpen(true);
+                                  }}>
                         <CloseIcon fontSize='small'/>
                       </IconButton>
                     </TableCell>
@@ -295,6 +305,11 @@ const PurchaseCompany = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
+      <DeletePaymentConfirmDialog isOpen={isConfirmDialogOpen}
+                                  onClose={() => setIsConfirmDialogOpen(false)}
+                                  onClick={() => delPurchaseCompany(companyName)}
+                                  dialogContentText='정말 해당 거래처를 삭제하시겠습니까? 삭제 시 해당 거래처와의 거래 내역도 함께 삭제됩니다.'
+      />
       {/*<PrintButton printData={salesCompanyList}></PrintButton>*/}
     </Box>
   );
