@@ -1057,13 +1057,13 @@ const basicInvoiceTable = (data, index) => {
 */
   // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.sales.length > 13 ? 23 : 13;
-  const shouldPageBreak = index === 1 && totalRowsNum === 23;
+  const totalRowsNum = data.sales.length > 15 ? 25 : 15;
+  const shouldPageBreak = index === 1 && totalRowsNum === 25;
 
   // 합계 계산
-  const sum = data.sales.map((item) => (Number(item.rawMatAmount) + Number(item.manufactureAmount)) * item.quantity)
-  const totalDeliveryCharge = data.sales.reduce((acc, cur) => acc + Number(cur.deliveryCharge || 0), 0);
-  const totalVatAmount= data.sales.reduce((acc, cur) => acc + Number(cur.vatAmount || 0), 0);
+  const sum = data.sales.map((item) => (Number(item.rawMatAmount) + Number(item.manufactureAmount)) * item.quantity + Number(item.deliveryCharge) + Number(item.vatAmount))
+  // const totalDeliveryCharge = data.sales.reduce((acc, cur) => acc + Number(cur.deliveryCharge || 0), 0);
+  // const totalVatAmount= data.sales.reduce((acc, cur) => acc + Number(cur.vatAmount || 0), 0);
 
   const [firstRowNames, secondRowNames] =
     data.locationName.length > 3
@@ -1140,16 +1140,6 @@ const basicInvoiceTable = (data, index) => {
             {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right'},
             {text: `${sum[index].toLocaleString('ko-KR')}`, alignment: 'right'},
           ]),
-          [
-            { text: '세액 합' },
-            '', '', '', '',
-            { text: `${formatCurrency(totalVatAmount)}`, alignment: 'right'},
-          ],
-          [
-            { text: '운임비 합'},
-            '', '', '', '',
-            { text: `${formatCurrency(totalDeliveryCharge)}`, alignment: 'right'},
-          ],
           ...Array.from({length: totalRowsNum - data.sales.length}, () =>
             Array.from({length: 6}, () => ({
               text: ' ',
