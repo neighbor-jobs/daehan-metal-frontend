@@ -352,7 +352,8 @@ const employeeStore = new Store({
 // GET employees
 const fetchEmployees = async (): Promise<CacheEmployee[] | undefined> => {
   try {
-    const res = await axios.get('https://saving-finer-fly.ngrok-free.app/employee?includesRetirement=true&orderIds=&includesPayment=false');
+    // const res = await axios.get('https://saving-finer-fly.ngrok-free.app/employee?includesRetirement=true&orderIds=&includesPayment=false');
+    const res = await axios.get('http://localhost:3000/employee?includesRetirement=true&orderIds=&includesPayment=false');
     return res.data.data?.map((e: Employee) => ({
       id: e.id,
       pay: '0'

@@ -486,8 +486,14 @@ const TransactionRegister = ({
     }
   }, [productList]);
 
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (!isOpen) return;
+    // if (!isOpen) return;
+    if (!isOpen) {
+      initializedRef.current = false; // 닫힐 때만 초기화 가능 상태로
+      return;
+    }
+    if (initializedRef.current) return;
 
     if (dialogType === 'create') {
       // create 기본 세팅
@@ -500,7 +506,9 @@ const TransactionRegister = ({
       if (prevChoices)  setChoices(prevChoices);
       setOutstanding(Number(prevAmount?.carryoverAmount ?? 0));
     }
-  }, [isOpen, dialogType, prevFormData, prevChoices, prevAmount]);
+    initializedRef.current = true;
+
+  }, [isOpen, dialogType]);
 
   useEffect(() => {
     if (dialogType === 'edit') return;

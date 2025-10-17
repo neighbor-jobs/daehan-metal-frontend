@@ -211,7 +211,8 @@ const isAbcApiProduct = (v: any): v is AbcApiProduct =>
 
 // --- API 전체 페이지 조회 ---
 export const abcFetchAllProducts = async (
-  baseUrl = 'https://saving-finer-fly.ngrok-free.app',
+  baseUrl = 'http://localhost:3000',
+  // baseUrl = 'https://saving-finer-fly.ngrok-free.app',
   orderBy: 'asc' | 'desc' = 'asc'
 ): Promise<AbcFetchResult> => {
   try {
@@ -257,7 +258,8 @@ export const abcInitializeProducts = async (opts?: {
   orderBy?: 'asc' | 'desc';
   skipIfExists?: boolean; // 기본 true: 로컬에 데이터 있으면 건너뜀
 }) => {
-  const { baseUrl = 'https://saving-finer-fly.ngrok-free.app', orderBy = 'asc', skipIfExists = true } = opts ?? {};
+  // const { baseUrl = 'https://saving-finer-fly.ngrok-free.app', orderBy = 'asc', skipIfExists = true } = opts ?? {};
+  const { baseUrl = 'http://localhost:3000', orderBy = 'asc', skipIfExists = true } = opts ?? {};
   const current = getProductsByCompany();
   if (skipIfExists && current.length > 0) return;
 
@@ -290,7 +292,8 @@ export const abcValidateAgainstAPI = async (opts?: {
     apiValue: any;
   }>;
 }> => {
-  const { baseUrl = 'https://saving-finer-fly.ngrok-free.app', orderBy = 'asc', autoFix = false, removeOrphaned = false } =
+  // const { baseUrl = 'https://saving-finer-fly.ngrok-free.app', orderBy = 'asc', autoFix = false, removeOrphaned = false } =
+  const { baseUrl = 'http://localhost:3000', orderBy = 'asc', autoFix = false, removeOrphaned = false } =
   opts ?? {};
 
   const stored = getProductsByCompany();

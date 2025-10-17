@@ -182,8 +182,8 @@ const ClientSales = (): React.JSX.Element => {
 
       outstanding -= Number(item.payingAmount);
       const paying = {
-        createdAt: sales[0]?.createdAt,
-        companyName: sales[0]?.companyName,
+        createdAt: item?.createdAt,
+        companyName: item?.companyName,
         productName: '입금액',
         scale: '',
         amount: -Number(item.payingAmount),

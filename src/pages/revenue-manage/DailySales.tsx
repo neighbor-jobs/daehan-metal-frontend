@@ -124,8 +124,8 @@ const DailySales = () => {
       if (!item.payingAmount || item.payingAmount === '0')
         return [...sales];
       const paying = {
-        createdAt: sales[0].createdAt,
-        companyName: sales[0].companyName,
+        createdAt: item.createdAt,
+        companyName: item.companyName,
         productName: '입금액',
         scale: '',
         payingAmount: item.payingAmount,

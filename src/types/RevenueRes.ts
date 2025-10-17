@@ -11,6 +11,8 @@ export interface DailySalesReceiptItem {
   reports: DailySalesReportsItem[];
   payingAmount: string;
   totalBalance?: number;
+  companyName?: string;
+  createdAt?: string;
 }
 
 export interface DailySalesReportsItem {
