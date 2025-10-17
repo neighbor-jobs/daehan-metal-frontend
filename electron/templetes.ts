@@ -1055,7 +1055,7 @@ const basicInvoiceTable = (data, index) => {
   ]
 }
 */
-  console.log(data);
+  // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
   const totalRowsNum = data.sales.length > 13 ? 23 : 13;
   const shouldPageBreak = index === 1 && totalRowsNum === 23;
@@ -1091,7 +1091,7 @@ const basicInvoiceTable = (data, index) => {
             }, '',
             {text: '공        급        자', colSpan: 5, alignment: 'center'}, '', '', '', ''
           ],
-          ['', '', {text: '등 록 번 호', alignment: 'center'},
+          ['', '', {text: '등 록 번 호', alignment: 'center', noWrap: true},
             {text: '122 - 86 - 29029', colSpan: 4, alignment: 'center'}, '', '', ''
           ],
           ['', '',
@@ -1101,19 +1101,19 @@ const basicInvoiceTable = (data, index) => {
             {text: '박신석', alignment: 'center'}
           ],
           ['', '',
-            {text: '사 업 장 주 소', alignment: 'center'},
+            {text: '사 업 장 주 소', alignment: 'center', noWrap: true},
             {text: '인천 계양구 평리길 92(평동 85-3)', colSpan: 4, alignment: 'center'}, '', '', ''
           ],
           [{text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, border: [true, true, true, false]}, '',
-            {text: '업 태', alignment: 'center'},
+            {text: '업 태', alignment: 'center', noWrap: true},
             {text: '제조업', alignment: 'center'},
-            {text: '종 목', alignment: 'center'},
+            {text: '종 목', alignment: 'center', noWrap: true},
             {text: '일반철물제작', colSpan: 2, alignment: 'center'}, ''
           ],
           [{text: `${secondRowNames?.join(', ')}`, colSpan: 2, border: [true, false, true, true]}, '',
             {text: '전 화', alignment: 'center'},
             {text: '032-543-2756,7', alignment: 'center'},
-            {text: '팩 스', alignment: 'center'},
+            {text: '팩 스', alignment: 'center', noWrap: true},
             {text: '032-543-2763', colSpan: 2, alignment: 'center'}, ''
           ],
         ],
@@ -1205,7 +1205,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [40, 10, 40, 20],
+    pageMargins: [40, 10, 40, 0],
     content: [
       ...basicInvoiceTable(data, 0),
       ...(totalRowsNum !== 25
