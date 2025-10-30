@@ -12,7 +12,6 @@ export const arrowNavAtRegister = (
   const { selectionStart, selectionEnd, value } = input;
   const row = Number(input.dataset.rowIndex);
   const col = Number(input.dataset.colIndex);
-  // console.log('row: ', row, 'col: ', col)
   let newRow = row;
   let newCol = col;
 
