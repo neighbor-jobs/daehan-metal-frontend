@@ -35,6 +35,7 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
     id: PurchaseRegisterColumn.PRODUCT_NAME,
     label: '품명',
+    align: 'center',
     minWidth: 200,
   },
   {
@@ -509,8 +510,15 @@ const PurchaseMain = (): React.JSX.Element => {
                                    return;
                                  }
 
+                                 const target = e.currentTarget;
+                                 const {selectionStart = 0, selectionEnd = 0, value = ''} = target;
+                                 const caretAtEnd = selectionStart === selectionEnd && selectionStart === value.length;
+
                                  // 그 외 Enter/방향키는 기존 네비게이션 유지
-                                 if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4)
+                                 if (!e.nativeEvent.isComposing) {
+                                   if (e.key === 'Enter') arrowNavAtRegister(e, 4)
+                                   if (caretAtEnd) arrowNavAtRegister(e, 4);
+                                 }
                                }
                              }}
                              onChange={(e) => handleInputChange(e, rowIndex)}

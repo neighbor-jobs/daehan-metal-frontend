@@ -20,9 +20,9 @@ import React, {useEffect, useState} from 'react';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
 import {formatCurrency, formatDecimal, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
-import {moveFocusToNextInput} from '../../utils/focus.ts';
 import {GetVendorReceiptResData} from '../../types/vendorRes.ts';
 import axiosInstance from '../../api/axios.ts';
+import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 interface UpdateReceiptProps {
   isOpen: boolean;
@@ -150,6 +150,18 @@ const UpdateReceipt = ({
     );
   };
 
+  const handleAltEnterNewLine = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const target = e.currentTarget;
+    const {selectionStart = 0, selectionEnd = 0, value} = target;
+    const next = value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+    setFormData((prev) => ({
+      ...prev,
+      productName: next
+    }))
+  };
+
+  // api
   const handleSubmit = async () => {
     let isPaying = formData.isPaying;
     if (formData.productPrice && formData.productPrice !== '0') isPaying = true;
@@ -261,12 +273,27 @@ const UpdateReceipt = ({
                   <TableCell>
                     <Input size='small'
                            fullWidth
+                           multiline
                            value={formData.productName}
                            name='productName'
                            inputProps={{
-                             'data-input-id': `productName`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`productName`);
+                             // 'data-input-id': `productName`,
+                             'data-row-index': 0,
+                             'data-col-index': 0,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                               if (e.altKey && e.key === 'Enter') {
+                                 handleAltEnterNewLine(e);
+                                 return;
+                               }
+
+                               const target = e.currentTarget;
+                               const {selectionStart = 0, selectionEnd = 0, value = ''} = target;
+                               const caretAtEnd = selectionStart === selectionEnd && selectionStart === value.length;
+
+                               if (!e.nativeEvent.isComposing) {
+                                 if (e.key === 'Enter') arrowNavAtRegister(e, 4)
+                                 if (caretAtEnd) arrowNavAtRegister(e, 4);
+                               }
                              }
                            }}
                            onChange={(e) => handleInputChange(e)}
@@ -278,15 +305,17 @@ const UpdateReceipt = ({
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `quantity`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter') moveFocusToNextInput(`quantity`);
-                             }
+                             // 'data-input-id': `quantity`,
+                             'data-row-index': 0,
+                             'data-col-index': 1,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                               if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4);                             }
                            }}
                            value={formData.quantity}
                            name='quantity'
                            onChange={(e) => handleInputChange(e)}
-                           data-table-input/>
+                           data-table-input
+                    />
                   </TableCell>
                   <TableCell>
                     {/* 단가 */}
@@ -294,18 +323,18 @@ const UpdateReceipt = ({
                            fullWidth
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `rawMatAmount`,
-                             onKeyDown: (e) => {
-                               if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                                 const el = document.querySelector<HTMLInputElement>('[data-input-id="productPrice"]');
-                                 el?.focus();
-                               }
+                             // 'data-input-id': `rawMatAmount`,
+                             'data-row-index': 0,
+                             'data-col-index': 2,
+                             onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                               if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4);
                              }
                            }}
                            name='rawMatAmount'
                            value={formatCurrency(formData.rawMatAmount)}
                            onChange={(event) => handleInputChange(event)}
-                           data-table-input/>
+                           data-table-input
+                    />
                   </TableCell>
                   <TableCell>
                     {/* 매입금액 */}
@@ -315,7 +344,7 @@ const UpdateReceipt = ({
                            inputProps={{
                              sx: {textAlign: 'right'},
                              disabled: true,
-                             'data-input-id': `totalRawMatAmount`,
+                             // 'data-input-id': `totalRawMatAmount`,
                            }}
                            name='totalRawMatAmount'
                            value={((parseFloat(formData.rawMatAmount || '0') || 0) * (formData.quantity || 0)).toLocaleString()}
@@ -351,7 +380,7 @@ const UpdateReceipt = ({
                            inputProps={{
                              sx: {textAlign: 'right', fontSize: 15},
                              disabled: true,
-                             'data-input-id': `totalPrice`,
+                             // 'data-input-id': `totalPrice`,
                            }}
                     />
                   </TableCell>
@@ -361,17 +390,20 @@ const UpdateReceipt = ({
                            disableUnderline={!formData.isPaying}
                            inputProps={{
                              sx: {textAlign: 'right'},
-                             'data-input-id': `productPrice`,
-                             onKeyDown: async (e) => {
+                             'data-row-index': 0,
+                             'data-col-index': 3,
+                             onKeyDown: async (e: React.KeyboardEvent<HTMLInputElement>) => {
                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                                  e.preventDefault();
                                  await handleSubmit();
-                               }                             }
+                               }
+
+                               if (!e.nativeEvent.isComposing) arrowNavAtRegister(e, 4)
+                             }
                            }}
                            name='productPrice'
                            onChange={(e) => handleInputChange(e)}
                            value={formatCurrency(formData.productPrice)}
-                           data-table-input
                     />
                   </TableCell>
                 </TableRow>
