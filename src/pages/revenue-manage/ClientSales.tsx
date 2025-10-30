@@ -13,7 +13,7 @@ import {
   TableFooter,
   TableHead,
   TableRow,
-   TextField,
+  TextField,
   Typography
 } from '@mui/material';
 import DateRangePicker from '../../components/DateRangePicker.tsx';
@@ -192,9 +192,7 @@ const ClientSales = (): React.JSX.Element => {
       }
       // console.log([...sales, paying]);
       return [...sales, paying];
-    })/* ?? []).sort((a, b) => {
-      return dayjs(a.createdAt).diff(dayjs(b.createdAt))
-    });*/
+    })
 
     setReports(data);
     setPrintData({
@@ -305,12 +303,27 @@ const ClientSales = (): React.JSX.Element => {
               </TableRow>
               {reports && reports?.map((row, rowIdx) => {
                 const balance = row.productName === '입금액' ? row.totalBalance + outstandingBeforeOneDay : row.balance + outstandingBeforeOneDay;
+
+                // 이전 행의 날짜와 비교
+                const prevDate = rowIdx > 0 ? reports[rowIdx - 1]?.createdAt?.split('T')[0] : null;
+                const currentDate = row?.createdAt?.split('T')[0];
+                const isNewDate = prevDate && currentDate !== prevDate;
+
                 return (
-                  <TableRow hover role="checkbox" tabIndex={-1} key={rowIdx}>
+                  <TableRow hover
+                            role="checkbox"
+                            tabIndex={-1}
+                            key={rowIdx}
+                  >
                     {columns.map((column) => {
                       const value = row[column.id];
                       return (
-                        <TableCell key={column.id} align={column.align}>
+                        <TableCell key={column.id}
+                                   align={column.align}
+                                   sx={{
+                                     borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
+                                   }}
+                        >
                           {column.format ?
                             <Typography variant='body2' sx={column.typoSx || undefined}>
                               {column.format(value)}
@@ -322,29 +335,43 @@ const ClientSales = (): React.JSX.Element => {
                         </TableCell>
                       );
                     })}
-                    <TableCell align='right'>{row.amount?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell align='right'
+                               sx={{
+                                 borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
+                               }}
+                    >
+                      {row.amount?.toLocaleString() ?? '-'}
+                    </TableCell>
                     {/*<TableCell align='right'>{row.remainingAmount?.toLocaleString() ?? '-'}</TableCell>*/}
-                    <TableCell align='right'>{balance?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell align='right'
+                               sx={{
+                                 borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
+                               }}
+                    >
+                      {balance?.toLocaleString() ?? '-'}
+                    </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
             <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell colSpan={4}>합계 :</TableCell>
-                <TableCell align='right'>
+                <TableCell colSpan={4} sx={{borderTop: '2px solid lightgray'}}>
+                  합계
+                </TableCell>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography color='black' fontSize={13}>매출액계 : </Typography>
                 </TableCell>
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography color='black' fontSize={13}>{formatCurrency(amount.totalSalesAmount)}</Typography>
-                  </TableCell>
-                <TableCell align='right'>
+                </TableCell>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography color='black' fontSize={13}>수금액계 : </Typography>
                 </TableCell>
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography color='black' fontSize={13}>{formatCurrency(amount.totalPayingAmount)}</Typography>
                 </TableCell>
-                <TableCell colSpan={2} />
+                <TableCell colSpan={2} sx={{borderTop: '2px solid lightgray'}}/>
               </TableRow>
             </TableFooter>
           </Table>
