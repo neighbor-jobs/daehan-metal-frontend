@@ -2,8 +2,6 @@ import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts';
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
-// TODO: 매출조회쪽에 세액&운임비 포함
-// TODO: 일별매출현황 템플릿 제작
 // TODO: 기본 border 얇기 0.4로 변경
 
 /**
@@ -101,6 +99,7 @@ export const dailySalesDocDef = (dailySalesData) => {
     + Number(dailySalesData.amount.totalDeliveryCharge)
     - dailySalesData.amount.totalPayingAmount
   const docDef: TDocumentDefinitions = {
+    pageSize: 'A4',
     pageMargins: [10, 20, 10, 10],
     header: (currentPage, pageCount) => ({
       columns: [
@@ -129,7 +128,7 @@ export const dailySalesDocDef = (dailySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', '*', '*', 30, 40, 40, 30, 30, '*'],
+          widths: ['auto', '*', 55, '*', 30, 47, 47, 40, 40, 50],
           body: [
             ['날짜', '거래처명', '품명', '규격', '수량', '재료비', '가공비', '세액', '운임비', '금액'].map(header => ({
               text: header,
@@ -157,6 +156,8 @@ export const dailySalesDocDef = (dailySalesData) => {
                 {text: amount.toLocaleString(), alignment: 'right'}, // 금액
               ]
             }),
+            [{text: ' '}, '','', '','', '','', '','', '',],
+            [{text: ' '}, '','', '','', '','', '','', '',],
             [
               {text: '합계'},
               {text: ''},
@@ -184,7 +185,7 @@ export const dailySalesDocDef = (dailySalesData) => {
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 8,
+      fontSize: 8.25,
     },
     styles: {
       header: {fontSize: 14,},
@@ -254,16 +255,16 @@ export const companySalesDocDef = (companySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', '*', 30, 40, 40, 40, 40, '*', '*', '*'],
+          widths: ['auto', '*', 30, 47, 47, 40, 40, 50, 50, 50],
           body: [
-            ['날짜', '품명', '규격', '수량', '재료비', '가공비','세액', '운임비', '금액', '수금액', '잔액'].map(header => ({
+            ['날짜', '품명/규격', '수량', '재료비', '가공비','세액', '운임비', '금액', '수금액', '잔액'].map(header => ({
               text: header,
               alignment: 'center'
             })),
             [
               {text: '', style: 'tableText'}, // 날짜
-              {text: '전일이월', style: 'tableText'}, // 품명
-              {text: '', style: 'tableText'}, // 규격
+              {text: '전일이월', style: 'tableText'}, // 품명+규격
+              // {text: '', style: 'tableText'}, // 규격
               {text: '', alignment: 'right', style: 'tableText'}, // 수량
               {text: '', alignment: 'right', style: 'tableText'}, // 재료비
               {text: '', alignment: 'right', style: 'tableText'}, // 가공비
@@ -288,8 +289,7 @@ export const companySalesDocDef = (companySalesData) => {
 
               return [
                 {text: createdAt, style: 'tableText'}, // 날짜
-                {text: item['productName'], style: 'tableText'}, // 품명
-                {text: item['scale'], style: 'tableText'}, // 규격
+                {text: `${item['productName']} ${item['scale']}`, style: 'tableText'}, // 품명+규격
                 {text: quantity, alignment: 'right', style: 'tableText'}, // 수량
                 {text: formatCurrency(item['rawMatAmount']), alignment: 'right', style: 'tableText'}, // 재료비
                 {text: formatCurrency(item['manufactureAmount']), alignment: 'right', style: 'tableText'}, // 가공비
@@ -300,9 +300,11 @@ export const companySalesDocDef = (companySalesData) => {
                 {text: item['remainingAmount'].toLocaleString(), alignment: 'right'}, // 잔액
               ]
             }),
+            [{text: ' '}, '','', '','', '','', '','', '',],
+            [{text: ' '}, '','', '','', '','', '','', '',],
             [
               { text: '합계', alignment: 'center', style: 'tableText' },
-              {}, {}, {},
+              {}, {},
               { text: totalRawMatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
               { text: totalManuAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
               { text: totalVatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
@@ -322,7 +324,7 @@ export const companySalesDocDef = (companySalesData) => {
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 8,
+      fontSize: 8.2,
     },
     styles: {
       header: {fontSize: 14,},
