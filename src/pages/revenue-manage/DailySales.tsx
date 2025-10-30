@@ -113,7 +113,7 @@ const DailySales = () => {
   };
 
   const getDailySalesList = async (startAt: string, endAt: string) => {
-    const res: AxiosResponse = await axiosInstance.get(`/receipt/daily/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`);
+    const res: AxiosResponse = await axiosInstance.get(`/receipt/daily/report?orderBy=asc&startAt=${startAt}&endAt=${endAt}`);
     const receipts: DailySalesReceiptItem[] = res.data.data?.receipts;
     const updatedList = receipts.flatMap((item: DailySalesReceiptItem) => {
       const sales = item.reports.map((r: DailySalesReportsItem) => ({

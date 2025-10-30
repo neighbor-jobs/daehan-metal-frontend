@@ -36,7 +36,8 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
   {
     id: MonthlyPurchaseColumn.PRODUCT_NAME,
     label: '품명',
-    minWidth: 170
+    align: 'center',
+    minWidth: 240,
   },
   {
     id: MonthlyPurchaseColumn.QUANTITY,
@@ -89,7 +90,6 @@ const columns: readonly TableColumns<MonthlyPurchaseColumn>[] = [
     format: formatCurrency,
   }
 ];
-
 
 const MonthlyPurchase = (): React.JSX.Element => {
   const [formData, setFormData] = useState({
@@ -295,7 +295,14 @@ const MonthlyPurchase = (): React.JSX.Element => {
                         {(row.createdAt).split('T')[0]}
                       </TableCell>
                       {/* 품명 */}
-                      <TableCell sx={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          whiteSpace: 'pre-line',
+                          wordBreak: 'break-word',
+                          width: '100%',
+                        }}
+                      >
                         {row.productName}
                       </TableCell>
                       {/* 수량 */}
