@@ -519,7 +519,8 @@ const PurchaseMain = (): React.JSX.Element => {
                                    if (e.key === 'Enter') arrowNavAtRegister(e, 4)
                                    if (caretAtEnd) arrowNavAtRegister(e, 4);
                                  }
-                               }
+                               },
+                               style: {textAlign: 'center'}
                              }}
                              onChange={(e) => handleInputChange(e, rowIndex)}
                       />
