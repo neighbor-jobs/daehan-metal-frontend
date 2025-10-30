@@ -145,6 +145,11 @@ const MonthlyPurchase = (): React.JSX.Element => {
 
   // api
   const handleSearch = async () => {
+    if (!formData.companyName) {
+      showAlert('검색할 거래처명을 선택해주세요.', 'warning');
+      return;
+    }
+
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
       setMonthlyPurchase(res.data.data);
