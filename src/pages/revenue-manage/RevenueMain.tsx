@@ -159,12 +159,20 @@ const RevenueMain = (): React.JSX.Element => {
 
     if (res.data.statusCode === 204) {
       showAlert('해당 거래 내역이 존재하지 않습니다.', 'warning');
+      setReport([]);
+      setPrevChoices([]);
+      setAmount({
+        totalPayingAmount: "0",
+        totalSalesAmount: "0",
+        carryoverAmount: "0"
+      })
+      setPrintData(null);
       return;
     }
-    let vatSum = 0, delSum = 0;
+    // let vatSum = 0, delSum = 0;
     const latestReports = res.data.data?.reports?.map((report) => {
-      vatSum += Number(report.vatAmount);
-      delSum += Number(report.deliveryCharge);
+      // vatSum += Number(report.vatAmount);
+      // delSum += Number(report.deliveryCharge);
       return {
         ...report,
         totalRawMatAmount: Number(report.rawMatAmount) * report.quantity,
@@ -248,7 +256,7 @@ const RevenueMain = (): React.JSX.Element => {
         payingAmount: amount.totalPayingAmount,
         sales: nextChoices,
       }
-      console.log('updateData: ', updateData);
+      // console.log('updateData: ', updateData);
       await axiosInstance.patch('/receipt', updateData);
 
       getReceipt(formData.companyName, formData.startAt, formData.sequence);
