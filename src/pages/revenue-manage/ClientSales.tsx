@@ -84,7 +84,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
 const ClientSales = (): React.JSX.Element => {
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [date, setDate] = useState({
-    startAt: dayjs(),
+    startAt: dayjs().startOf('month'),
     endAt: dayjs(),
   });
   const [companyName, setCompanyName] = useState('');

@@ -65,7 +65,7 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
 const ClientSalesSummary = (): React.JSX.Element => {
   const [clientSalesSumList, setClientSalesSumList] = useState([]);
   const [date, setDate] = useState({
-    startAt: dayjs(),
+    startAt: dayjs().startOf('month'),
     endAt: dayjs(),
   });
   const [printData, setPrintData] = useState<{
@@ -81,7 +81,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
 
   const getClientSalesSumList = async (startAt: string, endAt: string) => {
     const res: AxiosResponse = await axiosInstance.get(
-      `receipt/company/sales/summary/report?orderBy=desc&startAt=${startAt}&endAt=${endAt}`
+      `receipt/company/sales/summary/report?orderBy=asc&startAt=${startAt}&endAt=${endAt}`
     );
     // console.log('get client sales sum data: ', res.data.data);
     setClientSalesSumList(res.data.data);
