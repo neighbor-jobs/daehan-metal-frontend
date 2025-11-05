@@ -64,6 +64,15 @@ const columns: readonly TableColumns<ClientSalesSummaryColumn>[] = [
 
 const ClientSalesSummary = (): React.JSX.Element => {
   const [clientSalesSumList, setClientSalesSumList] = useState([]);
+  const [footer, setFooter] = useState({
+    sumRaw: 0,
+    sumManu: 0,
+    sumVat: 0,
+    sumDelivery: 0,
+    sumSales: 0,
+    sumPaying: 0,
+    sumRemaining: 0,
+  });
   const [date, setDate] = useState({
     startAt: dayjs().startOf('month'),
     endAt: dayjs(),
@@ -83,14 +92,21 @@ const ClientSalesSummary = (): React.JSX.Element => {
     const res: AxiosResponse = await axiosInstance.get(
       `receipt/company/sales/summary/report?orderBy=asc&startAt=${startAt}&endAt=${endAt}`
     );
-    // console.log('get client sales sum data: ', res.data.data);
     setClientSalesSumList(res.data.data);
 
+    let sumRaw = 0, sumManu = 0, sumVat = 0, sumDelivery = 0, sumPaying = 0
+
     const data = res.data.data?.map((item) => {
-      const raw = Number(item.totalRawMatAmount) || 0;
-      const manu = Number(item.totalManufactureAmount) || 0;
-      const vat = Number(item.totalVatAmount) || 0;
-      const del = Number(item.totalDeliveryCharge) || 0;
+      const raw   = Number(item.totalRawMatAmount) || 0;
+      const manu  = Number(item.totalManufactureAmount) || 0;
+      const vat   = Number(item.totalVatAmount) || 0;
+      const del   = Number(item.totalDeliveryCharge) || 0;
+
+      sumRaw += raw;
+      sumManu += manu;
+      sumVat += vat;
+      sumDelivery += del;
+      sumPaying += Number(item.totalPayingAmount);
 
       return {
         'company-name': item.companyName,
@@ -103,6 +119,16 @@ const ClientSalesSummary = (): React.JSX.Element => {
         'remaining-amount': raw + manu + vat + del - Number(item.totalPayingAmount),
       }
     }) ?? [];
+    setFooter({
+      sumRaw: sumRaw,
+      sumManu: sumManu,
+      sumVat: sumVat,
+      sumDelivery: sumDelivery,
+      sumSales: sumRaw + sumManu + sumVat + sumDelivery,
+      sumPaying: sumPaying,
+      sumRemaining: sumRaw + sumManu + sumVat + sumDelivery - sumPaying,
+    })
+
     setPrintData({
       data,
       'startAt': date.startAt.format('YYYY-MM-DD'),
@@ -205,12 +231,30 @@ const ClientSalesSummary = (): React.JSX.Element => {
             </TableBody>
             <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell>합계</TableCell>
-                <TableCell align='right'>재료비</TableCell>
-                <TableCell align='right'>가공비</TableCell>
-                <TableCell align='right'>금액</TableCell>
-                <TableCell align='right'>수금액</TableCell>
-                <TableCell align='right'>잔액</TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}}>
+                  <Typography variant='body2' color='black'>합계</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='blue'>{footer.sumRaw.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='darkorange'>{footer.sumManu.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='black'>{footer.sumVat.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='black'>{footer.sumDelivery.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='black'>{footer.sumSales.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='black'>{footer.sumPaying.toLocaleString()}</Typography>
+                </TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} align='right'>
+                  <Typography variant='body2' color='black'>{footer.sumRemaining.toLocaleString()}</Typography>
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>
