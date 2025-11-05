@@ -515,28 +515,6 @@ const TransactionRegister = ({
     fetchOutstanding(formData.companyName, formData.createdAt);
   }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);
 
-  /*useEffect(() => {
-    if (dialogType === 'edit' && prevChoices) {
-      setChoices(prevChoices);
-    } else if (dialogType === 'create') {
-      setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
-    }
-  }, [dialogType, prevChoices]);
-
-  useEffect(() => {
-    if (dialogType === 'edit' && prevFormData) {
-      setFormData(prevFormData);
-      setOutstanding(Number(prevAmount.carryoverAmount));
-    } else {
-      fetchOutstanding(formData.companyName, formData.createdAt);
-    }
-  }, [dialogType, prevFormData]);
-
-  useEffect(() => {
-    if (dialogType === 'edit') return;
-    fetchOutstanding(formData.companyName, formData.createdAt);
-  }, [formData.companyName, formData.createdAt, dialogType, fetchOutstanding]);*/
-
   // debug
   // console.log('choices: ', choices, 'formData: ',formData);
 
@@ -545,7 +523,10 @@ const TransactionRegister = ({
       {/* 거래 등록 Dialog */}
       <Dialog open={isOpen}
               fullWidth maxWidth="lg"
-              onClose={onClose}
+              onClose={(_event, reason) => {
+                if (reason === 'backdropClick') return;
+                onClose();
+              }}
               disableEscapeKeyDown={openAlert}
         // disableAutoFocus
               disableEnforceFocus
