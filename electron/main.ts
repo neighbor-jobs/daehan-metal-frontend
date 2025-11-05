@@ -1,4 +1,4 @@
-import {app, BrowserWindow, ipcMain, shell} from 'electron'
+import {app, BrowserWindow, ipcMain} from 'electron'
 import {createRequire} from 'node:module'
 import {fileURLToPath} from 'node:url'
 import path from 'node:path'
@@ -334,7 +334,7 @@ ipcMain.handle('generate-and-open-pdf',
            | ClientManageMenuType
            | AccountingManageMenuType,
          data) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(() => {
       let docDefinition: TDocumentDefinitions;
       switch (printType) {
         case RevenueManageMenuType.SalesDetail:
@@ -378,14 +378,25 @@ ipcMain.handle('generate-and-open-pdf',
       }
 
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-      pdfDocGenerator.getBuffer((buffer) => {
+
+      pdfDocGenerator.getBuffer(async (buffer) => {
         const previewPath = path.join(app.getPath('temp'), 'preview.pdf');
         fs.writeFileSync(previewPath, buffer);
 
-        // 시스템 기본 PDF 뷰어에서 열기
+        /*// 시스템 기본 PDF 뷰어에서 열기
         shell.openPath(previewPath)
           .then(() => resolve(previewPath))
-          .catch((error) => reject(error));
+          .catch((error) => reject(error));*/
+
+        // 내부 프리뷰 창 열기
+        const previewWin = new BrowserWindow({
+          width: 1200,
+          height: 900,
+          webPreferences: { plugins: true } // PDF 플러그인(크로미움 내장 뷰어)
+        });
+
+        // 파일 URL로 로드 (크로미움 내장 PDF 뷰어 사용)
+        await previewWin.loadURL(`file://${previewPath}`);
       });
     });
   });
