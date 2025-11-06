@@ -206,6 +206,11 @@ const DailySales = () => {
             <TableBody>
               {dailySalesList &&
                 dailySalesList.map((row, rowIndex) => {
+                  // 이전 행의 날짜와 비교
+                  const prevDate = rowIndex > 0 ? dailySalesList[rowIndex - 1]?.createdAt?.split('T')[0] : null;
+                  const currentDate = row?.createdAt?.split('T')[0];
+                  const isNewDate = prevDate && currentDate !== prevDate;
+
                   return (
                     <TableRow hover role="checkbox" tabIndex={-1} key={rowIndex}>
                       {columns.map((column) => {
@@ -222,7 +227,10 @@ const DailySales = () => {
                           }
                         }
                         return (
-                          <TableCell key={column.id} align={column.align}>
+                          <TableCell key={column.id}
+                                     align={column.align}
+                                     sx={{ borderTop: isNewDate ? '1.5px solid lightgray' : undefined }}
+                          >
                             {column.format ?
                               <Typography variant='body2' sx={column.typoSx || undefined}>
                                 {column.format(value)}
@@ -234,7 +242,9 @@ const DailySales = () => {
                           </TableCell>
                         );
                       })}
-                      <TableCell align='right'>
+                      <TableCell align='right'
+                                 sx={{borderTop: isNewDate ? '1.5px solid lightgray' : undefined,}}
+                      >
                         {row.productName === '입금액' ?
                           ((-Number(row.payingAmount)).toLocaleString())
                           : (
@@ -251,33 +261,33 @@ const DailySales = () => {
             </TableBody>
             <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell colSpan={6}>합계</TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} colSpan={6}>합계</TableCell>
                 {/* 재료비 합계 */}
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='blue'>
                     {`${formatCurrency(amount.totalRawMatAmount)}`}
                   </Typography>
                 </TableCell>
-                <TableCell/>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} />
                 {/* 가공비 합게 */}
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='darkorange'>
                     {`${formatCurrency(amount.totalManufactureAmount)}`}
                   </Typography>
                 </TableCell>
                 {/* 세액 합계 */}
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='black'>
                     {`${formatCurrency(amount.totalVatAmount)}`}
                   </Typography>
                 </TableCell>
                 {/* 운임비 합계 */}
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='black'>
                     {`${formatCurrency(amount.totalDeliveryCharge)}`}
                   </Typography>
                 </TableCell>
-                <TableCell align='right'>
+                <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='black'>
                     {`${(Number(amount.totalManufactureAmount)
                       + Number(amount.totalRawMatAmount)
