@@ -61,6 +61,7 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
     id: PaymentTableRow.WORKING_DAY,
     label: '월평균 근로시간',
     minWidth: 100,
+    disabled: true,
   },
   {
     id: PaymentTableRow.HOURLY_WAGE,
@@ -472,6 +473,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
         paymentId: selectedPaymentId,
         payrollRegisterId: payrollId,
       })
+      setFormData((prev: PatchPayment[]) =>
+        prev.filter((item) => item.id !== selectedPaymentId)
+      );
+
+      setIsConfirmDialogOpen(false);
+      setSelectedPaymentId(null);
     } catch {
       showAlert('해당 사원 급여내역 삭제 실패', 'error')
     }
