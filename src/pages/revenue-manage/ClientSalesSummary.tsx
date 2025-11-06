@@ -79,6 +79,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
   });
   const [printData, setPrintData] = useState<{
     data: any[];
+    footerData: any;
     startAt: string;
     endAt: string;
   } | null>(null);
@@ -119,7 +120,7 @@ const ClientSalesSummary = (): React.JSX.Element => {
         'remaining-amount': raw + manu + vat + del - Number(item.totalPayingAmount),
       }
     }) ?? [];
-    setFooter({
+    const footerData = {
       sumRaw: sumRaw,
       sumManu: sumManu,
       sumVat: sumVat,
@@ -127,10 +128,12 @@ const ClientSalesSummary = (): React.JSX.Element => {
       sumSales: sumRaw + sumManu + sumVat + sumDelivery,
       sumPaying: sumPaying,
       sumRemaining: sumRaw + sumManu + sumVat + sumDelivery - sumPaying,
-    })
+    }
+    setFooter(footerData);
 
     setPrintData({
       data,
+      footerData,
       'startAt': date.startAt.format('YYYY-MM-DD'),
       'endAt': date.endAt.format('YYYY-MM-DD'),
     })

@@ -534,7 +534,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
  * 거래처별 매출집계
  */
 export const companySalesSumDocDef = (companySalesSumData) => {
-  // console.log(companySalesSumData)
+  console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     pageMargins: [10, 20, 10, 10],
@@ -581,6 +581,18 @@ export const companySalesSumDocDef = (companySalesSumData) => {
               {text: Number(item['paying-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 총 금액
               {text: Number(item['remaining-amount']).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
+            [{text: ' '}, '' , '', '' , '', '' , '', ''],
+            [{text: ' '}, '' , '', '' , '', '' , '', ''],
+            [
+              {text: '합계 '},
+              {text: companySalesSumData.footerData.sumRaw?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumManu?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumVat?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumDelivery?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumSales?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumPaying?.toLocaleString(), style: 'tableText', alignment: 'right'},
+              {text: companySalesSumData.footerData.sumRemaining?.toLocaleString(), style: 'tableText', alignment: 'right'},
+            ]
           ],
         },
         layout: {
