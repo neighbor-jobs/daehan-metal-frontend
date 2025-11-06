@@ -534,7 +534,7 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
  * 거래처별 매출집계
  */
 export const companySalesSumDocDef = (companySalesSumData) => {
-  console.log(companySalesSumData)
+  // console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
     pageMargins: [10, 20, 10, 10],
@@ -618,7 +618,7 @@ export const companySalesSumDocDef = (companySalesSumData) => {
  * 품목별 매출집계
  */
 export const itemSalesSumDocDef = (itemSalesSumData) => {
-  console.log(itemSalesSumData);
+  // console.log(itemSalesSumData);
   /* {
   data: [
     {

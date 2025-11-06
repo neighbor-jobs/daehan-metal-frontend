@@ -563,7 +563,7 @@ const TransactionRegister = ({
                         value={dayjs(formData.createdAt)}
                         onChange={(value) => {
                           if (value && dayjs(value).isValid()) {
-                            console.log(dayjs(value).format('YYYY-MM-DD'))
+                            // console.log(dayjs(value).format('YYYY-MM-DD'))
                             setFormData(prev => ({
                               ...prev,
                               createdAt: dayjs(value).format('YYYY-MM-DD'),
