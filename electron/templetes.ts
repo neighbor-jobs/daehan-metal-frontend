@@ -200,7 +200,7 @@ export const dailySalesDocDef = (dailySalesData) => {
  * 거래처별 매출현황
  */
 export const companySalesDocDef = (companySalesData) => {
-  // console.log('printData: ', companySalesData);
+  console.log('printData: ', companySalesData);
 
   // amount 가 재료비 + 가공비 (단가X)
   const totalRawMatAmount = companySalesData.data?.reduce(
@@ -220,10 +220,12 @@ export const companySalesDocDef = (companySalesData) => {
     0
   );
   let totalPayingAmount = 0;
+/*
   const totalAmount = companySalesData.data?.reduce(
     (acc, cur) => acc + (Number(cur.amount) || 0),
     0
   );
+*/
 
   const today = new Date();
   const docDef: TDocumentDefinitions = {
@@ -309,7 +311,7 @@ export const companySalesDocDef = (companySalesData) => {
               { text: totalManuAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
               { text: totalVatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
               { text: totalDeliveryCharge.toLocaleString(), alignment: 'right', style: 'tableText' },
-              { text: totalAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: (totalRawMatAmount + totalManuAmount + totalVatAmount + totalDeliveryCharge).toLocaleString(), alignment: 'right', style: 'tableText' },
               { text: totalPayingAmount.toLocaleString(), alignment: 'right', style: 'tableText' }, // 수금액계
               { text: '', style: 'tableText' },
             ],
