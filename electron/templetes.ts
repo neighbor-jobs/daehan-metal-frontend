@@ -1120,7 +1120,8 @@ const basicInvoiceTable = (data, index) => {
             {text: '사 업 장 주 소', alignment: 'center', noWrap: true},
             {text: '인천 계양구 평리길 92(평동 85-3)', colSpan: 4, alignment: 'center'}, '', '', ''
           ],
-          [{text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, border: [true, true, true, false]}, '',
+          [
+            {text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, rowSpan: 2, border: [true, true, true, true]}, '',
             {text: '업 태', alignment: 'center', noWrap: true},
             {text: '제조업', alignment: 'center'},
             {text: '종 목', alignment: 'center', noWrap: true},
@@ -1211,7 +1212,8 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [40, 10, 40, 0],
+    pageMargins: [24, 15, 24, 15],
+    pageSize: 'A4',
     content: [
       ...basicInvoiceTable(data, 0),
       ...(totalRowsNum !== 25
