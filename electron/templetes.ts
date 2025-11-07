@@ -9,6 +9,10 @@ import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
  */
 export const dailySalesDocDef = (dailySalesData) => {
   // console.log(dailySalesData)
+  const A4_W = 650;
+  const A4_H = 845;
+  const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
+
   /* data
   {
   startAt: {
@@ -99,13 +103,16 @@ export const dailySalesDocDef = (dailySalesData) => {
     + Number(dailySalesData.amount.totalDeliveryCharge)
     - dailySalesData.amount.totalPayingAmount
   const docDef: TDocumentDefinitions = {
-    pageSize: 'A4',
-    pageMargins: [10, 20, 10, 10],
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
+    pageMargins: [24, 20, 24, 20],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
       ],
-      margin: [5, 10, 5, 0], // 좌우 여백 조정
+      margin: [15, 20, 15, 0], // 좌우 여백 조정
     }),
     content: [
       {
