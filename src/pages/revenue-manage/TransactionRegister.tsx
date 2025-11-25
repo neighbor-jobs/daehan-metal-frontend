@@ -15,7 +15,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer, TableFooter,
+  TableContainer,
+  TableFooter,
   TableHead,
   TableRow,
   TextField,
@@ -231,41 +232,10 @@ const TransactionRegister = ({
   };
 
   const handleScaleChange = async (index: number, newValue: string | null, prodName: string | null) => {
-    // 기존 amount cache 코드 주석처리
-/*
-    for (const product of productListState) {
-      if (product.name === prodName) {
-        const matchedScale = product.scales?.find(s => s === newValue);
-        if (matchedScale) {
-          cacheManager.getScale(product.id, matchedScale)
-            .then((scale) => {
-              // console.log('get scale cache: ', scale);
-              setChoices((prevChoices) =>
-                prevChoices.map((choice, i) => (i === index ? {
-                  ...choice,
-                  scale: newValue || '',
-                  rawMatAmount: scale?.prevRawMatAmount || '0',
-                  manufactureAmount: scale?.prevManufactureAmount || '0',
-                } : choice))
-              )
-            })
-            .catch((err) => {
-              setChoices((prevChoices) =>
-                prevChoices.map((choice, i) => (i === index ? {
-                  ...choice,
-                  scale: newValue || '',
-                } : choice))
-              )
-              console.error(err)
-            });
-        }
-      }
-    }
-*/
     const found = productListState.find((p: Product) => p.name === prodName);
     const productId = found?.id;
     if (!productId) {
-      setChoices((prev) => prev.map((c, i) => i === index ? { ...c, scale: newValue || '' } : c));
+      setChoices((prev) => prev.map((c, i) => i === index ? {...c, scale: newValue || ''} : c));
       return;
     }
 
@@ -285,7 +255,12 @@ const TransactionRegister = ({
       );
     } catch {
       setChoices((prev) =>
-        prev.map((c, i) => (i === index ? { ...c, scale: newValue, rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount } : c))
+        prev.map((c, i) => (i === index ? {
+          ...c,
+          scale: newValue,
+          rawMatAmount: c.rawMatAmount,
+          manufactureAmount: c.manufactureAmount
+        } : c))
       );
     }
   };
@@ -329,7 +304,7 @@ const TransactionRegister = ({
     let aborted = false;
     try {
       const res: AxiosResponse = await axiosInstance.get('/company/receivable', {
-        params: { orderBy: 'asc', startAt }
+        params: {orderBy: 'asc', startAt}
       });
       if (aborted) return;
 
@@ -340,7 +315,9 @@ const TransactionRegister = ({
     } catch {
       if (!aborted) setOutstanding(0);
     }
-    return () => { aborted = true; };
+    return () => {
+      aborted = true;
+    };
   }, []);
 
   const getEndSeq = async (companyName: string, startAt: string) => {
@@ -348,7 +325,7 @@ const TransactionRegister = ({
     return res.data?.data?.endSequence ?? null;
   }
 
-  const register = async () => {
+  const register = async (shouldAPI: boolean = true) => {
     if (formData.companyName.length === 0) {
       showAlert('거래처명은 필수 입력 값입니다.', 'info');
       return;
@@ -384,93 +361,92 @@ const TransactionRegister = ({
     };
     let amountInfo = null;
     let res: AxiosResponse;
-    try {
-      if (dialogType === 'create') {
-        res = await axiosInstance.post('/receipt', data);
-        amountInfo = {
-          carryoverAmount: res.data.data?.outstandingAmount,
-          totalSalesAmount: res.data.data?.receipt.totalAmount,
+    if (shouldAPI) {
+      try {
+        if (dialogType === 'create') {
+          res = await axiosInstance.post('/receipt', data);
+          amountInfo = {
+            carryoverAmount: res.data.data?.outstandingAmount,
+            totalSalesAmount: res.data.data?.receipt.totalAmount,
+          }
+          setOutstanding(Number(res.data.data?.outstandingAmount));
+        } else {
+          res = await axiosInstance.patch('/receipt', {
+            id: prevFormData.id,
+            locationNames: formData.locationName,
+            payingAmount: formData.payingAmount,
+            companyName: formData.companyName,
+            createdAt: formData.createdAt,
+            sales: updatedChoices.filter((c) => c.productName.length > 0),
+          });
+          amountInfo = {
+            carryoverAmount: String(outstanding),
+            totalSalesAmount: totalSales,
+          }
         }
-        setOutstanding(Number(res.data.data?.outstandingAmount));
-      } else {
-        res = await axiosInstance.patch('/receipt', {
-          id: prevFormData.id,
-          locationNames: formData.locationName,
-          payingAmount: formData.payingAmount,
-          companyName: formData.companyName,
-          createdAt: formData.createdAt,
-          sales: updatedChoices.filter((c) => c.productName.length > 0),
-        });
-        amountInfo = {
-          carryoverAmount: String(outstanding),
-          totalSalesAmount: totalSales,
+
+        if (res.data.statusCode === 204) {
+          showAlert('입력 필드를 재확인 해주세요.', 'info');
+          return;
+        } else if (res.data.statusCode === 409) {
+          showAlert(`${res.data.message}`, 'error');
+          return;
         }
-      }
-      if (res.data.statusCode === 204) {
-        showAlert('입력 필드를 재확인 해주세요.', 'info');
-        return;
-      } else if (res.data.statusCode === 409) {
-        showAlert(`${res.data.message}`, 'error');
-        return;
-      }
-      showAlert('거래등록에 성공했습니다.', 'success')
+        showAlert('거래등록에 성공했습니다.', 'success')
 
-      if (onSuccess && dialogType === 'edit') {
-        onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
-      }
-      // 기존 scale cache data update 주석처리
-/*
-      updatedChoices.map((c: Choice) => {
-        if (c.scale) {
-          cacheManager.updateScale(c.productName, c.scale, {
-            prevRawMatAmount: c.rawMatAmount,
-            prevManufactureAmount: c.manufactureAmount,
-          })
+        if (onSuccess && dialogType === 'edit') {
+          onSuccess(updatedFormData.companyName, updatedFormData.createdAt, updatedFormData.sequence);
         }
-      })
-*/
-      // ===== amountByCompanyStore로 교체: 거래처별 + (선택) 디폴트 업데이트 =====
-      for (const c of updatedChoices) {
-        if (!c.productName || !c.scale) continue;
-        const product = productListState.find((p: Product) => p.name === c.productName);
-        if (!product) continue;
 
-        // 거래처별 직전값 저장
-        await cacheManager.setPrevAmountByCompany(
-          product.id,
-          c.scale,
-          { rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount },
-          { companyName: formData.companyName }
-        );
-
-        // 필요하면 디폴트도 함께 갱신하고 싶을 때 사용 (원치 않으면 주석)
-        await cacheManager.setPrevAmountByCompany(
-          product.id,
-          c.scale,
-          { rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount },
-          { asDefault: true }
-        );
+        setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
+        setFormData((prev) => ({
+          // companyId: '',
+          // companyName: "",
+          // createdAt: prev.createdAt,
+          // sequence: 1,
+          ...prev,
+          locationName: [] as string[],
+          payingAmount: "0",
+        }))
+        if (dialogType === 'edit') onClose();
+      } catch (err) {
+        showAlert(`${err}`, 'error');
       }
-
-      setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
-      setFormData((prev) => ({
-        // companyId: '',
-        // companyName: "",
-        // createdAt: prev.createdAt,
-        // sequence: 1,
-        ...prev,
-        locationName: [] as string[],
-        payingAmount: "0",
-      }))
-      if (dialogType === 'edit') onClose();
-    } catch (err) {
-      showAlert(`${err}`, 'error');
+    } else {
+      amountInfo = {
+        carryoverAmount: String(outstanding),
+        totalSalesAmount: totalSales,
+      }
     }
+
+    // ===== amountByCompanyStore로 교체: 거래처별 + (선택) 디폴트 업데이트 =====
+    for (const c of updatedChoices) {
+      if (!c.productName || !c.scale) continue;
+      const product = productListState.find((p: Product) => p.name === c.productName);
+      if (!product) continue;
+
+      // 거래처별 직전값 저장
+      await cacheManager.setPrevAmountByCompany(
+        product.id,
+        c.scale,
+        {rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount},
+        {companyName: formData.companyName}
+      );
+
+      // 필요하면 디폴트도 함께 갱신하고 싶을 때 사용 (원치 않으면 주석)
+      await cacheManager.setPrevAmountByCompany(
+        product.id,
+        c.scale,
+        {rawMatAmount: c.rawMatAmount, manufactureAmount: c.manufactureAmount},
+        {asDefault: true}
+      );
+    }
+
     return {...data, ...amountInfo};
   }
 
-  const handlePrint = async () => {
-    const data = await register();
+  const handlePrint = async (shouldAPI: boolean) => {
+    const data = await register(shouldAPI);
     if (window.ipcRenderer && data) {
       try {
         await window.ipcRenderer.invoke('generate-and-open-pdf', RevenueManageMenuType.SalesDetail, {...data});
@@ -498,12 +474,12 @@ const TransactionRegister = ({
     if (dialogType === 'create') {
       // create 기본 세팅
       setFormData(makeDefaultFormData());
-      setChoices(Array.from({ length: 1 }, () => ({ ...defaultChoice })));
+      setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
       setOutstanding(0);
     } else {
       // edit 기본 세팅
       if (prevFormData) setFormData(prevFormData);
-      if (prevChoices)  setChoices(prevChoices);
+      if (prevChoices) setChoices(prevChoices);
       setOutstanding(Number(prevAmount?.carryoverAmount ?? 0));
     }
     initializedRef.current = true;
@@ -851,7 +827,7 @@ const TransactionRegister = ({
                                      // 비동기 렌더링 후 focus 적용
                                      setTimeout(() => {
                                        const el = tableContainerRef.current;
-                                       if (el) el.scrollTo({ top: el.scrollHeight });
+                                       if (el) el.scrollTo({top: el.scrollHeight});
                                        focusByCell(nextRowIndex, 0);
                                      }, 0);
 
@@ -872,7 +848,7 @@ const TransactionRegister = ({
                                name='sum'
                                disableUnderline
                                fullWidth
-                               // disabled
+                          // disabled
                                value={
                                  (Math.round(Number(choice.rawMatAmount) * choice.quantity)
                                    + Math.trunc(Number(choice.manufactureAmount) * choice.quantity)
@@ -917,14 +893,14 @@ const TransactionRegister = ({
 
                     {/* 재료비 합 */}
                     <TableCell align="right" colSpan={2} sx={{borderTop: '0.5px solid lightgray'}}>
-                      <Typography variant="body2" sx={{ color: 'blue' }}>
+                      <Typography variant="body2" sx={{color: 'blue'}}>
                         {sumMaterial.toLocaleString()}
                       </Typography>
                     </TableCell>
 
                     {/* 가공비 합 */}
                     <TableCell align="right" colSpan={2} sx={{borderTop: '0.5px solid lightgray'}}>
-                      <Typography variant="body2" sx={{ color: 'darkorange' }}>
+                      <Typography variant="body2" sx={{color: 'darkorange'}}>
                         {sumProcessing.toLocaleString()}
                       </Typography>
                     </TableCell>
@@ -944,8 +920,8 @@ const TransactionRegister = ({
                     </TableCell>
 
                     {/* 삭제 컬럼 자리 */}
-                    <TableCell sx={{borderTop: '0.5px solid lightgray'}} />
-                    <TableCell sx={{borderTop: '0.5px solid lightgray'}} />
+                    <TableCell sx={{borderTop: '0.5px solid lightgray'}}/>
+                    <TableCell sx={{borderTop: '0.5px solid lightgray'}}/>
                   </TableRow>
                 </TableFooter>
               </Table>
@@ -1008,14 +984,19 @@ const TransactionRegister = ({
 
             <Box display="flex" justifyContent="flex-end" gap={2} mt={0.5}>
               <Button variant="contained"
-                      onClick={register}
+                      onClick={() => register()}
               >
                 저장
               </Button>
               <Button variant="contained"
-                      onClick={handlePrint}
+                      onClick={() => handlePrint(true)}
               >
                 저장/인쇄
+              </Button>
+              <Button variant="contained"
+                      onClick={() => handlePrint(false)}
+              >
+                인쇄
               </Button>
             </Box>
           </Box>
