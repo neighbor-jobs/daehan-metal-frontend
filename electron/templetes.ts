@@ -3,16 +3,15 @@ import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts'
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
 // TODO: 기본 border 얇기 0.4로 변경
+const A4_W = 630;
+const A4_H = 845;
+const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
 
 /**
  * 일별매출현황
  */
 export const dailySalesDocDef = (dailySalesData) => {
   // console.log(dailySalesData)
-  const A4_W = 650;
-  const A4_H = 845;
-  const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
-
   /* data
   {
   startAt: {
@@ -207,7 +206,7 @@ export const dailySalesDocDef = (dailySalesData) => {
  * 거래처별 매출현황
  */
 export const companySalesDocDef = (companySalesData) => {
-  console.log('printData: ', companySalesData);
+  // console.log('printData: ', companySalesData);
 
   // amount 가 재료비 + 가공비 (단가X)
   const totalRawMatAmount = companySalesData.data?.reduce(
@@ -236,7 +235,11 @@ export const companySalesDocDef = (companySalesData) => {
 
   const today = new Date();
   const docDef: TDocumentDefinitions = {
-    pageMargins: [10, 20, 10, 10],
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
+    pageMargins: [24, 20, 24, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -370,7 +373,10 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
 
   const bankData = data.bankArr?.map((b) => `${b.bankName} : ${b.accountNumber}`).join(' ');
   return {
-    pageSize: 'A4', // A4 크기 유지
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
     pageMargins: [25, 20, 25, 20], // 좌 25, 상 20, 우 25, 하 20
     content: [
       {
@@ -467,7 +473,10 @@ export const companyListDocRef = (data): TDocumentDefinitions => {
   const today = new Date();
   return {
     pageOrientation: 'landscape', // 🔥 페이지를 가로로 설정
-    pageSize: 'A4', // A4 크기 유지
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
     pageMargins: [40, 20, 40, 30],
     header: (currPage, pageCount) => ({
       columns: [{text: `Page ${currPage} / ${pageCount}`, alignment: 'right'}],
@@ -546,7 +555,11 @@ export const companySalesSumDocDef = (companySalesSumData) => {
   // console.log(companySalesSumData)
   const today = new Date();
   const docDef: TDocumentDefinitions = {
-    pageMargins: [10, 20, 10, 10],
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
+    pageMargins: [24, 20, 24, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -796,8 +809,11 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
 }  * */
   const today = new Date();
   const docDef: TDocumentDefinitions = {
-    pageSize: 'A4',
-    pageMargins: [10, 20, 10, 10],
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
+    pageMargins: [24, 20, 24, 10],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -900,6 +916,10 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
   // console.log(outstandingAmount);
   const docDef: TDocumentDefinitions = {
+    pageSize: {
+      width: A4_W * PAGE_SCALE,
+      height: A4_H * PAGE_SCALE,
+    },
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
