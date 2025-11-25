@@ -117,6 +117,11 @@ const ClientSales = (): React.JSX.Element => {
 
   // api
   const getClientSales = async () => {
+    if (!companyName) {
+      showAlert("정확한 거래처명을 입력해주세요", "warning");
+      return;
+    }
+
     const res: AxiosResponse = await axiosInstance.get(`receipt/company/sales/report?companyName=${companyName}&orderBy=desc&startAt=${date.startAt.format('YYYY-MM-DD')}&endAt=${date.endAt.format('YYYY-MM-DD')}`);
     setAmount({
       totalPayingAmount: res.data.data?.totalPayingAmount,
@@ -230,7 +235,7 @@ const ClientSales = (): React.JSX.Element => {
         {/* date picker */}
         <DateRangePicker onChange={handleDateChange} startAt={date.startAt} endAt={date.endAt}/>
         <Autocomplete
-          freeSolo
+          // freeSolo
           sx={{width: 200}}
           options={salesCompanyList.map((option) => option.companyName)}
           value={companyName}
