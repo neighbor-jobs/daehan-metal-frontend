@@ -10,7 +10,8 @@ import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {
   companyListDocRef,
   companySalesDocDef,
-  companySalesSumDocDef, dailySalesDocDef,
+  companySalesSumDocDef,
+  dailySalesDocDef,
   invoiceDocDef,
   itemSalesSumDocDef,
   outstandingAmountDocDef,
@@ -45,14 +46,21 @@ import {
   getEmployees,
   initEmployee,
   removeEmployee,
-  replaceEmployees, updateEmployees,
+  replaceEmployees,
+  updateEmployees,
   validateEmployeesAgainstAPI
 } from './store/employeeStore.ts';
 import {
   abcInitializeProducts,
-  abcValidateAgainstAPI, addProductByCompany, AmountPair, getPrevAmountByCompany,
+  abcValidateAgainstAPI,
+  addProductByCompany,
+  AmountPair,
+  getPrevAmountByCompany,
   getProductsByCompany,
-  ProductByCompany, removeCompanyPrevAmount, removeProductByCompany, setPrevAmountByCompany
+  ProductByCompany,
+  removeCompanyPrevAmount,
+  removeProductByCompany,
+  setPrevAmountByCompany
 } from './store/amountByCompanyStore.ts';
 
 createRequire(import.meta.url);
@@ -234,12 +242,12 @@ ipcMain.handle('abc:products:get', () => getProductsByCompany());
 
 ipcMain.handle('abc:products:add', (_event, product: ProductByCompany) => {
   addProductByCompany(product);
-  return { success: true };
+  return {success: true};
 });
 
 ipcMain.handle('abc:products:remove', (_event, prodId: string) => {
   removeProductByCompany(prodId);
-  return { success: true };
+  return {success: true};
 });
 
 // 검증/동기화 (이름/스케일만 API와 맞춤; 금액 데이터는 로컬 소유)
@@ -266,13 +274,13 @@ ipcMain.handle('abc:prev:set', (
   opts?: { companyName?: string; asDefault?: boolean; touchUpdatedAt?: boolean }
 ) => {
   setPrevAmountByCompany(productId, scaleName, value, opts);
-  return { success: true };
+  return {success: true};
 });
 
 // 특정 거래처의 직전값 삭제 (스케일 단위)
 ipcMain.handle('abc:prev:remove', (_event, productId: string, scaleName: string, companyName: string) => {
   removeCompanyPrevAmount(productId, scaleName, companyName);
-  return { success: true };
+  return {success: true};
 });
 
 /*
@@ -329,74 +337,94 @@ pdfMake.fonts = {
 };
 
 ipcMain.handle('generate-and-open-pdf',
-  async (_, printType: RevenueManageMenuType
+  async (_,
+         printType:
+           RevenueManageMenuType
            | PurchaseManageMenuType
            | ClientManageMenuType
            | AccountingManageMenuType,
          data) => {
-    return new Promise(() => {
-      let docDefinition: TDocumentDefinitions;
-      switch (printType) {
-        case RevenueManageMenuType.SalesDetail:
-          docDefinition = invoiceDocDef(data);
-          break;
-        case RevenueManageMenuType.DailySales:
-          docDefinition = dailySalesDocDef(data);
-          break;
-        case RevenueManageMenuType.ClientSalesSummary:
-          docDefinition = companySalesSumDocDef(data);
-          break;
-        case RevenueManageMenuType.ClientSales:
-          docDefinition = companySalesDocDef(data);
-          break;
-        case RevenueManageMenuType.ClientOutstandingBalance:
-          docDefinition = outstandingAmountDocDef(data);
-          break;
-        case RevenueManageMenuType.ItemSalesSummary:
-          docDefinition = itemSalesSumDocDef(data);
-          break;
-        case ClientManageMenuType.SalesManage:
-          docDefinition = companyListDocRef(data)
-          break;
-        case PurchaseManageMenuType.MonthlyPurchase:
-          docDefinition = purchaseReceiptDocRef(data)
-          break;
-        /* 직원별 급여명세서 */
-        case AccountingManageMenuType.EmployeeManage:
-          docDefinition = salaryDocsRef(data);
-          break;
-        /* 급여대장 */
-        case AccountingManageMenuType.PayrollDetail:
-          docDefinition = payrollRegisterDocRef(data);
-          break;
-        default:
-          throw new Error(`Unknown print type: ${printType}`);
-      }
+    // 1. 문서 정의 (DocDefinition) 계산
+    let docDefinition: TDocumentDefinitions;
+    switch (printType) {
+      case RevenueManageMenuType.SalesDetail:
+        docDefinition = invoiceDocDef(data);
+        break;
+      case RevenueManageMenuType.DailySales:
+        docDefinition = dailySalesDocDef(data);
+        break;
+      case RevenueManageMenuType.ClientSalesSummary:
+        docDefinition = companySalesSumDocDef(data);
+        break;
+      case RevenueManageMenuType.ClientSales:
+        docDefinition = companySalesDocDef(data);
+        break;
+      case RevenueManageMenuType.ClientOutstandingBalance:
+        docDefinition = outstandingAmountDocDef(data);
+        break;
+      case RevenueManageMenuType.ItemSalesSummary:
+        docDefinition = itemSalesSumDocDef(data);
+        break;
+      case ClientManageMenuType.SalesManage:
+        docDefinition = companyListDocRef(data)
+        break;
+      case PurchaseManageMenuType.MonthlyPurchase:
+        docDefinition = purchaseReceiptDocRef(data)
+        break;
+      /* 직원별 급여명세서 */
+      case AccountingManageMenuType.EmployeeManage:
+        docDefinition = salaryDocsRef(data);
+        break;
+      /* 급여대장 */
+      case AccountingManageMenuType.PayrollDetail:
+        docDefinition = payrollRegisterDocRef(data);
+        break;
+      default:
+        throw new Error(`Unknown print type: ${printType}`);
+    }
 
-      if (!docDefinition) {
-        throw new Error('Document definition is missing');
-      }
+    if (!docDefinition) {
+      throw new Error('Document definition is missing');
+    }
 
+    // 2. pdfMake의 getBuffer 비동기 호출을 Promise로 감싸서 처리
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
 
-      pdfDocGenerator.getBuffer(async (buffer) => {
-        const previewPath = path.join(app.getPath('temp'), 'preview.pdf');
-        fs.writeFileSync(previewPath, buffer);
-
-        /*// 시스템 기본 PDF 뷰어에서 열기
-        shell.openPath(previewPath)
-          .then(() => resolve(previewPath))
-          .catch((error) => reject(error));*/
-
-        // 내부 프리뷰 창 열기
-        const previewWin = new BrowserWindow({
-          width: 1200,
-          height: 900,
-          webPreferences: { plugins: true } // PDF 플러그인(크로미움 내장 뷰어)
-        });
-
-        // 파일 URL로 로드 (크로미움 내장 PDF 뷰어 사용)
-        await previewWin.loadURL(`file://${previewPath}`);
+      pdfDocGenerator.getBuffer((buffer) => {
+        if (buffer) {
+          resolve(buffer);
+        } else {
+          // buffer가 유효하지 않으면 실패 처리
+          reject(new Error('PDF buffer generation failed'));
+        }
       });
     });
+
+    // 3. 파일 저장 및 프리뷰 창 열기
+    try {
+      const previewPath = path.join(app.getPath('temp'), 'preview.pdf');
+
+      // 버퍼를 파일로 저장
+      fs.writeFileSync(previewPath, buffer);
+
+      // 내부 프리뷰 창 열기
+      const previewWin = new BrowserWindow({
+        width: 1200,
+        height: 900,
+        webPreferences: {plugins: true}
+      });
+
+      // 파일 URL로 로드
+      await previewWin.loadURL(`file://${previewPath}`);
+
+      // 4. 성공 응답 반환 (IPC 통신 필수!)
+      return previewPath;
+
+    } catch (error) {
+      // 파일 저장/창 열기 중 에러 발생 시
+      console.error("PDF Preview Error:", error);
+      // 에러를 throw 하여 렌더러 프로세스에 실패를 알림
+      throw new Error(`PDF 파일 처리 중 오류 발생: ${error.message}`);
+    }
   });
