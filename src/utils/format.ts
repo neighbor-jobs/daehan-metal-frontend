@@ -150,6 +150,24 @@ export const formatInputQuality = (value: string, baseQuality: number): string =
   return newValue;
 };
 
+export const formatQuantity = (value: string | number): string => {
+  if (value === null || value === undefined) return '';
+
+  // 숫자, 소수점 형식 외 제거
+  const numeric = String(value).replace(/,/g, '');
+
+  if (numeric === '') return '';
+
+  // 정수/소수 분리
+  const [intPart, decimalPart] = numeric.split('.');
+
+  const formattedInt = Number(intPart).toLocaleString();
+
+  return decimalPart !== undefined
+    ? `${formattedInt}.${decimalPart}`
+    : formattedInt;
+}
+
 export const formatVatRate = (input: string) => {
   return input + '%';
 }
