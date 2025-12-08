@@ -3,6 +3,7 @@ import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts'
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
 // TODO: 기본 border 얇기 0.4로 변경
+// TODO: 거래명세서 수량 기본 소숫점 제거
 const A4_W = 630;
 const A4_H = 845;
 const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
@@ -988,6 +989,7 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
 /**
  * 거래명세서
  */
+// TODO: row 별 매출 합계 소숫점 없도록 처리
 const basicInvoiceTable = (data, index) => {
   /* data 형식 */
   /*
@@ -1100,7 +1102,7 @@ const basicInvoiceTable = (data, index) => {
 */
   // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.sales.length > 15 ? 25 : 15;
+  const totalRowsNum = data.sales.length > 12 ? 25 : 12;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
 
   // 합계 계산
@@ -1162,6 +1164,10 @@ const basicInvoiceTable = (data, index) => {
           ],
         ],
       },
+      layout: {
+        hLineWidth: () => 0.4,
+        vLineWidth: () => 0.4,
+      },
       ...(shouldPageBreak ? {pageBreak: 'before'} : {}),
     },
     {
@@ -1204,6 +1210,10 @@ const basicInvoiceTable = (data, index) => {
           ]
         ],
       },
+      layout: {
+        hLineWidth: () => 0.4,
+        vLineWidth: () => 0.4,
+      },
     },
   ];
 }
@@ -1239,7 +1249,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [24, 15, 24, 15],
+    // pageMargins: [24, 30, 24, 30],
     pageSize: 'A4',
     content: [
       ...basicInvoiceTable(data, 0),
@@ -1254,7 +1264,7 @@ export const invoiceDocDef = (data: any) => {
                 dash: {length: 2, space: 2}
               }
             ],
-            margin: [0, 5, 0, 5]
+            margin: [0, 30, 0, 30]
           } as any]
           : []
       ),
