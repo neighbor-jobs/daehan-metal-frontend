@@ -1,5 +1,5 @@
 import {MonthlyPurchaseColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal} from '../../utils/format.ts';
+import {formatCurrency, formatDecimal, formatQuantity} from '../../utils/format.ts';
 import {
   Autocomplete,
   Box,
@@ -152,8 +152,8 @@ const MonthlyPurchase = (): React.JSX.Element => {
 
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
-      setMonthlyPurchase(res.data.data);
-      setRecords(res.data.data.map((item) => {
+      setMonthlyPurchase(res.data.data.result);
+      setRecords(res.data.data.result.map((item) => {
         return ({
           createdAt: item.createdAt.split('T')[0],
           productName: item.productName,
@@ -216,6 +216,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
             <DesktopDatePicker
               views={['year', 'month']}
               format="YYYY/MM"
+              openTo="month"
               closeOnSelect={true} // 월 선택 시 자동 닫힘 및 onAccept 실행
               value={formData.standardDate}
               onChange={(value) => setFormData(prev => ({...prev, standardDate: value}))}
@@ -312,7 +313,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                       </TableCell>
                       {/* 수량 */}
                       <TableCell align='right'>
-                        {row.quantity.toFixed(3)}
+                        {formatQuantity(row.quantity.toFixed(3))}
                       </TableCell>
                       {/* 단가 */}
                       <TableCell align='right'>
