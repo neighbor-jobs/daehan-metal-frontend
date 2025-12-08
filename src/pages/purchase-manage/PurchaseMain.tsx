@@ -22,7 +22,14 @@ import dayjs from 'dayjs';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {PurchaseRegisterColumn, TableColumns} from '../../types/tableColumns.ts';
-import {formatCurrency, formatDecimal, formatInputPrice, formatInputQuality, toNum} from '../../utils/format.ts';
+import {
+  formatCurrency,
+  formatDecimal,
+  formatInputPrice,
+  formatInputQuality,
+  formatQuantity,
+  toNum
+} from '../../utils/format.ts';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
@@ -200,7 +207,7 @@ const PurchaseMain = (): React.JSX.Element => {
         )
       );
     } else if (name === 'quantity' || name === 'vatRate') {
-      const numericValue = formatInputQuality(value, 0);
+      const numericValue: string = formatInputQuality(value, 0);
       setReceipts((prev) =>
         prev.map((item, i) =>
           i === rowIndex ? {...item, [name]: numericValue} : item
@@ -535,7 +542,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                'data-col-index': 1,
                                onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => arrowNavAtRegister(e, 4)
                              }}
-                             value={row.quantity}
+                             value={formatQuantity(row.quantity)}
                              name='quantity'
                              onChange={(e) => handleInputChange(e, rowIndex)}
                       />
