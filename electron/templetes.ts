@@ -3,7 +3,6 @@ import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts'
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
 // TODO: 기본 border 얇기 0.4로 변경
-// TODO: 거래명세서 수량 기본 소숫점 제거
 const A4_W = 630;
 const A4_H = 845;
 const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
@@ -1298,7 +1297,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
   widths[0] = '15%'
 
   const headers: any[][] = [
-    [{text: `작성일자: ${year}-${month}-${day}`, style: 'subheader', border: [true, true, true, false]}],
+    [{text: `작성일자: ${year}-${month}-${day}`, style: 'subheader', border: [false, false, false, false]}],
   ]
   const employees: any[] = [{text: "성명", style: 'subheader'}]
   const salaryDetails: object = {
@@ -1327,7 +1326,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     const payment = payments[i]
     const salary = Math.ceil(Number(payment.salary) / 10) * 10;
     const totalSalary = Math.ceil((salary - Number(payment.deduction)) / 10) * 10;
-    headers[0].push({text: payment.employeePosition, style: 'cell', alignment: 'center', margin: [0, 6, 0, 6]})
+    headers[0].push({text: payment.employeePosition, style: 'cell', alignment: 'center', margin: [0, 6, 0, 6], border: [false, false, false, false]})
     employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
 
     salaryDetails['기본급'].push({
@@ -1444,12 +1443,12 @@ const payrollLayout = {
       || i === totalSalaryRowIndex
       || i === totalSalaryRowIndex + 1
     ) {
-      return 2; // 두께 2
+      return 1.5; // 두께 2
     }
-    return 1; // 기본 두께 1
+    return 0.4; // 기본 두께 0.4
   },
   vLineWidth: function () {
-    return 1; // 세로줄은 기본 두께
+    return 0.4; // 세로줄은 기본 두께
   },
   hLineColor: function () {
     return 'black';
@@ -1558,7 +1557,10 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
         widths: TABLE_WIDTHS,
         body: bodyRows,
       },
-      layout: customTableLayout,
+      layout: {
+        hLineWidth: () => 0.4,
+        vLineWidth: () => 0.4
+      },
       margin: [0, 0, 0, 10],
     },
     {
@@ -1566,7 +1568,10 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
         widths: ["*", "*", "*", "*", "*", "*", "*", "*"],
         body: groupCalcs,
       },
-      layout: customTableLayout,
+      layout: {
+        hLineWidth: () => 0.4,
+        vLineWidth: () => 0.4
+      },
       margin: [0, 0, 0, 10],
     },
     {
