@@ -710,7 +710,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
             ref={tableScrollRef}
             sx={{
               maxHeight: '72vh',
-              // overflow: 'auto',
+              overflow: 'auto',
               border: '1px solid',
               borderColor: 'lightgray',
               borderRadius: 1,
@@ -799,11 +799,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       let delta = 0
                       let value = formData[colIdx]?.paymentDetail[row.id];
                       if (row.id === PaymentTableRow.EXTEND_WORKING_TIME
-                        || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -1
+                        || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -2
                       else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
-                        || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -2
-                      else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -3
-                      else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -4
+                        || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -3
+                      else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -4
+                      else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
 
                       if (row.id === PaymentTableRow.HOURLY_WAGE
                         || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
@@ -842,9 +842,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                          align='left'
                                          onChange={(e) => handleDeductionPurposeChange(e, decIdx)}
                                          colIdx={0}
-                                         rowIdx={decIdx + 8}
+                                         rowIdx={decIdx + 7}
                                          maxColLen={listToPaymentRender.length}
-                                         maxRowLen={16}
+                                         maxRowLen={15}
                     />
                     {listToPaymentRender.map((item, colIdx: number) => (
                       <TableCellForPayroll key={`${item.id}-${colIdx + 100}`}
@@ -853,9 +853,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            name={dec.purpose}
                                            onChange={(e) => handleDeductionChange(e, item.id, decIdx)}
                                            colIdx={colIdx + 1}
-                                           rowIdx={decIdx + 8}
+                                           rowIdx={decIdx + 7}
                                            maxColLen={listToPaymentRender.length}
-                                           maxRowLen={16}
+                                           maxRowLen={15}
                       />
                     ))}
                   </TableRow>
@@ -872,7 +872,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                          key={`지급액계-${colIdx + 100}`}
                                          disabled={true}
                                          disabledTextColor='black'
-                                         maxRowLen={18}
+                                         maxRowLen={17}
 
                     />
                   ))}
