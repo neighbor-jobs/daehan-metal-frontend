@@ -103,6 +103,8 @@ const MonthlyPurchase = (): React.JSX.Element => {
   const [monthlyPurchase, setMonthlyPurchase] = useState([]);
   const [selectedCompanyData, setSelectedCompanyData] = useState({});
   const [records, setRecords] = useState([]);
+  const [outstanding, setOutstanding] = useState(0);
+
   const companyInputRef = useRef<HTMLInputElement>(null);
   const { showAlert } = useAlertStore();
 
@@ -152,7 +154,9 @@ const MonthlyPurchase = (): React.JSX.Element => {
 
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${formData.companyName}&standardDate=${formData.standardDate.format('YYYY-MM')}`);
+      const outstanding = res.data.data.outstandingAmount;
       setMonthlyPurchase(res.data.data.result);
+      setOutstanding(outstanding);
       setRecords(res.data.data.result.map((item) => {
         return ({
           createdAt: item.createdAt.split('T')[0],
@@ -164,7 +168,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
           totalVatPrice: item.totalVatPrice,
           totalPrice: item.totalPrice,
           productPrice: item.productPrice,
-          payableBalance: item.payableBalance,
+          payableBalance: String(Number(item.payableBalance) + outstanding),
         });
       }))
     } catch (error) {
@@ -293,6 +297,13 @@ const MonthlyPurchase = (): React.JSX.Element => {
               </TableRow>
             </TableHead>
             <TableBody>
+              <TableRow>
+                <TableCell />
+                <TableCell align='center'>전월미수</TableCell>
+                <TableCell colSpan={6} />
+                <TableCell align='right'>{outstanding.toLocaleString()}</TableCell>
+                <TableCell />
+              </TableRow>
               {monthlyPurchase &&
                 monthlyPurchase.map((row, rowIndex) => {
                   return (
@@ -336,7 +347,7 @@ const MonthlyPurchase = (): React.JSX.Element => {
                         <Typography variant='body2' color='red'>{formatCurrency(row.productPrice)}</Typography>
                       </TableCell>
                       <TableCell align='right'>
-                        {formatCurrency(row.payableBalance)}
+                        {(Number(row.payableBalance)+outstanding).toLocaleString()}
                       </TableCell>
 
                       {/* 수정 & 삭제 버튼 */}

@@ -94,24 +94,13 @@ const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
     typoSx: {color: 'red'},
     format: formatCurrency,
   },
-  /*  {
-      id: PurchaseRegisterColumn.VAT,
-      label: '세금',
-      minWidth: 70,
-      align: 'center',
-    },*/
-  /*{
-    id: PurchaseRegisterColumn.VAT_RATE,
-    label: '세금비율',
-    minWidth: 30,
+  {
+    id: PurchaseRegisterColumn.PAYABLE_BALANCE,
+    label: '잔액',
+    minWidth: 100,
     align: 'right',
-  },*/
-  /*{
-    id: PurchaseRegisterColumn.IS_PAYING,
-    label: '입금',
-    minWidth: 30,
-    align: 'center',
-  },*/
+    format: formatCurrency,
+  }
 ];
 const defaultReceipt = {
   vendorId: '',
@@ -137,6 +126,7 @@ const PurchaseMain = (): React.JSX.Element => {
     vendorId: '',
   });
   const [openDialog, setOpenDialog] = useState(false);
+  const [outstanding, setOutstanding] = useState(0);
   const {showAlert} = useAlertStore();
 
   // handler
@@ -160,11 +150,12 @@ const PurchaseMain = (): React.JSX.Element => {
 
   // 합계 계산
   const totals = useMemo(() => {
+    const balance = [];
     let purchaseAmountSum = 0; // 매입금액 합계 (단가 * 수량)
     let vatAmountSum = 0;      // 매입세액 합계 (매입금액 * 세율)
     let depositSum = 0;        // 입금액 합계
 
-    receipts.forEach((r) => {
+    receipts.forEach((r, idx) => {
       const qty: number = toNum(r.quantity);
       const unit: number = toNum(r.rawMatAmount);
       const price: number = Math.round(unit * qty);
@@ -178,6 +169,9 @@ const PurchaseMain = (): React.JSX.Element => {
 
       // 입금액 합계
       depositSum += toNum(r.productPrice);
+
+      // 잔액
+      balance[idx] = outstanding + purchaseAmountSum + vatAmountSum - depositSum;
     });
 
     return {
@@ -185,8 +179,9 @@ const PurchaseMain = (): React.JSX.Element => {
       vatAmountSum,
       totalWithVat: purchaseAmountSum + vatAmountSum,
       depositSum,
+      balance
     };
-  }, [receipts]);
+  }, [receipts, outstanding]);
 
   const addRow = () => {
     setReceipts(prev => [...prev, {...defaultReceipt}]);
@@ -247,17 +242,6 @@ const PurchaseMain = (): React.JSX.Element => {
         i === rowIndex ? {...item, productName: next} : item
       )
     );
-
-    // 커서 위치 복원(선택)
-/*
-    setTimeout(() => {
-      try {
-        target.selectionStart = target.selectionEnd = selectionStart + 1;
-      } catch (err) {
-        console.log(err)
-      }
-    }, 0);
-*/
   };
 
   // api
@@ -349,7 +333,8 @@ const PurchaseMain = (): React.JSX.Element => {
     // 2. 인쇄 데이터 불러오기
     try {
       const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${header.companyName}&standardDate=${header.createdAt}`);
-      const records = res.data.data.map((item) => {
+      const os = res.data.data?.outstandingAmount;
+      const records = res.data.data.result?.map((item) => {
         return ({
           createdAt: item.createdAt.split('T')[0],
           productName: item.productName,
@@ -360,7 +345,7 @@ const PurchaseMain = (): React.JSX.Element => {
           totalVatPrice: item.totalVatPrice,
           totalPrice: item.totalPrice,
           productPrice: item.productPrice,
-          payableBalance: item.payableBalance,
+          payableBalance: String(Number(item.payableBalance) + os),
         });
       })
       const companyInfo = purchaseCompanyList.find((item) => item.id === header.vendorId);
@@ -392,6 +377,22 @@ const PurchaseMain = (): React.JSX.Element => {
   useEffect(() => {
     getPurchaseCompanyList();
   }, [showAlert, getPurchaseCompanyList])
+
+  useEffect(() => {
+    const getOutstandingAmount = async () => {
+      if (!header.companyName || !header.createdAt) return;
+
+      try {
+        const res: AxiosResponse = await axiosInstance.get(`/vendor/receipt?companyName=${header.companyName}&standardDate=${header.createdAt}`);
+        const resArr = res.data.data.result;
+        const bal = Number(resArr[resArr.length - 1]?.payableBalance) || 0;
+        setOutstanding(res.data.data?.outstandingAmount + bal || 0);
+      } catch (e) {
+        showAlert('이전 미수금 조회에 실패했습니다.', 'info');
+      }
+    };
+    getOutstandingAmount();
+  }, [header.companyName, header.createdAt, showAlert]);
 
   // debug
   // console.log(curTime.toDate().toUTCString())
@@ -547,8 +548,8 @@ const PurchaseMain = (): React.JSX.Element => {
                              onChange={(e) => handleInputChange(e, rowIndex)}
                       />
                     </TableCell>
+                    {/* 단가 */}
                     <TableCell>
-                      {/* 단가 */}
                       <Input size='small'
                              disableUnderline={row.isPaying}
                              disabled={row.isPaying}
@@ -644,7 +645,18 @@ const PurchaseMain = (): React.JSX.Element => {
                              value={formatCurrency(row.productPrice)}
                       />
                     </TableCell>
-
+                    {/* 잔액 */}
+                    <TableCell>
+                      <Input size='small'
+                             disableUnderline
+                             inputProps={{
+                               'data-row-index': rowIndex,
+                               sx: {textAlign: 'right'},
+                             }}
+                             name='payableBalance'
+                             value={totals.balance[rowIndex].toLocaleString()}
+                      />
+                    </TableCell>
                     {/* 행 삭제 */}
                     <TableCell>
                       <IconButton size='small' onClick={() => {
@@ -672,8 +684,11 @@ const PurchaseMain = (): React.JSX.Element => {
             </TableBody>
             <TableFooter sx={{position: 'sticky', bottom: 0, backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell colSpan={3}>
-                  <Typography variant='body2' color='black'>합계</Typography>
+                <TableCell colSpan={2}>
+                  <Typography variant='body2' color='black'>{`전미수: ${outstanding.toLocaleString()}`}</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant='body2' color='black'>{`/   합계: `}</Typography>
                 </TableCell>
                 {/* 매입금액 합계 */}
                 <TableCell>
