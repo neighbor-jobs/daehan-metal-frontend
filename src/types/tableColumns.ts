@@ -277,5 +277,6 @@ export enum PurchaseRegisterColumn {
   VAT_AMOUNT = 'vatAmount',        // 매입세액
   VAT_RATE = 'vatRate',
   IS_PAYING = 'isPaying',
-  TOTAL_AMOUNT = 'totalAmount'
+  TOTAL_AMOUNT = 'totalAmount',
+  PAYABLE_BALANCE = 'payableBalance', // 잔액
 }
