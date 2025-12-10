@@ -154,6 +154,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [memo, setMemo] = useState<string>('');
 
   const calculatedWages = useMemo(() => {
     const newWages = {};
@@ -371,7 +372,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
         const payrollRes = await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
         const ledgerRes = await axiosInstance.post('/ledger', {
           paying: [...leftLedger, ...rightLedger],
-          deduction: [],
+          deduction: [{
+              memo: memo,
+              group: '',
+              value: '',
+              purpose: "메모",
+          }],
           createdAt: standardAt
         });
 
@@ -929,9 +935,21 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
         {/* 지출 내역 */}
         <Box sx={{mt: 2}}>
-          <Box sx={{display: 'flex', alignItems: 'end', gap: 1}}>
-            <Typography variant='h6'>지출 내역</Typography>
-            <Typography variant='caption'>*수령액 합계는 항목명이 '급여' 여야만 자동합산됩니다.</Typography>
+          <Box>
+            <Box sx={{display: 'flex', alignItems: 'end', gap: 1}}>
+              <Typography variant='h6'>지출 내역</Typography>
+              <Typography variant='caption'>*수령액 합계는 항목명이 '급여' 여야만 자동합산됩니다.</Typography>
+            </Box>
+            <Box sx={{display: 'flex', justifyItems: 'center', alignItems: 'center'}}>
+              <Typography variant="caption" width={30}>메모: </Typography>
+              <Input size="small"
+                     disableUnderline
+                     fullWidth
+                     value={memo}
+                     onChange={(e) => setMemo(e.target.value)}
+                     sx={{border: '1px solid lightgray'}}
+              />
+            </Box>
           </Box>
           <Box sx={{display: 'flex', mt: 1}}>
             {/* 왼쪽 table */}
