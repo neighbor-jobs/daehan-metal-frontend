@@ -81,6 +81,7 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
   }
 ];
 
+// TODO: 수금액 column 하나 더 만들기 (프린트 템플릿이랑 형식 동일하도록)
 const ClientSales = (): React.JSX.Element => {
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [date, setDate] = useState({
@@ -290,6 +291,7 @@ const ClientSales = (): React.JSX.Element => {
                   </TableCell>
                 ))}
                 <TableCell align='right' sx={{minWidth: 80}}>금액</TableCell>
+                <TableCell align='right' sx={{minWidth: 80}}>수금액</TableCell>
                 <TableCell align='right' sx={{minWidth: 80}}>잔액</TableCell>
               </TableRow>
             </TableHead>
@@ -297,13 +299,7 @@ const ClientSales = (): React.JSX.Element => {
               <TableRow>
                 <TableCell/>
                 <TableCell align='left'>전일이월</TableCell>
-                <TableCell/>
-                <TableCell/>
-                <TableCell/>
-                <TableCell/>
-                <TableCell/>
-                <TableCell/>
-                <TableCell/>
+                <TableCell colSpan={8}/>
                 <TableCell align='right'>{outstandingBeforeOneDay.toLocaleString()}</TableCell>
               </TableRow>
               {reports && reports?.map((row, rowIdx) => {
@@ -340,18 +336,21 @@ const ClientSales = (): React.JSX.Element => {
                         </TableCell>
                       );
                     })}
+                    {/* 금액 */}
                     <TableCell align='right'
-                               sx={{
-                                 borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
-                               }}
+                               sx={{ borderTop: isNewDate ? '1.5px solid lightgray' : undefined,}}
                     >
-                      {row.amount?.toLocaleString() ?? '-'}
+                      {row.productName === "입금액" ? '' : (row.amount?.toLocaleString() ?? '-')}
                     </TableCell>
-                    {/*<TableCell align='right'>{row.remainingAmount?.toLocaleString() ?? '-'}</TableCell>*/}
+                    {/* 수금액 */}
                     <TableCell align='right'
-                               sx={{
-                                 borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
-                               }}
+                               sx={{ borderTop: isNewDate ? '1.5px solid lightgray' : undefined,}}
+                    >
+                      {row.productName === "입금액" ? ((-row.amount)?.toLocaleString() ?? '-') : ''}
+                    </TableCell>
+                    {/* 잔액 */}
+                    <TableCell align='right'
+                               sx={{borderTop: isNewDate ? '1.5px solid lightgray' : undefined,}}
                     >
                       {balance?.toLocaleString() ?? '-'}
                     </TableCell>
@@ -376,7 +375,7 @@ const ClientSales = (): React.JSX.Element => {
                 <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography color='black' fontSize={13}>{formatCurrency(amount.totalPayingAmount)}</Typography>
                 </TableCell>
-                <TableCell colSpan={2} sx={{borderTop: '2px solid lightgray'}}/>
+                <TableCell colSpan={3} sx={{borderTop: '2px solid lightgray'}}/>
               </TableRow>
             </TableFooter>
           </Table>
