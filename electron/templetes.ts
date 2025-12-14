@@ -1267,7 +1267,7 @@ export const invoiceDocDef = (data: any) => {
                 dash: {length: 2, space: 2}
               }
             ],
-            margin: [0, 30, 0, 30]
+            margin: [0, 12, 0, 12]
           } as any]
           : []
       ),
@@ -1283,7 +1283,7 @@ export const invoiceDocDef = (data: any) => {
     },
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 9,
+      fontSize: 9.5,
     },
   };
   return docDef;
@@ -1299,7 +1299,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
   const widths = Array.from({length: payments.length + 1}, () => '*')
   // const spacer = Array.from({length: widths.length}, () => ({text: ''}))
   widths[0] = '15%'
-
+  // console.log(payrollRegisterData);
   const headers: any[][] = [
     [{text: `작성일자: ${year}-${month}-${day}`, style: 'subheader', border: [false, false, false, false]}],
   ]
@@ -1581,7 +1581,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
 export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitions => {
   const payrollRegisterContent = createPayrollRegisterContent(data.payrollRegister)
   const financialLedger = createFinancialLedgerContent(data.financialLedger)
-
+  console.log(data);
   return {
     pageSize: 'A4',
     pageMargins: [20, 20, 20, 20],
