@@ -24,12 +24,7 @@ import dayjs from 'dayjs';
 import {Employee} from '../../types/employeeRes.ts';
 import axiosInstance from '../../api/axios.ts';
 import {PatchPayment, PostPayment, PostPaymentDetail} from '../../types/payrollReq.ts';
-import {
-  defaultDeductionList,
-  PaymentTableRow,
-  TableColumns,
-  TOTAL_DEDUCTION_ROWS
-} from '../../types/tableColumns.ts';
+import {defaultDeductionList, PaymentTableRow, TableColumns, TOTAL_DEDUCTION_ROWS} from '../../types/tableColumns.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
@@ -39,6 +34,7 @@ import {formatCurrency, formatInputPrice, formatInputQuality} from '../../utils/
 import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
+import {tableSelectedRowWithoutDesign} from '../../utils/tableDisignSx.ts';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
@@ -155,6 +151,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [memo, setMemo] = useState<string>('');
+  const [activeRowIdx, setActiveRowIdx] = useState(0);
 
   const calculatedWages = useMemo(() => {
     const newWages = {};
@@ -312,7 +309,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
     // deduction(좌측 제목 열) 업데이트
     setDeduction(prev =>
-      prev.map((row, i) => (i === decIdx ? { ...row, purpose: newPurpose } : row))
+      prev.map((row, i) => (i === decIdx ? {...row, purpose: newPurpose} : row))
     );
 
     // 모든 사원의 동일 인덱스 deductionDetail purpose 동기화
@@ -320,7 +317,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       prev.map(item => ({
         ...item,
         deductionDetail: (item.deductionDetail ?? []).map((d, i) =>
-          i === decIdx ? { ...d, purpose: newPurpose } : d
+          i === decIdx ? {...d, purpose: newPurpose} : d
         ),
       }))
     );
@@ -372,12 +369,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
         const payrollRes = await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
         const ledgerRes = await axiosInstance.post('/ledger', {
           paying: [...leftLedger, ...rightLedger],
-          deduction: [{
+          deduction: [
+            {
               memo: memo,
               group: '',
               value: '',
               purpose: "메모",
-          }],
+            }
+          ],
           createdAt: standardAt
         });
 
@@ -443,7 +442,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
       const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
       setEmployees(employeesRes.data.data);
-
       setFormData(employeesRes.data.data.map((employee) => ({
         employeeId: employee.id,
         employeeName: employee.info.name,
@@ -576,6 +574,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
           setLeftLedger(emptyLedgers.slice(0, 15));
           setRightLedger(emptyLedgers.slice(15));
         }
+
+        // 4. 전체 메모 불러오기 (지출 내역 밑에)
+        try {
+          const prevMemo = await cacheManager.getPayrollMemo();
+          setMemo(prevMemo);
+        } catch (err) {
+          console.error(err);
+        }
       })();
     } else {
       setMode('edit');
@@ -642,6 +648,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
     );
   }, [totalSalarySum]);
 
+  useEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+
+    if (activeRowIdx === 0) {
+      el.scrollTop = 0;
+    }
+
+    if (activeRowIdx === leftRows.length + deduction.length - 1) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [activeRowIdx, leftRows.length]);
   // debug
   // console.log(formData);
 
@@ -793,57 +811,73 @@ const NewPayrollLedger = (): React.JSX.Element => {
               </TableHead>
               <TableBody>
                 {/* payment */}
-                {leftRows.map((row, rowIdx) => (
-                  <TableRow key={rowIdx}>
-                    <TableCell
-                      sx={{borderRight: '1px solid lightgray', py: 0}}
-                      width={row.minWidth}
-                    >
-                      {row.label}
-                    </TableCell>
-                    {listToPaymentRender.map((item, colIdx) => {
-                      let delta = 0
-                      let value = formData[colIdx]?.paymentDetail[row.id];
-                      if (row.id === PaymentTableRow.EXTEND_WORKING_TIME
-                        || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -2
-                      else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
-                        || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -3
-                      else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -4
-                      else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
+                {leftRows.map((row, rowIdx) => {
+                  let delta = 0
+                  if (row.id === PaymentTableRow.EXTEND_WORKING_TIME
+                    || row.id === PaymentTableRow.EXTEND_WORKING_MULTI) delta = -2
+                  else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
+                    || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -3
+                  else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -4
+                  else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
 
-                      if (row.id === PaymentTableRow.HOURLY_WAGE
-                        || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
-                        || row.id === PaymentTableRow.DAY_OFF_WORKING_WAGE
-                        || row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE
-                        || row.id === PaymentTableRow.TOTAL_PAYMENT
-                      ) {
-                        value = calculatedWages[colIdx]?.[row.id];
-                      }
-                      return (
-                        <TableCellForPayroll value={row.format ? row.format(value) : value || ''}
-                                             validation={value === '-'}
-                                             disabled={row.disabled || false}
-                                             disabledTextColor='black'
-                                             name={row.id}
-                                             onChange={(e) => handlePaymentInput(e, item.id)}
-                                             colIdx={colIdx + 1}
-                                             rowIdx={row.disabled ? undefined : rowIdx + delta}
-                                             maxColLen={listToPaymentRender.length}
-                                             maxRowLen={13}
-                                             key={`${item.id}-${colIdx}`}
-                        />
-                      )
-                    })}
-                  </TableRow>
-                ))}
+                  return (
+                    <TableRow key={rowIdx}
+                              selected={row.disabled ? undefined : rowIdx + delta === activeRowIdx}
+                              sx={tableSelectedRowWithoutDesign}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                  setActiveRowIdx(rowIdx + delta + 1);
+                                } else if (e.key === 'ArrowUp') {
+                                  rowIdx === 0 ? setActiveRowIdx(0) : setActiveRowIdx(rowIdx + delta - 1);
+                                }
+                              }}
+                    >
+                      <TableCell
+                        sx={{borderRight: '1px solid lightgray', py: 0}}
+                        width={row.minWidth}
+                      >
+                        {row.label}
+                      </TableCell>
+                      {listToPaymentRender.map((item, colIdx) => {
+                        let value = formData[colIdx]?.paymentDetail[row.id];
+                        if (row.id === PaymentTableRow.HOURLY_WAGE
+                          || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
+                          || row.id === PaymentTableRow.DAY_OFF_WORKING_WAGE
+                          || row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE
+                          || row.id === PaymentTableRow.TOTAL_PAYMENT
+                        ) {
+                          value = calculatedWages[colIdx]?.[row.id];
+                        }
+                        return (
+                          <TableCellForPayroll value={row.format ? row.format(value) : value || ''}
+                                               validation={value === '-'}
+                                               disabled={row.disabled || false}
+                                               disabledTextColor='black'
+                                               name={row.id}
+                                               onChange={(e) => handlePaymentInput(e, item.id)}
+                                               colIdx={colIdx + 1}
+                                               rowIdx={row.disabled ? undefined : rowIdx + delta}
+                                               maxColLen={listToPaymentRender.length}
+                                               maxRowLen={13}
+                                               key={`${item.id}-${colIdx}`}
+                          />
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })}
                 {/* deduction */}
                 {deduction?.map((dec, decIdx) => (
-                  <TableRow key={`purpose-${decIdx}`}>
-                    {/*<TableCell
-                      sx={{borderRight: '1px solid lightgray', py: 0}}
-                    >
-                      {dec.purpose}
-                    </TableCell>*/}
+                  <TableRow key={`purpose-${decIdx}`}
+                            selected={decIdx + 13 === activeRowIdx}
+                            sx={tableSelectedRowWithoutDesign}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === 'ArrowDown')
+                                decIdx === deduction.length - 1 ? setActiveRowIdx(0) : setActiveRowIdx(decIdx + 14);
+                              else if (e.key === 'ArrowUp')
+                                setActiveRowIdx(decIdx + 12);
+                            }}
+                  >
                     <TableCellForPayroll value={dec.purpose}
                                          align='left'
                                          onChange={(e) => handleDeductionPurposeChange(e, decIdx)}
@@ -904,8 +938,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
           </TableContainer>
         </Box>
         <DeletePaymentConfirmDialog isOpen={isConfirmDialogOpen}
-                                    // paymentId={selectedPaymentId}
-                                    // payrollRegisterId={payrollId}
+          // paymentId={selectedPaymentId}
+          // payrollRegisterId={payrollId}
                                     dialogContentText='정말 해당 사원의 급여내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
                                     onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
                                     onClose={() => setIsConfirmDialogOpen(false)}
@@ -944,6 +978,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
               <Typography variant="caption" width={30}>메모: </Typography>
               <Input size="small"
                      disableUnderline
+                     multiline
                      fullWidth
                      value={memo}
                      onChange={(e) => setMemo(e.target.value)}
