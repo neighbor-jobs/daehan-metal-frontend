@@ -62,6 +62,7 @@ import {
   removeProductByCompany,
   setPrevAmountByCompany
 } from './store/amountByCompanyStore.ts';
+import {CachePayrollMemo, getPayrollMemo, removePayrollMemo, replacePayrollMemo} from './store/payrollMemoStore.ts';
 
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -284,9 +285,8 @@ ipcMain.handle('abc:prev:remove', (_event, productId: string, scaleName: string,
 });
 
 /*
-* ======================== 회계 관련 ==========================
+* ================================ 회계 관련 ===============================================
 * */
-
 ipcMain.handle('ledgers:get', () => getLedgers());
 
 ipcMain.handle('ledgers:add', (_event, ledger) => {
@@ -308,10 +308,12 @@ ipcMain.handle('ledgers:remove', (_event, index) => {
   return {success: true};
 });
 
+// ------------------------------------------------------------------------------------------
 ipcMain.handle('deductions:get', () => getDeductions());
 
 ipcMain.handle('deductions:replace', (_event, newDeductions: string[]) => replaceDeductions(newDeductions));
 
+// ------------------------------------------------------------------------------------------
 ipcMain.handle('employees:get', () => getEmployees());
 
 ipcMain.handle('employees:add', (_event, newEmployeeId: string) => addEmployee(newEmployeeId))
@@ -321,6 +323,13 @@ ipcMain.handle('employees:replace', (_event, newEmployees) => replaceEmployees(n
 ipcMain.handle('employees:update', (_event, newEmployees) => updateEmployees(newEmployees));
 
 ipcMain.handle('employees:remove', (_event, id: string) => removeEmployee(id));
+
+// ------------------------------------------------------------------------------------------
+ipcMain.handle('payrollMemo:get', () => getPayrollMemo());
+
+ipcMain.handle('payrollMemo:replace', (_e, newMemo: CachePayrollMemo) => replacePayrollMemo(newMemo));
+
+ipcMain.handle('payrollMemo:remove', () => removePayrollMemo());
 
 /*
 * ======================== 인쇄 관련 ==========================

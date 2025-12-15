@@ -147,6 +147,7 @@ export const cacheManager = {
     return await window.ipcRenderer.invoke('ledgers:update', index);
   },
 
+  // ------------------------------------------------------------------------------------------
   async getDeductions() {
     return await window.ipcRenderer.invoke('deductions:get');
   },
@@ -155,6 +156,7 @@ export const cacheManager = {
     return await window.ipcRenderer.invoke('deductions:replace', newDeductions);
   },
 
+  // // ------------------------------------------------------------------------------------------
   async getEmployees() {
     return await window.ipcRenderer.invoke('employees:get');
   },
@@ -173,6 +175,19 @@ export const cacheManager = {
 
   async removeEmployee(employeeId: string) {
     return await window.ipcRenderer.invoke('employees:remove', employeeId);
+  },
+
+  // ------------------------------------------------------------------------------------------
+  async getPayrollMemo() {
+    return await window.ipcRenderer.invoke('payrollMemo:get');
+  },
+
+  async replacePayrollMemo(newMemo) {
+    return await window.ipcRenderer.invoke('payrollMemo:replace', newMemo);
+  },
+
+  async removePayrollMemo() {
+    return await window.ipcRenderer.invoke('payrollMemo:remove');
   }
 };
 
