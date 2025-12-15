@@ -81,7 +81,6 @@ const columns: readonly TableColumns<ClientSalesColumn>[] = [
   }
 ];
 
-// TODO: 수금액 column 하나 더 만들기 (프린트 템플릿이랑 형식 동일하도록)
 const ClientSales = (): React.JSX.Element => {
   const [salesCompanyList, setSalesCompanyList] = useState([]);
   const [date, setDate] = useState({

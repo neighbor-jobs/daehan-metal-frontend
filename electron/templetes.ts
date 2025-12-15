@@ -2,7 +2,6 @@ import {TDocumentDefinitions} from 'pdfmake/interfaces';
 import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts';
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
-// TODO: 기본 border 얇기 0.4로 변경
 const A4_W = 630;
 const A4_H = 845;
 const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
@@ -12,88 +11,6 @@ const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추
  */
 export const dailySalesDocDef = (dailySalesData) => {
   // console.log(dailySalesData)
-  /* data
-  {
-  startAt: {
-    '$L': 'en',
-    '$u': undefined,
-    '$d': 2025-09-30T19:06:41.136Z,
-    '$y': 2025,
-    '$M': 9,
-    '$D': 1,
-    '$W': 3,
-    '$H': 4,
-    '$m': 6,
-    '$s': 41,
-    '$ms': 136,
-    '$x': {},
-    '$isDayjsObject': true
-  },
-  endAt: {
-    '$L': 'en',
-    '$u': undefined,
-    '$d': 2025-09-30T19:06:41.136Z,
-    '$y': 2025,
-    '$M': 9,
-    '$D': 1,
-    '$W': 3,
-    '$H': 4,
-    '$m': 6,
-    '$s': 41,
-    '$ms': 136,
-    '$x': {},
-    '$isDayjsObject': true
-  },
-  dailySalesList: [
-    {
-      companyName: '(ㄱ)',
-      manufactureAmount: '1000',
-      rawMatAmount: '2090',
-      productLength: '0',
-      productName: '0',
-      quantity: 2,
-      scale: '2x2',
-      vCut: '0',
-      vCutAmount: '0',
-      vatAmount: '600',
-      deliveryCharge: '0',
-      createdAt: '2025-10-01T00:00:00.000Z',
-      totalRawMatAmount: 4180,
-      totalManufactureAmount: 2000
-    },
-    {
-      companyName: '(ㄱ)',
-      manufactureAmount: '5000',
-      rawMatAmount: '3000',
-      productLength: '0',
-      productName: '000',
-      quantity: 1,
-      scale: '11',
-      vCut: '0',
-      vCutAmount: '0',
-      vatAmount: '0',
-      deliveryCharge: '0',
-      createdAt: '2025-10-01T00:00:00.000Z',
-      totalRawMatAmount: 3000,
-      totalManufactureAmount: 5000
-    },
-    {
-      createdAt: '2025-10-01T00:00:00.000Z',
-      companyName: '(ㄱ)',
-      productName: '입금액',
-      scale: '',
-      payingAmount: '30000'
-    }
-  ],
-  amount: {
-    totalManufactureAmount: '7000',
-    totalRawMatAmount: '7180',
-    totalVatAmount: '1200',
-    totalDeliveryCharge: '0',
-    totalPayingAmount: 30000
-  }
-}
-  * */
   const today = new Date();
   const totalAmount =
     Number(dailySalesData.amount.totalRawMatAmount)
