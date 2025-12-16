@@ -13,7 +13,9 @@ export const moveFocus = (
     ),
   );
 
-  const currentIndex = inputs.findIndex((input) => input.dataset.inputId === currentId,);
+  const currentIndex = inputs.findIndex((input) =>
+    input.dataset.inputId === currentId,
+  );
 
   if (currentIndex === -1) return;
 
