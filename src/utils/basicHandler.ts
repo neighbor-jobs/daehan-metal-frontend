@@ -14,3 +14,10 @@ export const getValueWithNewLine = (e: React.KeyboardEvent<HTMLInputElement>): s
   const {selectionStart = 0, selectionEnd = 0, value} = target;
   return value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
 }
+
+/** 캐럿 위치가 맨 끝인지 파악하는 함수 **/
+export const isCaretAtEnd = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const target = e.currentTarget;
+  const {selectionStart = 0, selectionEnd = 0, value = ''} = target;
+  return selectionStart === selectionEnd && selectionStart === value.length;
+}
