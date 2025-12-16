@@ -35,6 +35,8 @@ import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDia
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
 import {tableSelectedRowWithoutDesign} from '../../utils/tableDisignSx.ts';
+import {getValueWithNewLine, isCaretAtEnd} from '../../utils/basicHandler.ts';
+import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
@@ -232,11 +234,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
   };
 
   const handlePaymentInput = useCallback((
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    name: string,
+    value: string,
     id: string,
   ) => {
-    const {name, value} = e.target;
-    let onlyNums: string;
+    let onlyNums: string = value;
 
     if (name === PaymentTableRow.EXTEND_WORKING_TIME
       || name === PaymentTableRow.EXTEND_WORKING_MULTI
@@ -664,20 +666,20 @@ const NewPayrollLedger = (): React.JSX.Element => {
     );
   }, [totalSalarySum]);
 
+  /* table 내부 scroll 이벤트 제어 */
   useEffect(() => {
     const el = tableScrollRef.current;
     if (!el) return;
-
     if (activeRowIdx === 0) {
       el.scrollTop = 0;
     }
-
-    if (activeRowIdx === leftRows.length + deduction.length - 1) {
+    if (activeRowIdx === leftRows.length + deduction.length) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [activeRowIdx, leftRows.length]);
+  }, [activeRowIdx, deduction.length]);
+
   // debug
-  // console.log(formData);
+  console.log(formData);
 
   return (
     <Box>
@@ -766,7 +768,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       zIndex: 2,
                     }}
                   />
-                  {mode === 'create' ? employees?.map((employee) => (
+                  {mode === 'create' ? employees?.map((employee, index) => (
+                    /* CREATE MODE */
                     <TableCell align='center'
                                key={employee.id}
                                sx={{
@@ -778,6 +781,35 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  py: 0.5,
                                  px: 1,
                                }}>
+                      <Input disableUnderline
+                             multiline
+                             name="memo"
+                             sx={{marginRight: 1,}}
+                             onClick={() => setActiveRowIdx(0)}
+                             inputProps={{
+                               'data-row-index': 0,
+                               'data-col-index': index + 1,
+                               onKeyDown: (e: any) => {
+                                 if (e.altKey && e.key === "Enter") {
+                                   const newValue = getValueWithNewLine(e);
+                                   handlePaymentInput(e.target.name, newValue, employee.id)
+                                   return;
+                                 }
+                                 const caretAtEnd = isCaretAtEnd(e);
+                                 if (!e.nativeEvent.isComposing) {
+                                   if (e.key === 'Enter') {
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
+                                     setActiveRowIdx(1);
+                                   }
+                                   if (caretAtEnd) {
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
+                                     setActiveRowIdx(1);
+                                   }
+                                 }
+                               }
+                             }}
+                             onChange={(e) => handlePaymentInput(e.target.name, e.target.value, employee.id)}
+                      />
                       <Typography variant='body2' sx={{mx: 1.5}}>
                         {employee.info.name}
                       </Typography>
@@ -837,14 +869,15 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
 
                   return (
-                    <TableRow key={rowIdx}
-                              selected={row.disabled ? undefined : rowIdx + delta === activeRowIdx}
+                    <TableRow key={rowIdx + 1}
+                              selected={row.disabled ? undefined : rowIdx + 1 + delta === activeRowIdx}
                               sx={tableSelectedRowWithoutDesign}
+                              onClick={() => !row.disabled && setActiveRowIdx(rowIdx + delta + 1)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                                  setActiveRowIdx(rowIdx + delta + 1);
+                                  setActiveRowIdx(rowIdx + delta + 2);
                                 } else if (e.key === 'ArrowUp') {
-                                  rowIdx === 0 ? setActiveRowIdx(0) : setActiveRowIdx(rowIdx + delta - 1);
+                                  setActiveRowIdx(rowIdx + delta);
                                 }
                               }}
                     >
@@ -854,7 +887,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       >
                         {row.label}
                       </TableCell>
-                      {listToPaymentRender.map((item, colIdx) => {
+                      {listToPaymentRender.map((item, colIdx: number) => {
                         let value = formData[colIdx]?.paymentDetail[row.id];
                         if (row.id === PaymentTableRow.HOURLY_WAGE
                           || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
@@ -870,11 +903,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                                disabled={row.disabled || false}
                                                disabledTextColor='black'
                                                name={row.id}
-                                               onChange={(e) => handlePaymentInput(e, item.id)}
+                                               onChange={(e) => handlePaymentInput(e.target.name, e.target.value, item.id)}
                                                colIdx={colIdx + 1}
-                                               rowIdx={row.disabled ? undefined : rowIdx + delta}
+                                               rowIdx={row.disabled ? undefined : rowIdx + delta + 1}
                                                maxColLen={listToPaymentRender.length}
-                                               maxRowLen={13}
+                                               maxRowLen={14}
                                                key={`${item.id}-${colIdx}`}
                           />
                         )
@@ -885,22 +918,25 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 {/* deduction */}
                 {deduction?.map((dec, decIdx) => (
                   <TableRow key={`purpose-${decIdx}`}
-                            selected={decIdx + 13 === activeRowIdx}
+                            selected={decIdx + 8 === activeRowIdx}
                             sx={tableSelectedRowWithoutDesign}
+                            onClick={() => setActiveRowIdx(decIdx + 8)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === 'ArrowDown')
-                                decIdx === deduction.length - 1 ? setActiveRowIdx(0) : setActiveRowIdx(decIdx + 14);
+                              if (e.key === 'ArrowDown')
+                                decIdx === deduction.length - 1 ? setActiveRowIdx(decIdx + 8) : setActiveRowIdx(decIdx + 9);
+                              else if (e.key === 'Enter')
+                                decIdx === deduction.length - 1 ? setActiveRowIdx(0) : setActiveRowIdx(decIdx + 9);
                               else if (e.key === 'ArrowUp')
-                                setActiveRowIdx(decIdx + 12);
+                                setActiveRowIdx(decIdx + 7);
                             }}
                   >
                     <TableCellForPayroll value={dec.purpose}
                                          align='left'
                                          onChange={(e) => handleDeductionPurposeChange(e, decIdx)}
                                          colIdx={0}
-                                         rowIdx={decIdx + 7}
+                                         rowIdx={decIdx + 8}
                                          maxColLen={listToPaymentRender.length}
-                                         maxRowLen={15}
+                                         maxRowLen={16}
                     />
                     {listToPaymentRender.map((item, colIdx: number) => (
                       <TableCellForPayroll key={`${item.id}-${colIdx + 100}`}
@@ -909,9 +945,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                            name={dec.purpose}
                                            onChange={(e) => handleDeductionChange(e, item.id, decIdx)}
                                            colIdx={colIdx + 1}
-                                           rowIdx={decIdx + 7}
+                                           rowIdx={decIdx + 8}
                                            maxColLen={listToPaymentRender.length}
-                                           maxRowLen={15}
+                                           maxRowLen={16}
                       />
                     ))}
                   </TableRow>
@@ -928,7 +964,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                          key={`지급액계-${colIdx + 100}`}
                                          disabled={true}
                                          disabledTextColor='black'
-                                         maxRowLen={17}
+                                         maxRowLen={18}
 
                     />
                   ))}
