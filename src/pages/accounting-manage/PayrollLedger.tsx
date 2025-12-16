@@ -139,6 +139,7 @@ const PayrollLedger = (): React.JSX.Element => {
       setRightLedger(arr.slice(midIndex));
     } catch {
       showAlert('해당 월 급여대장 정보가 없습니다.', 'error');
+      setPayrollId("");
       setCreatedAtPayroll('');
       setPayments([]);
       setLedger(null);
@@ -163,6 +164,11 @@ const PayrollLedger = (): React.JSX.Element => {
   };
 
   const deletePayroll = async () => {
+    if (!payrollId || !ledger.id) {
+      showAlert("삭제할 급여대장을 먼저 불러와 주세요.", 'warning')
+      return;
+    }
+
     try {
       await axiosInstance.delete(`/payroll?id=${payrollId}`);
       await axiosInstance.delete(`/ledger?id=${ledger.id}`)
