@@ -99,7 +99,6 @@ const tailRows = [
   }
 ];
 
-
 const PayrollLedger = (): React.JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -317,6 +316,9 @@ const PayrollLedger = (): React.JSX.Element => {
         {/* 지출 내역 */}
         <Box sx={{mt: 2}}>
           <Typography variant='h6'>지출 내역</Typography>
+          <Typography variant='caption' sx={{ whiteSpace: 'pre-line'}}>
+            {ledger?.deductionExpenses[0]?.memo ?? ""}
+          </Typography>
           <Box sx={{display: 'flex', mt: 1}}>
             {/* 왼쪽 table */}
             <TableContainer

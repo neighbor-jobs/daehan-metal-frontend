@@ -150,7 +150,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [memo, setMemo] = useState<string>('');
+  const [memo, setMemo] = useState<string>(initialLedger?.deductionExpenses[0]?.memo || '');
   const [activeRowIdx, setActiveRowIdx] = useState(0);
 
   const calculatedWages = useMemo(() => {
@@ -393,8 +393,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
         try {
           await cacheManager.updateEmployees(updateCacheData);
+          await cacheManager.replacePayrollMemo({   // payroll memo 캐시값 업데이트
+            date: standardAt,
+            memo: memo,
+          })
         } catch {
-          console.error('FAIL employee pay cache data update')
+          console.error('FAIL employee pay cache data OR payroll memo update')
         }
 
         navigate(`/account/payroll`, {
@@ -407,6 +411,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
         await axiosInstance.patch('/ledger', {
           ...ledger,
           paying: [...leftLedger, ...rightLedger],
+          deduction: [
+            {
+              memo: memo,
+              group: '',
+              value: '',
+              purpose: "메모",
+            }
+          ],
         });
         navigate(`/account/payroll`, {
           state: standardAt
@@ -416,6 +428,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
       showAlert('등록 성공', 'success');
       await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
+      await cacheManager.replacePayrollMemo({
+        date: standardAt,
+        memo: memo,
+      })
 
       // 성공 후 입력필드 초기화
       const baseDedRows = defaultDeductionList.map((item) => ({purpose: item, value: '0'}));
@@ -575,10 +591,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
           setRightLedger(emptyLedgers.slice(15));
         }
 
-        // 4. 전체 메모 불러오기 (지출 내역 밑에)
+        // 4. 이전 메모 불러오기 (지출 내역 밑에)
         try {
           const prevMemo = await cacheManager.getPayrollMemo();
-          setMemo(prevMemo);
+          setMemo(prevMemo?.memo);
         } catch (err) {
           console.error(err);
         }
@@ -974,6 +990,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
               <Typography variant='h6'>지출 내역</Typography>
               <Typography variant='caption'>*수령액 합계는 항목명이 '급여' 여야만 자동합산됩니다.</Typography>
             </Box>
+            {/* 메모 입력 */}
             <Box sx={{display: 'flex', justifyItems: 'center', alignItems: 'center'}}>
               <Typography variant="caption" width={30}>메모: </Typography>
               <Input size="small"

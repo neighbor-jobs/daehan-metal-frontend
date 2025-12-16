@@ -11,7 +11,7 @@ const defaultMemo: CachePayrollMemo = {
 };
 
 const schema = {
-  deductions: {
+  payrollMemo: {
     type: 'object',
     properties: {
       date: {type: ['string']},
@@ -29,7 +29,7 @@ const payrollMemoStore = new Store({
 
 // 데이터 조회
 export const getPayrollMemo = (): CachePayrollMemo => {
-  return payrollMemoStore.get('payrollMemo');
+  return payrollMemoStore.get('payrollMemo') as CachePayrollMemo;
 };
 
 // 데이터 수정
