@@ -37,6 +37,7 @@ import {arrowNavAtRegister, focusByCell} from '../../utils/arrowNavAtRegister.ts
 import PurchaseCompanyForm from '../company-manage/PurchaseCompanyForm.tsx';
 import {AxiosResponse} from 'axios';
 import {PurchaseManageMenuType} from '../../types/headerMenu.ts';
+import {getValueWithNewLine, isCaretAtEnd} from '../../utils/basicHandler.ts';
 
 const columns: readonly TableColumns<PurchaseRegisterColumn>[] = [
   {
@@ -227,15 +228,8 @@ const PurchaseMain = (): React.JSX.Element => {
     e: React.KeyboardEvent<HTMLInputElement>,
     rowIndex: number
   ) => {
-    // Alt + Enter만 처리 (IME 조합 중이면 무시)
-    // if (!e.shiftKey || e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-    // if (!e.altKey || e.key !== 'Enter' || e.nativeEvent.isComposing) return;
-
     e.preventDefault();
-    const target = e.currentTarget;
-    const {selectionStart = 0, selectionEnd = 0, value} = target;
-
-    const next = value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+    const next = getValueWithNewLine(e);
 
     setReceipts(prev =>
       prev.map((item, i) =>
@@ -517,11 +511,7 @@ const PurchaseMain = (): React.JSX.Element => {
                                    handleAltEnterNewline(e, rowIndex);
                                    return;
                                  }
-
-                                 const target = e.currentTarget;
-                                 const {selectionStart = 0, selectionEnd = 0, value = ''} = target;
-                                 const caretAtEnd = selectionStart === selectionEnd && selectionStart === value.length;
-
+                                 const caretAtEnd = isCaretAtEnd(e);
                                  // 그 외 Enter/방향키는 기존 네비게이션 유지
                                  if (!e.nativeEvent.isComposing) {
                                    if (e.key === 'Enter') arrowNavAtRegister(e, 4)

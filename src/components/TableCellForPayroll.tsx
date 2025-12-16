@@ -39,25 +39,6 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
                width={cellW}
                sx={{borderRight: '1px solid lightgray', py: '1px'}}
     >
-      {/*<Input
-        disableUnderline
-        disabled={disabled || false}
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        sx={{
-          py: 0,
-          my: 0,
-          '& input': {textAlign: align}
-        }}
-        inputProps={{
-          'data-col-index': colIdx,
-          'data-row-index': rowIdx,
-          onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-            arrowNavAtRegister(e, maxColLen - 1, false)
-          }
-        }}
-      />*/}
       <input type="text"
              disabled={disabled || false}
              name={name}
