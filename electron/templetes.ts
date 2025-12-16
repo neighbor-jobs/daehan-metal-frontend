@@ -1538,14 +1538,37 @@ export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitio
 const getSalaryContent = (data: Payment): any[] => {
   const [year, month] = data.createdAt.split('-');
   const today = formatDate(new Date());
-  let deductions: any[][] = []
-  let deduction:
-    any[][] = [[], []]
+  const paymentRows = [
+    ['기본급', formatCurrency(data.paymentDetail.pay)],
+    ['시급', formatCurrency(data.paymentDetail.hourlyWage)],
+    ['연장 근무시간', `${data.paymentDetail.extendWorkingTime}`],
+    ['연장 근무수당', `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.extendWorkingTime} X ${data.paymentDetail.multis.extendWorkingMulti} = ${formatCurrency(data.paymentDetail.extendWokringWage)}`],
+    ['휴일 근무시간', `${data.paymentDetail.dayOffWorkingTime}`],
+    ['휴일 근무수당', `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.dayOffWorkingTime} X ${data.paymentDetail.multis.dayOffWorkingMulti} = ${formatCurrency(data.paymentDetail.dayOffWorkingWage)}`],
+    ['연차수당 (연차+월차)', `${formatCurrency(data.paymentDetail.hourlyWage)} X 8 X ${data.paymentDetail.multis.annualLeaveAllowanceMulti} = ${formatCurrency(data.paymentDetail.annualLeaveAllowance)}`],
+  ];
+  const deductionRows = data.deductionDetail.map(d => [
+    d.purpose,
+    formatCurrency(d.value),
+  ]);
+  const rowCount = Math.max(paymentRows.length, deductionRows.length);
+
+  const mergedRows = Array.from({ length: rowCount }).map((_, i) => {
+    const pay = paymentRows[i] || ['', ''];
+    const ded = deductionRows[i] || ['', ''];
+
+    return [
+      { text: pay[0], alignment: 'center' },
+      { text: pay[1], alignment: 'right' },
+      { text: ded[0], alignment: 'center' },
+      { text: ded[1], alignment: 'right' },
+    ];
+  });
   const salary = Math.ceil(Number(data.salary) / 10) * 10;
   const totalSalary = Math.ceil((salary - Number(data.deduction)) / 10) * 10;
-  // console.log(data);
+  console.log(data);
 
-  for (let i = 0; i < data.deductionDetail.length; ++i) {
+  /*for (let i = 0; i < data.deductionDetail.length; ++i) {
     const deductionDetail = data.deductionDetail[i];
     if (deductionDetail.purpose.length === 0) continue;
 
@@ -1568,8 +1591,8 @@ const getSalaryContent = (data: Payment): any[] => {
       }
     }
     deductions.push(deduction)
-  }
-  deductions = deductions.flatMap((deduction) => [deduction[0], deduction[1]])
+  }*/
+  // deductions = deductions.flatMap((deduction) => [deduction[0], deduction[1]])
 
   // debug
   // console.log(deductions)
@@ -1595,15 +1618,10 @@ const getSalaryContent = (data: Payment): any[] => {
       margin: [0, 0, 0, 10],
     },
     {
-      text: '수령액',
-      style: 'header',
-      alignment: "left",
-      fontSize: 10,
-    },
-    {
       table: {
-        widths: ['*', '*', '*'],
+        widths: ['20%', '30%', '20%', '30%'],
         body: [
+        /*
           [
             {text: '기본급', alignment: 'center'},
             {text: '시급', alignment: 'center'},
@@ -1665,25 +1683,9 @@ const getSalaryContent = (data: Payment): any[] => {
             },
               '',
           ]
+        */
+          ...mergedRows,
         ]
-      },
-      layout: {
-        hLineWidth: () => 0.4,
-        vLineWidth: () => 0.4
-      },
-      margin: [0, 0, 0, 10],
-    },
-    {text: "\n"},
-    {
-      text: '공제액',
-      style: 'header',
-      alignment: "left",
-      fontSize: 10,
-    },
-    {
-      table: {
-        widths: ['*', '*', '*'],
-        body: deductions,
       },
       layout: {
         hLineWidth: () => 0.4,
