@@ -5,6 +5,7 @@ import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 const A4_W = 630;
 const A4_H = 845;
 const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
+const headerSpacing = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
 
 /**
  * 일별매출현황
@@ -1017,7 +1018,7 @@ const basicInvoiceTable = (data, index) => {
 */
   // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
-  const totalRowsNum = data.sales.length > 12 ? 25 : 12;
+  const totalRowsNum = data.sales.length > 13 ? 25 : 13;
   const shouldPageBreak = index === 1 && totalRowsNum === 25;
 
   // 합계 계산
@@ -1040,9 +1041,10 @@ const basicInvoiceTable = (data, index) => {
         widths: ['*', '*', 'auto', '*', 'auto', 'auto', '*'],
         body: [
           [{
-            text: '거    래    명    세    서',
-            style: 'header',
+            text: `거${headerSpacing}래${headerSpacing}명${headerSpacing}세${headerSpacing}서`,
+            fontSize: 15,
             colSpan: 6,
+            margin: [70, 0, 0, 0],
             alignment: 'center',
             border: [true, true, false, true]
           }, '', '', '', '', '',
@@ -1050,9 +1052,14 @@ const basicInvoiceTable = (data, index) => {
           ],
           [
             {
-              text: `${data.createdAt}\n\n\u00A0\u00A0\u00A0${data.companyName}\u00A0\u00A0\u00A0\u00A0귀하\n\n\u00A0\u00A0\u00A0아래와 같이 계산합니다.`,
+              stack: [
+                { text: data.createdAt }, {text: "\n"},
+                { text: data.companyName + '         귀하', margin: [10, 0, 0, 0] }, {text: "\n"},
+                { text: '아래와 같이 계산합니다.', margin: [10, 0, 0, 0] },
+              ],
               rowSpan: 4,
-              colSpan: 2
+              colSpan: 2,
+              margin: [10, 0, 0, 0]
             }, '',
             {text: '공        급        자', colSpan: 5, alignment: 'center'}, '', '', '', ''
           ],
@@ -1103,8 +1110,8 @@ const basicInvoiceTable = (data, index) => {
             {text: '계', alignment: 'center', border: [true, false, true, true]}
           ],
           ...data.sales.map((item, index) => [
-            {text: `${item.productName}`},
-            {text: `${item.productScale || item.scale}`},
+            {text: `${item.productName}`, alignment: 'center'},
+            {text: `${item.productScale || item.scale}`, alignment: 'center'},
             {text: `${item.quantity.toFixed(3)}`, alignment: 'right'},
             {text: `${formatCurrency(item.rawMatAmount)}`, alignment: 'right'},
             {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right'},
@@ -1117,10 +1124,14 @@ const basicInvoiceTable = (data, index) => {
           ),
           [{
             columns: [
-              {text: `전미수: ${formatCurrency(data.carryoverAmount)} `},
-              {text: `매출계: ${formatCurrency(data.totalSalesAmount)} `},
-              {text: `입금액: ${formatCurrency(data.payingAmount)}`},
-              {text: `미수계: ${(Number(data.carryoverAmount) + Number(data.totalSalesAmount) - Number(data.payingAmount)).toLocaleString()}`},
+              {text: `전미수:`, width: 'auto'},
+              {text: `${formatCurrency(data.carryoverAmount)}`, width: '*', alignment: 'center'},
+              {text: `매출계:`, width: 'auto'},
+              {text: `${formatCurrency(data.totalSalesAmount)}`, width: '*', alignment: 'center'},
+              {text: `입금액:`, width: 'auto'},
+              {text: `${formatCurrency(data.payingAmount)}`, width: '*', alignment: 'center'},
+              {text: `미수계:`, width: 'auto'},
+              {text: `${(Number(data.carryoverAmount) + Number(data.totalSalesAmount) - Number(data.payingAmount)).toLocaleString()}`, width: '*', alignment: 'center'},
             ],
             colSpan: 6,
           }, '', '', '', '', ''],
@@ -1166,10 +1177,10 @@ export const invoiceDocDef = (data: any) => {
   ]
 }
   * */
-  const totalRowsNum = data.sales?.length > 12 ? 25 : 12;
+  const totalRowsNum = data.sales?.length > 13 ? 25 : 13;
 
   const docDef: TDocumentDefinitions = {
-    // pageMargins: [24, 30, 24, 30],
+    pageMargins: [30, 30, 30, 30],
     pageSize: 'A4',
     content: [
       ...basicInvoiceTable(data, 0),
