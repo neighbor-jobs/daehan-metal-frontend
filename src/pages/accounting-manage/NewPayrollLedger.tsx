@@ -35,7 +35,7 @@ import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDia
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
 import {tableSelectedRowWithoutDesign} from '../../utils/tableDisignSx.ts';
-import {getValueWithNewLine, isCaretAtEnd} from '../../utils/basicHandler.ts';
+import {getValueWithNewLine, isCaretAtEnd, isCaretAtStart} from '../../utils/basicHandler.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 const defaultPayment: PostPaymentDetail = {
@@ -232,6 +232,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
       setFormData((prev: PatchPayment[]) => prev.filter((item: PatchPayment) => item.id !== id));
     }
   };
+
+  const handleMemoInputByEmployee = useCallback((newMemo, id) => {
+    setFormData((prev) =>
+      prev.map(item => {
+        const key: string = mode === 'create' ? item.employeeId : item.id;
+        return key === id ? {
+          ...item,
+          memo: newMemo,
+        } : item
+      })
+    )
+  }, [mode])
 
   const handlePaymentInput = useCallback((
     name: string,
@@ -679,7 +691,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }, [activeRowIdx, deduction.length]);
 
   // debug
-  console.log(formData);
+  // console.log(formData);
 
   return (
     <Box>
@@ -784,7 +796,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       <Input disableUnderline
                              multiline
                              name="memo"
-                             sx={{marginRight: 1,}}
+                             sx={{marginRight: 1, fontSize: 11}}
                              onClick={() => setActiveRowIdx(0)}
                              inputProps={{
                                'data-row-index': 0,
@@ -792,23 +804,24 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                onKeyDown: (e: any) => {
                                  if (e.altKey && e.key === "Enter") {
                                    const newValue = getValueWithNewLine(e);
-                                   handlePaymentInput(e.target.name, newValue, employee.id)
+                                   handleMemoInputByEmployee(newValue, employee.id)
                                    return;
                                  }
-                                 const caretAtEnd = isCaretAtEnd(e);
+                                 const caretEnd = isCaretAtEnd(e), caretStart = isCaretAtStart(e);
                                  if (!e.nativeEvent.isComposing) {
                                    if (e.key === 'Enter') {
                                      arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
                                      setActiveRowIdx(1);
-                                   }
-                                   if (caretAtEnd) {
+                                   } else if (caretEnd && e.key === 'ArrowDown') {
                                      arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
                                      setActiveRowIdx(1);
-                                   }
+                                   } else if ((caretStart && e.key === 'ArrowLeft')
+                                     || (caretEnd && e.key === 'ArrowRight'))
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
                                  }
                                }
                              }}
-                             onChange={(e) => handlePaymentInput(e.target.name, e.target.value, employee.id)}
+                             onChange={(e) => handleMemoInputByEmployee(e.target.value, employee.id)}
                       />
                       <Typography variant='body2' sx={{mx: 1.5}}>
                         {employee.info.name}
@@ -825,9 +838,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       </IconButton>
                       <Typography sx={{m: 0, fontSize: 11}}>{employee.info.position}</Typography>
                     </TableCell>
-                  )) : formData?.map((item, idx) => (
+                  )) : formData?.map((item, index) => ( // EDIT MODE
                     <TableCell align='center'
-                               key={`${item.employeeName}-${idx}`}
+                               key={`${item.employeeName}-${index}`}
                                sx={{
                                  backgroundColor: 'background.paper',
                                  zIndex: 2,
@@ -836,6 +849,37 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  py: 0.5,
                                  px: 1
                                }}>
+                      <Input disableUnderline
+                             multiline
+                             name="memo"
+                             value={formData[index].memo}
+                             sx={{marginRight: 1, fontSize: 11}}
+                             onClick={() => setActiveRowIdx(0)}
+                             inputProps={{
+                               'data-row-index': 0,
+                               'data-col-index': index + 1,
+                               onKeyDown: (e: any) => {
+                                 if (e.altKey && e.key === "Enter") {
+                                   const newValue = getValueWithNewLine(e);
+                                   handleMemoInputByEmployee(newValue, item.id)
+                                   return;
+                                 }
+                                 const caretEnd = isCaretAtEnd(e), caretStart = isCaretAtStart(e);
+                                 if (!e.nativeEvent.isComposing) {
+                                   if (e.key === 'Enter') {
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
+                                     setActiveRowIdx(1);
+                                   } else if (caretEnd && e.key === 'ArrowDown') {
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
+                                     setActiveRowIdx(1);
+                                   } else if ((caretStart && e.key === 'ArrowLeft')
+                                     || (caretEnd && e.key === 'ArrowRight'))
+                                     arrowNavAtRegister(e, employees?.length + 1, false, "col", 1);
+                                 }
+                               }
+                             }}
+                             onChange={(e) => handleMemoInputByEmployee(e.target.value, item.id)}
+                      />
                       <Typography variant='body2' sx={{mx: 1.5}}>
                         {item.employeeName}
                       </Typography>
