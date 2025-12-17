@@ -280,7 +280,7 @@ const PayrollLedger = (): React.JSX.Element => {
                                align='center'
                                key={p.id}
                     >
-                      <Typography sx={{m: 0, fontSize: 11}}>{p.memo || ""}</Typography>
+                      <Typography sx={{m: 0, fontSize: 11, whiteSpace: 'pre-line', lineHeight: 1.2, height: 23 }}>{p.memo || ""}</Typography>
                       {p.employeeName}
                       <Typography sx={{m: 0, fontSize: 11}}>{p.employeePosition}</Typography>
                     </TableCell>
