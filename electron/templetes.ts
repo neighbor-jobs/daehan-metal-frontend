@@ -1053,9 +1053,9 @@ const basicInvoiceTable = (data, index) => {
           [
             {
               stack: [
-                { text: data.createdAt }, {text: "\n"},
-                { text: data.companyName + '         귀하', margin: [10, 0, 0, 0] }, {text: "\n"},
-                { text: '아래와 같이 계산합니다.', margin: [10, 0, 0, 0] },
+                { text: data.createdAt, fontSize: 10 }, {text: "\n"},
+                { text: data.companyName + '      귀하', margin: [10, 0, 0, 0], fontSize: 11}, {text: "\n"},
+                { text: '아래와 같이 계산합니다.', margin: [10, 0, 0, 0], fontSize: 8 },
               ],
               rowSpan: 4,
               colSpan: 2,
@@ -1077,7 +1077,8 @@ const basicInvoiceTable = (data, index) => {
             {text: '인천 계양구 평리길 92(평동 85-3)', colSpan: 4, alignment: 'center'}, '', '', ''
           ],
           [
-            {text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, rowSpan: 2, border: [true, true, true, true]}, '',
+            // {text: `현장명 : ${firstRowNames?.join(', ')}`, colSpan: 2, rowSpan: 2, border: [true, true, true, true]}, '',
+            {text: `${firstRowNames?.join(', ')}`, colSpan: 2, rowSpan: 2, border: [true, true, true, true], alignment: 'center'}, '',
             {text: '업 태', alignment: 'center', noWrap: true},
             {text: '제조업', alignment: 'center'},
             {text: '종 목', alignment: 'center', noWrap: true},
@@ -1180,7 +1181,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 13 ? 25 : 13;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [30, 30, 30, 30],
+    pageMargins: [30, 43, 30, 20],
     pageSize: 'A4',
     content: [
       ...basicInvoiceTable(data, 0),
@@ -1195,7 +1196,7 @@ export const invoiceDocDef = (data: any) => {
                 dash: {length: 2, space: 2}
               }
             ],
-            margin: [0, 12, 0, 12]
+            margin: [0, 12, 0, 20]
           } as any]
           : []
       ),
@@ -1258,7 +1259,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     const payment = payments[i]
     const salary = Math.ceil(Number(payment.salary) / 10) * 10;
     const totalSalary = Math.ceil((salary - Number(payment.deduction)) / 10) * 10;
-    headers[0].push({text: payment.employeePosition, style: 'cell', alignment: 'center', margin: [0, 6, 0, 6], border: [false, false, false, false]})
+    headers[0].push({text: `${payment.memo || ""}\n${payment.employeePosition}`, style: 'cell', alignment: 'center', margin: [0, 6, 0, 1], border: [false, false, false, false]})
     employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
 
     salaryDetails['기본급'].push({
@@ -1395,6 +1396,7 @@ const payrollLayout = {
  */
 const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
   const items = financialLedgerData.payingExpenses || [];
+  const memo = financialLedgerData?.deductionExpenses[0]?.memo || "";
   const LEFT_ROWS = 15;
   const TABLE_WIDTHS: (string | number)[] = [
     '15%', '13%', '11%', '11%',
@@ -1473,6 +1475,7 @@ const createFinancialLedgerContent = (financialLedgerData: Ledger): any[] => {
       margin: [0, 0, 0, 10],
       fontSize: 12,
     },
+    {text: memo, fontSize: 8,},
     {
       table: {
         widths: TABLE_WIDTHS,
@@ -1542,10 +1545,10 @@ const getSalaryContent = (data: Payment): any[] => {
     ['기본급', formatCurrency(data.paymentDetail.pay)],
     ['시급', formatCurrency(data.paymentDetail.hourlyWage)],
     ['연장 근무시간', `${data.paymentDetail.extendWorkingTime}`],
-    ['연장 근무수당', `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.extendWorkingTime} X ${data.paymentDetail.multis.extendWorkingMulti} = ${formatCurrency(data.paymentDetail.extendWokringWage)}`],
+    ['연장 근무수당', `${formatCurrency(data.paymentDetail.extendWokringWage)}`],
     ['휴일 근무시간', `${data.paymentDetail.dayOffWorkingTime}`],
-    ['휴일 근무수당', `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.dayOffWorkingTime} X ${data.paymentDetail.multis.dayOffWorkingMulti} = ${formatCurrency(data.paymentDetail.dayOffWorkingWage)}`],
-    ['연차수당 (연차+월차)', `${formatCurrency(data.paymentDetail.hourlyWage)} X 8 X ${data.paymentDetail.multis.annualLeaveAllowanceMulti} = ${formatCurrency(data.paymentDetail.annualLeaveAllowance)}`],
+    ['휴일 근무수당', `${formatCurrency(data.paymentDetail.dayOffWorkingWage)}`],
+    ['연차수당 (연차+월차)', `${formatCurrency(data.paymentDetail.annualLeaveAllowance)}`],
   ];
   const deductionRows = data.deductionDetail.map(d => [
     d.purpose,
@@ -1558,10 +1561,10 @@ const getSalaryContent = (data: Payment): any[] => {
     const ded = deductionRows[i] || ['', ''];
 
     return [
-      { text: pay[0], alignment: 'center' },
-      { text: pay[1], alignment: 'right' },
-      { text: ded[0], alignment: 'center' },
-      { text: ded[1], alignment: 'right' },
+      { text: pay[0], alignment: 'center', margin: [0, 5, 0, 0]},
+      { text: pay[1], alignment: 'right' , margin: [0, 5, 0, 0]},
+      { text: ded[0], alignment: 'center', margin: [0, 5, 0, 0] },
+      { text: ded[1], alignment: 'right' , margin: [0, 5, 0, 0]},
     ];
   });
   const salary = Math.ceil(Number(data.salary) / 10) * 10;
@@ -1620,6 +1623,7 @@ const getSalaryContent = (data: Payment): any[] => {
     {
       table: {
         widths: ['20%', '30%', '20%', '30%'],
+        heights: 24,
         body: [
         /*
           [
@@ -1689,23 +1693,33 @@ const getSalaryContent = (data: Payment): any[] => {
       },
       layout: {
         hLineWidth: () => 0.4,
-        vLineWidth: () => 0.4
+        vLineWidth: () => 0.4,
       },
       margin: [0, 0, 0, 10],
     },
+    {text: "\n"},
+    {text: '※ 근로계약서 참조'},
+    {text: "\n"},
+    {text: `연장수당: ${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.extendWorkingTime} X ${data.paymentDetail.multis.extendWorkingMulti}`},
+    {text: "\n"},
+    {text: `휴일수당: ${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.dayOffWorkingTime} X ${data.paymentDetail.multis.dayOffWorkingMulti}`},
+    {text: "\n"},
+    {text: `연차수당(연차+월차): ${formatCurrency(data.paymentDetail.hourlyWage)} X 8 X ${data.paymentDetail.multis.annualLeaveAllowanceMulti}`},
+    {text: "\n"},
     {
       table: {
         widths: ['*', '*', '*'],
+        heights: 24,
         body: [
           [
-            {text: '수령액계', alignment: 'center'},
-            {text: '공제액계', alignment: 'center'},
-            {text: '실수령액', alignment: 'center'},
+            {text: '수령액계', alignment: 'center', margin: [0, 5, 0, 0]},
+            {text: '공제액계', alignment: 'center', margin: [0, 5, 0, 0]},
+            {text: '실수령액', alignment: 'center', margin: [0, 5, 0, 0]},
           ],
           [
-            {text: `${salary.toLocaleString()} 원`, alignment: 'right'},
-            {text: `${formatCurrency(data.deduction)} 원`, alignment: 'right'},
-            {text: `${totalSalary.toLocaleString()} 원`, alignment: 'right'},
+            {text: `${salary.toLocaleString()} 원`, alignment: 'right', margin: [0, 5, 0, 0]},
+            {text: `${formatCurrency(data.deduction)} 원`, alignment: 'right', margin: [0, 5, 0, 0]},
+            {text: `${totalSalary.toLocaleString()} 원`, alignment: 'right', margin: [0, 5, 0, 0]},
           ],
         ]
       },
@@ -1715,10 +1729,11 @@ const getSalaryContent = (data: Payment): any[] => {
       },
       margin: [0, 0, 0, 10],
     },
+    {text: "\n"},
     {
       text: '귀하의 노고에 감사드립니다.',
       alignment: 'center',
-      style: 'footer',
+      fontSize: 13
     },
     // 마지막에 pageBreak 추가
     {text: '', pageBreak: 'after'}
@@ -1748,7 +1763,7 @@ export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
     content: allContents,
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 9,
+      fontSize: 10,
     },
     styles: {
       header: {fontSize: 14},
