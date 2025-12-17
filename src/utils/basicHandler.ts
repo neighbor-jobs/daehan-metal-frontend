@@ -21,3 +21,9 @@ export const isCaretAtEnd = (e: React.KeyboardEvent<HTMLInputElement>) => {
   const {selectionStart = 0, selectionEnd = 0, value = ''} = target;
   return selectionStart === selectionEnd && selectionStart === value.length;
 }
+
+export const isCaretAtStart = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const target = e.currentTarget;
+  const {selectionStart = 0, selectionEnd = 0} = target;
+  return selectionStart === selectionEnd && selectionStart === 0;
+}
