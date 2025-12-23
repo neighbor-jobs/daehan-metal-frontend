@@ -232,6 +232,7 @@ const EmployeeForm = ({
       email: updateEmployee.info.email?.trim() || undefined,
       phoneNumber: updateEmployee.info.phoneNumber || undefined,
       birth: updateEmployee.info.birth || undefined,
+      address: updateEmployee.info.address || "",
     };
 
     try {
