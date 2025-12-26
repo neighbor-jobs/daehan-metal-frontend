@@ -29,7 +29,7 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
   {
     id: DailySalesColumn.DATE,
     label: '날짜',
-    minWidth: 80,
+    minWidth: 120,
     format: (date: string) => date.split('T')[0] || '',
   },
   {
@@ -40,12 +40,17 @@ const columns: readonly TableColumns<DailySalesColumn>[] = [
   {
     id: DailySalesColumn.PRODUCT_NAME,
     label: '품명',
-    minWidth: 170,
+    minWidth: 150,
   },
   {
     id: DailySalesColumn.SCALE,
     label: '규격',
-    minWidth: 140,
+    minWidth: 160,
+  },
+  {
+    id: DailySalesColumn.LOCATION_NAMES,
+    label: '현장명',
+    minWidth: 160,
   },
   {
     id: DailySalesColumn.QUANTITY,
@@ -118,6 +123,7 @@ const DailySales = () => {
     const updatedList = receipts.flatMap((item: DailySalesReceiptItem) => {
       const sales = item.reports.map((r: DailySalesReportsItem) => ({
         ...r,
+        locationNames: item.locationName?.join(', '),
         totalRawMatAmount: Math.round(Number(r.rawMatAmount) * r.quantity),
         totalManufactureAmount: Math.trunc(Number(r.manufactureAmount) * r.quantity),
       }));
@@ -229,13 +235,17 @@ const DailySales = () => {
                         return (
                           <TableCell key={column.id}
                                      align={column.align}
-                                     sx={{ borderTop: isNewDate ? '1.5px solid lightgray' : undefined }}
+                                     sx={{
+                                       borderTop: isNewDate ? '1.5px solid lightgray' : undefined,
+                                       whiteSpace: 'normal',
+                                       wordBreak: 'break-word'
+                                     }}
                           >
                             {column.format ?
                               <Typography variant='body2' sx={column.typoSx || undefined}>
                                 {column.format(value)}
                               </Typography>
-                              : <Typography variant='body2' sx={column.typoSx || undefined}>
+                              : <Typography variant='body2' sx={column.typoSx || undefined} noWrap={false}>
                                 {value}
                               </Typography>
                             }
@@ -261,14 +271,14 @@ const DailySales = () => {
             </TableBody>
             <TableFooter sx={{bottom: 0, position: 'sticky', backgroundColor: 'white'}}>
               <TableRow>
-                <TableCell sx={{borderTop: '2px solid lightgray'}} colSpan={6}>합계</TableCell>
+                <TableCell sx={{borderTop: '2px solid lightgray'}} colSpan={7}>합계</TableCell>
                 {/* 재료비 합계 */}
                 <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='blue'>
                     {`${formatCurrency(amount.totalRawMatAmount)}`}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{borderTop: '2px solid lightgray'}} />
+                <TableCell sx={{borderTop: '2px solid lightgray'}}/>
                 {/* 가공비 합게 */}
                 <TableCell align='right' sx={{borderTop: '2px solid lightgray'}}>
                   <Typography variant='body2' color='darkorange'>
@@ -294,7 +304,7 @@ const DailySales = () => {
                       + Number(amount.totalVatAmount)
                       + Number(amount.totalDeliveryCharge)
                       - amount.totalPayingAmount
-                      ).toLocaleString()}`
+                    ).toLocaleString()}`
                     }
                   </Typography>
                 </TableCell>
@@ -305,7 +315,7 @@ const DailySales = () => {
       </Paper>
 
       {/* 인쇄 */}
-      <Box sx={{ mx: 1, my: 1, display: 'flex', gap: 2}}>
+      <Box sx={{mx: 1, my: 1, display: 'flex', gap: 2}}>
         <PrintButton value='인쇄'
                      printData={{
                        startAt: date.startAt.format('YYYY-MM-DD'),
