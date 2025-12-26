@@ -29,6 +29,7 @@ import {AccountingManageMenuType} from '../../types/headerMenu.ts';
 import AddPayment from './AddPayment.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import cacheManager from '../../utils/cacheManager.ts';
+import DateInputDialog from '../../components/DateInputDialog.tsx';
 
 const paymentRows = [
   {
@@ -111,7 +112,8 @@ const PayrollLedger = (): React.JSX.Element => {
   const [leftLedger, setLeftLedger] = useState<Paying[]>([]);
   const [rightLedger, setRightLedger] = useState<Paying[]>([]);
   const [standardAt, setStandardAt] = useState<string>(paramStandardAt || dayjs().format('YYYY-MM-01'));
-  const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false)
+  const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false);
+  const [isOpenDateInputDialog, setIsOpenDateInputDialog] = useState<boolean>(false);
 
   const refreshKeyRef = useRef(0);
   const {showAlert} = useAlertStore();
@@ -276,11 +278,17 @@ const PayrollLedger = (): React.JSX.Element => {
                 <TableRow>
                   <TableCell sx={{borderRight: '1px solid lightgray'}}/>
                   {payments.map((p) => (
-                    <TableCell sx={{borderRight: '1px solid lightgray', minWidth: 100}}
+                    <TableCell sx={{borderRight: '1px solid lightgray', minWidth: 100, px: 0.5, py: 0.5}}
                                align='center'
                                key={p.id}
                     >
-                      <Typography sx={{m: 0, fontSize: 11, whiteSpace: 'pre-line', lineHeight: 1.2, height: 23 }}>{p.memo || ""}</Typography>
+                      <Typography sx={{
+                        m: 0,
+                        fontSize: 11,
+                        whiteSpace: 'pre-line',
+                        lineHeight: 1.2,
+                        height: 23
+                      }}>{p.memo || ""}</Typography>
                       {p.employeeName}
                       <Typography sx={{m: 0, fontSize: 11}}>{p.employeePosition}</Typography>
                     </TableCell>
@@ -323,7 +331,7 @@ const PayrollLedger = (): React.JSX.Element => {
         {/* 지출 내역 */}
         <Box sx={{mt: 2}}>
           <Typography variant='h6'>지출 내역</Typography>
-          <Typography variant='caption' sx={{ whiteSpace: 'pre-line'}}>
+          <Typography variant='caption' sx={{whiteSpace: 'pre-line'}}>
             {ledger?.deductionExpenses[0]?.memo ?? ""}
           </Typography>
           <Box sx={{display: 'flex', mt: 1}}>
@@ -350,7 +358,7 @@ const PayrollLedger = (): React.JSX.Element => {
                     <TableRow key={`left-${idx}`}>
                       <TableCell sx={{borderRight: '1px solid lightgray', py: 0}}>
                         <Input disableUnderline
-                               value={(item).purpose}
+                               value={(item).purpose === '급여' ? `${standardAt.slice(0, 7)} 급여` : item.purpose}
                                sx={{py: 0, my: 0,}}
                                inputProps={{
                                  disabled: true,
@@ -536,10 +544,12 @@ const PayrollLedger = (): React.JSX.Element => {
           </Button>
         </Box>
         <Box sx={{display: 'flex', gap: 2}}>
-          <PrintButton printData={payments}
-                       value='급여명세서 인쇄'
-                       propType={AccountingManageMenuType.EmployeeManage}
-          />
+          <Button variant='contained'
+                  onClick={() => setIsOpenDateInputDialog(true)}
+                  sx={{width: '100%'}}
+          >
+            급여명세서 인쇄
+          </Button>
           <PrintButton
             printData={{
               payrollRegister: {
@@ -553,6 +563,10 @@ const PayrollLedger = (): React.JSX.Element => {
             value='급여대장 인쇄'
           />
         </Box>
+        <DateInputDialog payments={payments}
+                         isOpened={isOpenDateInputDialog}
+                         onClose={() => setIsOpenDateInputDialog(false)}
+        />
       </Box>
     </Box>
   )
