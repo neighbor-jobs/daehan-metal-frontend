@@ -27,3 +27,13 @@ export const isCaretAtStart = (e: React.KeyboardEvent<HTMLInputElement>) => {
   const {selectionStart = 0, selectionEnd = 0} = target;
   return selectionStart === selectionEnd && selectionStart === 0;
 }
+
+/** 문자열 byte 길이 계산 (UTF-8 기준) */
+export const getByteLength = (str: string) => {
+  return new TextEncoder().encode(str).length;
+};
+
+/** 줄 수 계산*/
+export const getLineCount = (str: string) => {
+  return str.split('\n').length;
+};

@@ -6,6 +6,14 @@ const A4_W = 630;
 const A4_H = 845;
 const PAGE_SCALE = 1; // 94% 정도부터 시도 (필요시 0.92, 0.90로 낮추기)
 const headerSpacing = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
+const basicTableLayout = {
+  hLineWidth: () => 0.4,
+  vLineWidth: () => 0.4,
+  paddingLeft: () => 1,
+  paddingRight: () => 1,
+  // paddingTop: () => 1,
+  // paddingBottom: () => 1,
+}
 
 /**
  * 일별매출현황
@@ -20,10 +28,10 @@ export const dailySalesDocDef = (dailySalesData) => {
     + Number(dailySalesData.amount.totalDeliveryCharge)
     - dailySalesData.amount.totalPayingAmount
   const docDef: TDocumentDefinitions = {
-    pageSize: {
+    /*pageSize: {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
-    },
+    },*/
     pageMargins: [24, 20, 24, 20],
     header: (currentPage, pageCount) => ({
       columns: [
@@ -52,7 +60,7 @@ export const dailySalesDocDef = (dailySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', 55, '*', 30, 47, 47, 40, 40, 50],
+          widths: ['auto', 70, 70, 80, 30, 52, 52, 40, 40, 53],
           body: [
             ['날짜', '거래처명', '품명', '규격', '수량', '재료비', '가공비', '세액', '운임비', '금액'].map(header => ({
               text: header,
@@ -101,15 +109,16 @@ export const dailySalesDocDef = (dailySalesData) => {
           ],
         },
         layout: {
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0.4,
+          ...basicTableLayout,
+          paddingBottom: () => 6,
+          paddingTop: () => 6
         },
         margin: [0, 0, 0, 0]
       },
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 8.25,
+      fontSize: 8.5,
     },
     styles: {
       header: {fontSize: 14,},
@@ -153,10 +162,10 @@ export const companySalesDocDef = (companySalesData) => {
 
   const today = new Date();
   const docDef: TDocumentDefinitions = {
-    pageSize: {
+ /*   pageSize: {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
-    },
+    },*/
     pageMargins: [24, 20, 24, 10],
     header: (currentPage, pageCount) => ({
       columns: [
@@ -185,7 +194,7 @@ export const companySalesDocDef = (companySalesData) => {
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', 30, 47, 47, 40, 40, 50, 50, 50],
+          widths: ['auto', 90, 30, 55, 55, 45, 45, 55, 53, 55],
           body: [
             ['날짜', '품명/규격', '수량', '재료비', '가공비','세액', '운임비', '금액', '수금액', '잔액'].map(header => ({
               text: header,
@@ -246,15 +255,16 @@ export const companySalesDocDef = (companySalesData) => {
           ],
         },
         layout: {
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0.4,
+          ...basicTableLayout,
+          paddingBottom: () => 6,
+          paddingTop: () => 6,
         },
         margin: [0, 0, 0, 0]
       },
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 8.2,
+      fontSize: 9,
     },
     styles: {
       header: {fontSize: 14,},
@@ -295,7 +305,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },
-    pageMargins: [25, 20, 25, 20], // 좌 25, 상 20, 우 25, 하 20
+    pageMargins: [15, 20, 24, 20], // 좌 25, 상 20, 우 25, 하 20
     content: [
       {
         text: `${data.companyName}`,
@@ -304,7 +314,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
         marginBottom: 5,
       },
       {
-        text: `T ${data.telNumber}  F ${data.subTelNumber}  HP ${data.phoneNumber}  ${bankData}`,
+        text: `T ${data.telNumber}${headerSpacing} F ${data.subTelNumber}${headerSpacing}  HP ${data.phoneNumber}${headerSpacing}  ${bankData}`,
         style: {
           fontSize: 8,
         },
@@ -314,7 +324,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       {
         table: {
           headerRows: 1,
-          widths: ['10%', '20%', '*', '*', '10%', '10%', '8%', '10%', '10%', '12%'],
+          widths: ['auto', '20%', 20, 45, 50, 62, 55, 62, 55, 62],
           body: [
             ['날짜', '품명', '세액', '수량', '단가', '매입금액', '매입세액', '합계', '입금', '잔액'].map(header => ({
               text: header,
@@ -327,55 +337,56 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
               {
                 text: item.quantity ? Number(item.quantity).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 수량
               {
                 text: item.unitPrice ? Number(item.unitPrice).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 단가
               {
                 text: item.totalSalesAmount ? Number(item.totalSalesAmount).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 매입금액
               {
                 text: item.totalVatPrice ? Number(item.totalVatPrice).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 매입세액
               {
                 text: item.totalPrice ? Number(item.totalPrice).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 합계
               {
                 text: item.productPrice ? Number(item.productPrice).toLocaleString() : '',
                 style: 'tableText',
-                alignment: 'right'
+                alignment: 'center'
               }, // 입금
               {text: Number(item.payableBalance).toLocaleString(), style: 'tableText', alignment: 'right'}, // 잔액
             ]),
             [
               { text: '합계', alignment: 'center', style: 'tableText' },
               {}, {}, {}, {},
-              { text: totalPurchaseAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
-              { text: totalVatAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
-              { text: totalSum.toLocaleString(), alignment: 'right', style: 'tableText' },
-              { text: totalPayingAmount.toLocaleString(), alignment: 'right', style: 'tableText' },
+              { text: totalPurchaseAmount.toLocaleString(), alignment: 'center', style: 'tableText' },
+              { text: totalVatAmount.toLocaleString(), alignment: 'center', style: 'tableText' },
+              { text: totalSum.toLocaleString(), alignment: 'center', style: 'tableText' },
+              { text: totalPayingAmount.toLocaleString(), alignment: 'center', style: 'tableText' },
               { text: '', style: 'tableText' },
             ],
           ],
         },
         layout: {
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0.4,
-        }
+          ...basicTableLayout,
+          paddingBottom: () => 10,
+          paddingTop: () => 10,
+        },
       },
     ],
     defaultStyle: {
       font: 'Pretendard',
-      fontSize: 8,
+      fontSize: 9,
     },
     styles: {
       header: {fontSize: 14},
@@ -536,8 +547,9 @@ export const companySalesSumDocDef = (companySalesSumData) => {
           ],
         },
         layout: {
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0.4,
+          ...basicTableLayout,
+          paddingBottom: () => 6,
+          paddingTop: () => 6,
         },
         margin: [0, 0, 0, 0]
       },
@@ -1100,7 +1112,7 @@ const basicInvoiceTable = (data, index) => {
     },
     {
       table: {
-        widths: ['*', '*', 50, '*', '*', '*'],
+        widths: [80, 120, 50, '*', '*', '*'],
         body: [
           [
             {text: '품  목', alignment: 'center', border: [true, false, true, true]},
@@ -1111,8 +1123,8 @@ const basicInvoiceTable = (data, index) => {
             {text: '계', alignment: 'center', border: [true, false, true, true]}
           ],
           ...data.sales.map((item, index) => [
-            {text: `${item.productName}`, alignment: 'center'},
-            {text: `${item.productScale || item.scale}`, alignment: 'center'},
+            {text: `${item.productName}`, alignment: 'center', padding: [0, 0, 0, 0],   noWrap: false,},
+            {text: `${item.productScale || item.scale}`, alignment: 'center', padding: [0, 0, 0, 0], noWrap: false},
             {text: `${item.quantity.toFixed(3)}`, alignment: 'right'},
             {text: `${formatCurrency(item.rawMatAmount)}`, alignment: 'right'},
             {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right'},
@@ -1538,9 +1550,11 @@ export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitio
 /**
  * 급여명세서(1개)
  * */
-const getSalaryContent = (data: Payment): any[] => {
-  const [year, month] = data.createdAt.split('-');
-  const today = formatDate(new Date());
+const getSalaryContent = (data: Payment, date: Date): any[] => {
+  const printDate = new Date(date ?? new Date());
+  console.log(printDate)
+  const today = formatDate(printDate);
+  printDate.setMonth(printDate.getMonth() - 1);
   const paymentRows = [
     ['기본급', formatCurrency(data.paymentDetail.pay)],
     ['시급', formatCurrency(data.paymentDetail.hourlyWage)],
@@ -1570,40 +1584,13 @@ const getSalaryContent = (data: Payment): any[] => {
   const salary = Math.ceil(Number(data.salary) / 10) * 10;
   const totalSalary = Math.ceil((salary - Number(data.deduction)) / 10) * 10;
   console.log(data);
-
-  /*for (let i = 0; i < data.deductionDetail.length; ++i) {
-    const deductionDetail = data.deductionDetail[i];
-    if (deductionDetail.purpose.length === 0) continue;
-
-    deduction[0].push({text: deductionDetail['purpose'], alignment: 'center'})
-    deduction[1].push({text: `${formatCurrency(deductionDetail['value'])} 원`, alignment: 'right'});
-
-    if (deduction[0].length > 2) {
-      deductions.push(deduction)
-      deduction = [[], []]
-    }
-  }
-
-  if (deduction[0].length > 0) {
-    if (deduction[0].length < 3) {
-      for (let i = 0; i < 3; ++i) {
-        if (!deduction[0][i]) {
-          deduction[0][i] = {}
-          deduction[1][i] = ''
-        }
-      }
-    }
-    deductions.push(deduction)
-  }*/
-  // deductions = deductions.flatMap((deduction) => [deduction[0], deduction[1]])
-
   // debug
   // console.log(deductions)
 
   // content만 반환
   return [
     {
-      text: `대한금속ENG(주) ${year}년 ${month}월 급여명세서 ${today}`,
+      text: `대한금속ENG(주) ${printDate.getFullYear()}년 ${printDate.getMonth() + 1}월 급여명세서 ${today}`,
       style: 'header',
       alignment: 'center',
       margin: [0, 0, 0, 10],
@@ -1625,69 +1612,6 @@ const getSalaryContent = (data: Payment): any[] => {
         widths: ['20%', '30%', '20%', '30%'],
         heights: 24,
         body: [
-        /*
-          [
-            {text: '기본급', alignment: 'center'},
-            {text: '시급', alignment: 'center'},
-            {text: '식대', alignment: 'center'}
-          ],
-          [
-            {text: `${formatCurrency(data.paymentDetail.pay)} 원`, alignment: 'right'},
-            {text: `${formatCurrency(data.paymentDetail.hourlyWage)} 원`, alignment: 'right'},
-            {text: `${formatCurrency(data.paymentDetail.mealAllowance)} 원`, alignment: 'right'},
-          ],
-          [
-            {text: '연장 근무시간', alignment: 'center'},
-            {text: '연장 근무수당', alignment: 'center', border: [true, true, false, true]},
-            {}
-          ],
-          [
-            {text: `${data.paymentDetail.extendWorkingTime} 시간`, alignment: 'right'},
-            {
-              text: `${formatCurrency(data.paymentDetail.extendWokringWage)} 원`,
-              alignment: 'right',
-              border: [true, true, false, true]
-            },
-            {text: `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.extendWorkingTime} X ${data.paymentDetail.multis.extendWorkingMulti} = ${formatCurrency(data.paymentDetail.extendWokringWage)}`, alignment: 'right'},
-          ],
-          [
-            {text: '휴일 근무시간', alignment: 'center'},
-            {text: '휴일 근무수당', alignment: 'center', border: [true, true, false, true]},
-            {text: '',}
-          ],
-          [
-            {text: `${data.paymentDetail.dayOffWorkingTime} 시간`, alignment: 'right'},
-            {
-              text: `${formatCurrency(data.paymentDetail.dayOffWorkingWage)} 원`,
-              alignment: 'right',
-              border: [true, true, false, true]},
-            {
-              text: `${formatCurrency(data.paymentDetail.hourlyWage)} X ${data.paymentDetail.dayOffWorkingTime} X ${data.paymentDetail.multis.dayOffWorkingMulti} = ${formatCurrency(data.paymentDetail.dayOffWorkingWage)}`,
-              alignment: 'right'
-            },
-          ],
-          [
-            {
-              text: '연차수당 (연차+월차)',
-              alignment: 'center',
-              border: [true, true, false, true]
-            },
-            {},
-            {},
-          ],
-          [
-            {
-              text: `${formatCurrency(data.paymentDetail.annualLeaveAllowance)} 원`,
-              alignment: 'right',
-              border: [true, true, false, true]
-            },
-            {
-              text: `${formatCurrency(data.paymentDetail.hourlyWage)} X 8 X ${data.paymentDetail.multis.annualLeaveAllowanceMulti} = ${formatCurrency(data.paymentDetail.annualLeaveAllowance)}`,
-              alignment: 'right'
-            },
-              '',
-          ]
-        */
           ...mergedRows,
         ]
       },
@@ -1743,11 +1667,12 @@ const getSalaryContent = (data: Payment): any[] => {
 /**
  * 급여명세서(summary)
  * */
-export const salaryDocsRef = (datas: Payment[]): TDocumentDefinitions => {
+export const salaryDocsRef = (datas): TDocumentDefinitions => {
+  const date = datas.date;
   // 각 사원별 content를 합침
   const allContents: any[] = [];
-  datas.forEach((data, idx) => {
-    const content = getSalaryContent(data);
+  datas.payments.forEach((data, idx) => {
+    const content = getSalaryContent(data, date);
     // 마지막 사원은 pageBreak 제거
     if (idx === datas.length - 1) {
       if (content[content.length - 1]?.pageBreak) {
