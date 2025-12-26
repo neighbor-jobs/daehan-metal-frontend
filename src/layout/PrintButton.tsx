@@ -48,6 +48,6 @@ const PrintButton = ({printData, value, propType}: FooterProps): React.JSX.Eleme
       </Button>
     </Box>
   )
-}
+};
 
 export default PrintButton;
