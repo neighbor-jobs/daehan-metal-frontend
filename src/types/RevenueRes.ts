@@ -9,6 +9,7 @@ export interface DailySalesResData {
 
 export interface DailySalesReceiptItem {
   reports: DailySalesReportsItem[];
+  locationName: string[];
   payingAmount: string;
   totalBalance?: number;
   companyName?: string;

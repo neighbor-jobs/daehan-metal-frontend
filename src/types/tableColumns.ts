@@ -106,6 +106,7 @@ export enum DailySalesColumn {
   TOTAL_MANUFACTURE_AMOUNT = 'totalManufactureAmount',
   VAT_AMOUNT = 'vatAmount',
   DELIVERY_CHARGE = 'deliveryCharge',
+  LOCATION_NAMES = 'locationNames',
 }
 
 export enum ClientSalesColumn {
