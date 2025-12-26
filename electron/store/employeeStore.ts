@@ -2,9 +2,11 @@ import Store from 'electron-store';
 import {Employee} from '../../src/types/employeeRes.ts';
 import axios from 'axios';
 
+// TODO: memo 관련 스토어 코드 마저 작성
 interface CacheEmployee {
   id: string;
   pay: string;
+  memo: string;
 }
 
 /*김상동	이우석	최종인	퀀 제이슨	브라얀	레이니어	양희경	신진아*/
@@ -17,6 +19,7 @@ const schema = {
       properties: {
         id: { type: 'string' },
         pay: { type: 'string', default: '0' },
+        memo: { type: 'string', default: '' },
       },
       required: ['id']
     },
@@ -36,7 +39,8 @@ const fetchEmployees = async (): Promise<CacheEmployee[] | undefined> => {
     const res = await axios.get('http://localhost:3000/employee?includesRetirement=true&orderIds=&includesPayment=false');
     return res.data.data?.map((e: Employee) => ({
       id: e.id,
-      pay: '0'
+      pay: '0',
+      memo: '',
     }));
   } catch {
     console.error('fail fetching employee store');
@@ -63,37 +67,6 @@ export const getEmployees = (): CacheEmployee[] => {
 /** 캐시-DB 데이터 정합성 검증 */
 export const validateEmployeesAgainstAPI = async () => {
   const storedEmployees = getEmployees();
-  /* cache data 구조
-  * 	"employees": [
-		{
-			"id": "da103d3b-719e-467d-90c0-d6831f0b4c20",
-			"pay": "1000000"
-		},
-		{
-			"id": "452fffb2-5bb6-4164-a843-39a65ab4a19e",
-			"pay": "1001000"
-		},
-		{
-			"id": "29cc7997-984d-4b78-ad3d-36c499ddf5db",
-			"pay": "1002000"
-		},
-		{
-			"id": "25a21c12-71f0-4947-aa67-bb51179803fa",
-			"pay": "1300000"
-		},
-		{
-			"id": "e011f5e0-d17b-4983-b59c-0393ab3cd46b",
-			"pay": "1400000"
-		},
-		{
-			"id": "d23dfc38-2cbe-4d75-a99b-6fa367109ea3",
-			"pay": "1500000"
-		},
-		{
-			"id": "cbb80221-9764-4554-a025-4fd5d5aebb11",
-			"pay": "1600000"
-		}
-	]*/
 
   const apiEmployees = await fetchEmployees();
   /* API 응답
@@ -268,7 +241,7 @@ export const addEmployee = (newEmployeeId: string): void => {
  const prev = getEmployees();
   const cur: CacheEmployee[] = [
     ...prev,
-    {id: newEmployeeId, pay: '0'}
+    {id: newEmployeeId, pay: '0', memo: ''}
   ];
   employeeStore.set('employees', cur);
 }
@@ -283,24 +256,30 @@ export const replaceEmployees = (newEmployees: Employee[]): void => {
   // 새 Employees 순서대로 정렬 (기존 pay 유지)
   const reordered = newEmployees.map(item => {
     const existing = storedMap.get(item.id);
-    return existing ?? { id: item.id, pay: '0' };
+    return existing ?? { id: item.id, pay: '0', memo: '' };
   });
 
   employeeStore.set('employees', reordered);
 };
 
-/** 최근 급여 싹 다 업데이트 */
+/** 최근 급여 및 메모 싹 다 업데이트 */
 export const updateEmployees = (newEmployees: CacheEmployee[]) => {
-  const stored = getEmployees(); // CacheEmployee[]
+  const stored = getEmployees();
 
-  // id → pay 매핑
-  const payMap = new Map(newEmployees.map(e => [e.id, e.pay]));
-
-  const updated = stored.map(item =>
-    payMap.has(item.id)
-      ? { ...item, pay: payMap.get(item.id) ?? item.pay }
-      : item
+  // id → CacheEmployee 전체 매핑
+  const updateMap = new Map(
+    newEmployees.map(e => [e.id, e])
   );
+
+  const updated = stored.map(item => {
+    const next = updateMap.get(item.id);
+    return next
+      ? {
+        ...item,
+        pay: next.pay,
+        memo: next.memo,
+      } : item;
+  });
 
   employeeStore.set('employees', updated);
 };
