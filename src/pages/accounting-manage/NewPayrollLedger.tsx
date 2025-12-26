@@ -35,7 +35,13 @@ import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDia
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
 import {tableSelectedRowWithoutDesign} from '../../utils/tableDisignSx.ts';
-import {getValueWithNewLine, isCaretAtEnd, isCaretAtStart} from '../../utils/basicHandler.ts';
+import {
+  getByteLength,
+  getLineCount,
+  getValueWithNewLine,
+  isCaretAtEnd,
+  isCaretAtStart
+} from '../../utils/basicHandler.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 const defaultPayment: PostPaymentDetail = {
@@ -233,7 +239,25 @@ const NewPayrollLedger = (): React.JSX.Element => {
     }
   };
 
+  const reorderByEmployeeIds = (orderedIds: string[]) => {
+    setEmployees(prev =>
+      orderedIds
+        .map(id => prev.find(e => e.id === id))
+        .filter(Boolean)
+    );
+
+    setFormData((prev: any) =>
+      orderedIds
+        .map(id => prev.find((p: any) => p.employeeId === id))
+        .filter(Boolean)
+    );
+  };
+
   const handleMemoInputByEmployee = useCallback((newMemo, id) => {
+    if (getLineCount(newMemo) > 2) return;
+
+    if (getByteLength(newMemo) > 50) return;
+
     setFormData((prev) =>
       prev.map(item => {
         const key: string = mode === 'create' ? item.employeeId : item.id;
@@ -402,7 +426,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
         // pay(사원 기본급) 값 update
         const updateCacheData = formData.map((item) => ({
           id: item.employeeId,
-          pay: item.paymentDetail.pay
+          pay: item.paymentDetail.pay,
+          memo: item.memo,
         }))
 
         try {
@@ -460,12 +485,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
       // formData 초기화
       let list: string;
       let cache = []
-      let payMap = new Map<string, string>();
+      let employeeMap = new Map();
 
       try {
         cache = await cacheManager.getEmployees();
         list = cache.map(e => e.id).join(',');
-        payMap = new Map(cache.map(e => [e.id, e.pay ?? '0']));
+        employeeMap = new Map(cache.map(e => [e.id, e]));
       } catch {
         list = '';
       }
@@ -480,10 +505,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
         paymentDetail: {
           ...defaultPayment,
           // 여기서도 동일하게 캐시 pay 주입
-          pay: payMap.get(employee.id) ?? defaultPayment.pay,
+          pay: employeeMap.get(employee.id).pay ?? defaultPayment.pay,
         },
         deductionDetail: mergedRows,
-        memo: '',
+        memo: employeeMap.get(employee.id).memo ?? '',
       })));
 
       // ledger(지출내역)도 다시 불러와서 초기화
@@ -753,7 +778,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
       <AssignEmployees isOpened={dialogOpen}
                        onClose={() => setDialogOpen(false)}
                        employees={employees}
-                       onApply={(ordered) => setEmployees(ordered)}
+                       onApply={(orderedEmployees) => {
+                         const orderedIds = orderedEmployees.map(e => e.id);
+                         reorderByEmployeeIds(orderedIds);
+                       }}
       />
 
       <Paper sx={{paddingBottom: 1, px: 2}}>
