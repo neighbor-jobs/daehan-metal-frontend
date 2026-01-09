@@ -110,8 +110,8 @@ export const dailySalesDocDef = (dailySalesData) => {
         },
         layout: {
           ...basicTableLayout,
-          paddingBottom: () => 6,
-          paddingTop: () => 6
+          paddingBottom: () => 2,
+          paddingTop: () => 2
         },
         margin: [0, 0, 0, 0]
       },
@@ -256,8 +256,8 @@ export const companySalesDocDef = (companySalesData) => {
         },
         layout: {
           ...basicTableLayout,
-          paddingBottom: () => 6,
-          paddingTop: () => 6,
+          paddingBottom: () => 2,
+          paddingTop: () => 2,
         },
         margin: [0, 0, 0, 0]
       },
@@ -548,8 +548,8 @@ export const companySalesSumDocDef = (companySalesSumData) => {
         },
         layout: {
           ...basicTableLayout,
-          paddingBottom: () => 6,
-          paddingTop: () => 6,
+          paddingBottom: () => 2,
+          paddingTop: () => 2,
         },
         margin: [0, 0, 0, 0]
       },
