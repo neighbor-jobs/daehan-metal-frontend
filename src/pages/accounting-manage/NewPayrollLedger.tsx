@@ -43,6 +43,7 @@ import {
   isCaretAtStart
 } from '../../utils/basicHandler.ts';
 import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
+import {normalizePostPayments, updateCacheAfterCreate} from '../../utils/normalize.ts';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
@@ -404,78 +405,98 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }, []);
 
   // api
-  const submitPayroll = async () => {
-    const data = formData.map((p) => ({
-      ...p,
-      deductionDetail: (p.deductionDetail ?? []).filter(d => (d.purpose ?? '').trim() !== ''),
+  const submitCreatePayroll = async (data) => {
+    const [payrollRes, ledgerRes] = await Promise.all([
+      axiosInstance.post('/payroll', { payments: data, standardAt }),
+      axiosInstance.post('/ledger', {
+        paying: [...leftLedger, ...rightLedger],
+        deduction: [{
+          memo,
+          group: '',
+          value: '',
+          purpose: '메모',
+        }],
+        createdAt: standardAt,
+      }),
+    ]);
+
+    if (payrollRes.data.statusCode === 409 || ledgerRes.data.statusCode === 409) {
+      throw new Error('DUPLICATE');
+    }
+  };
+
+  const submitEditPayroll = async (data) => {
+    await Promise.all(
+      data.map(p =>
+        // pay가 기존 initial의 pay와 동일하지 않다면 payments 삭제 후 재등록
+        axiosInstance.patch('/payroll/payment', p)
+      )
+    );
+
+    await axiosInstance.patch('/ledger', {
+      ...ledger,
+      paying: [...leftLedger, ...rightLedger],
+      deduction: [{
+        memo,
+        group: '',
+        value: '',
+        purpose: '메모',
+      }],
+    });
+  };
+
+  // form data 초기화
+  const resetForm = async () => {
+    const baseRows = defaultDeductionList.map(p => ({ purpose: p, value: '0' }));
+    const mergedRows = [
+      ...baseRows,
+      ...Array.from(
+        { length: TOTAL_DEDUCTION_ROWS - baseRows.length },
+        () => ({ purpose: '', value: '0' })
+      ),
+    ];
+
+    setStandardAt(dayjs().format('YYYY-MM-DD'));
+    setDeduction(mergedRows);
+
+    const cache = await cacheManager.getEmployees().catch(() => []);
+    const employeeMap = new Map<string, any>(cache.map(e => [e.id, e]));
+    const orderIds = cache.map(e => e.id).join(',');
+
+    const res = await axiosInstance.get(
+      `/employee?includesRetirement=true&orderIds=${orderIds}&includesPayment=false`
+    );
+
+    setEmployees(res.data.data);
+    setFormData(res.data.data.map(emp => ({
+      employeeId: emp.id,
+      employeeName: emp.info.name,
+      employeePosition: emp.info.position,
+      startWorkingAt: emp.startWorkingAt?.split('T')[0],
       paymentDetail: {
-        ...p.paymentDetail,
-        workingDay: Number(p.paymentDetail.workingDay) || 0,
-        extendWorkingTime: Number(p.paymentDetail.extendWorkingTime) || 0,
-        extendWorkingMulti: Number(p.paymentDetail.extendWorkingMulti) || 0,
-        dayOffWorkingTime: Number(p.paymentDetail.dayOffWorkingTime) || 0,
-        dayOffWorkingMulti: Number(p.paymentDetail.dayOffWorkingMulti) || 0,
-        annualLeaveAllowanceMulti: Number(p.paymentDetail.annualLeaveAllowanceMulti) || 0,
-        unusedAnnualLeaveAllowance: Number(p.paymentDetail.unusedAnnualLeaveAllowance) || 0,
-      }
-    }));
+        ...defaultPayment,
+        pay: employeeMap.get(emp.id)?.pay ?? defaultPayment.pay,
+      },
+      deductionDetail: mergedRows,
+      memo: employeeMap.get(emp.id)?.memo ?? '',
+    })));
+
+    const ledgers = await cacheManager.getLedgers();
+    const mid = Math.ceil(ledgers.length / 2);
+    setLeftLedger(ledgers.slice(0, mid));
+    setRightLedger(ledgers.slice(mid));
+  };
+
+  const submitPayroll = async () => {
+    const data = normalizePostPayments(formData);
     try {
       if (mode === 'create') {
-        const payrollRes = await axiosInstance.post('/payroll', {payments: data, standardAt: standardAt})
-        const ledgerRes = await axiosInstance.post('/ledger', {
-          paying: [...leftLedger, ...rightLedger],
-          deduction: [
-            {
-              memo: memo,
-              group: '',
-              value: '',
-              purpose: "메모",
-            }
-          ],
-          createdAt: standardAt
-        });
-
-        if (payrollRes.data.statusCode === 409 || ledgerRes.data.statusCode === 409) {
-          showAlert('해당 월에 이미 생성한 급여대장이 있습니다.', 'error');
-          return;
-        }
-
-        // pay(사원 기본급) 값 update
-        const updateCacheData = formData.map((item) => ({
-          id: item.employeeId,
-          pay: item.paymentDetail.pay,
-          memo: item.memo,
-        }))
-
-        try {
-          await cacheManager.updateEmployees(updateCacheData);
-          await cacheManager.replacePayrollMemo({   // payroll memo 캐시값 업데이트
-            date: standardAt,
-            memo: memo,
-          })
-        } catch {
-          console.error('FAIL employee pay cache data OR payroll memo update')
-        }
-
+        await submitCreatePayroll(data);
         navigate(`/account/payroll`, {
           state: standardAt
         });
-      } else {
-        data?.map(async (p) => {
-          await axiosInstance.patch('/payroll/payment', p);
-        });
-        await axiosInstance.patch('/ledger', {
-          ...ledger,
-          paying: [...leftLedger, ...rightLedger],
-          deduction: [
-            {
-              memo: memo,
-              group: '',
-              value: '',
-              purpose: "메모",
-            }
-          ],
-        });
+      } else {  // 수정
+        await submitEditPayroll(data);
         navigate(`/account/payroll`, {
           state: standardAt
         });
@@ -483,61 +504,16 @@ const NewPayrollLedger = (): React.JSX.Element => {
       }
 
       showAlert('등록 성공', 'success');
-      await cacheManager.replaceLedgers([...leftLedger, ...rightLedger]);
-      await cacheManager.replacePayrollMemo({
-        date: standardAt,
-        memo: memo,
-      })
+      await updateCacheAfterCreate({
+        formData: data,
+        standardAt: standardAt,
+        totalMemo: memo,
+        leftLedger: leftLedger,
+        rightLedger: rightLedger,
+      });
 
       // 성공 후 입력필드 초기화
-      const baseDedRows = defaultDeductionList.map((item) => ({purpose: item, value: '0'}));
-      const extraRows = Array.from(
-        {length: TOTAL_DEDUCTION_ROWS - baseDedRows?.length},
-        () => ({purpose: '', value: '0'})
-      );
-      const mergedRows = [...baseDedRows, ...extraRows];
-      setStandardAt(dayjs().format('YYYY-MM-DD'));
-      setDeduction(mergedRows);
-
-      // formData 초기화
-      let list: string;
-      let cache = []
-      let employeeMap = new Map();
-
-      try {
-        cache = await cacheManager.getEmployees();
-        list = cache.map(e => e.id).join(',');
-        employeeMap = new Map(cache.map(e => [e.id, e]));
-      } catch {
-        list = '';
-      }
-
-      const employeesRes = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
-      setEmployees(employeesRes.data.data);
-      setFormData(employeesRes.data.data.map((employee) => ({
-        employeeId: employee.id,
-        employeeName: employee.info.name,
-        employeePosition: employee.info.position,
-        startWorkingAt: employee.startWorkingAt?.split('T')[0],
-        paymentDetail: {
-          ...defaultPayment,
-          // 여기서도 동일하게 캐시 pay 주입
-          pay: employeeMap.get(employee.id).pay ?? defaultPayment.pay,
-        },
-        deductionDetail: mergedRows,
-        memo: employeeMap.get(employee.id).memo ?? '',
-      })));
-
-      // ledger(지출내역)도 다시 불러와서 초기화
-      const ledgers = await cacheManager.getLedgers();
-      const mid = Math.ceil(ledgers.length / 2);
-      setLedger({
-        paying: ledgers,
-        deduction: [],
-        createdAt: dayjs().format('YYYY-MM-DD'),
-      });
-      setLeftLedger(ledgers.slice(0, mid));
-      setRightLedger(ledgers.slice(mid));
+      await resetForm();
     } catch {
       showAlert('등록 실패', 'error');
     }
