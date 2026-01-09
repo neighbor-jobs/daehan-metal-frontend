@@ -12,35 +12,15 @@ export interface DeleteConfirmDialogProps {
   onSuccess?: () => void;
   onClose: () => void;
   onClick: () => void;
-  dialogContentText? : string;
+  dialogContentText?: string;
 }
 
-const DeletePaymentConfirmDialog = ({
-                                      /*paymentId,
-                                      payrollRegisterId,
-                                      onSuccess,*/
-                                      isOpen,
-                                      onClose,
-                                      onClick,
-                                      dialogContentText
-                                    }: DeleteConfirmDialogProps) => {
-  // const {showAlert} = useAlertStore();
-  /* PATCH /payroll/payment/pop */
-/*
-  const deletePayment = async () => {
-    try {
-      await axiosInstance.patch('/payroll/payment/pop', {
-        paymentId: paymentId,
-        payrollRegisterId: payrollRegisterId,
-      })
-    } catch {
-      showAlert('해당 사원 급여내역 삭제 실패', 'error')
-    }
-    showAlert('해당 사원의 급여내역을 삭제했습니다.', 'success');
-    if (onSuccess) onSuccess();
-  }
-*/
-
+const DeleteConfirmDialog = ({
+                               isOpen,
+                               onClose,
+                               onClick,
+                               dialogContentText
+                             }: DeleteConfirmDialogProps) => {
   return (
     <Dialog
       open={isOpen}
@@ -62,4 +42,4 @@ const DeletePaymentConfirmDialog = ({
   )
 }
 
-export default DeletePaymentConfirmDialog;
+export default DeleteConfirmDialog;
