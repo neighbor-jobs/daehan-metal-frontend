@@ -27,13 +27,15 @@ export interface PatchPayment {
 }
 
 export interface PostPaymentDetail {
-  pay: string
+  pay: string;
+  latestPay?: string | null;
   workingDay: number | string;
   extendWorkingTime: number | string;
   extendWorkingMulti: number | string;
   dayOffWorkingTime: number | string;
   dayOffWorkingMulti: number | string;
   annualLeaveAllowanceMulti: number | string;
+  unusedAnnualLeaveAllowance: number | string;
   mealAllowance: string;
 }
 

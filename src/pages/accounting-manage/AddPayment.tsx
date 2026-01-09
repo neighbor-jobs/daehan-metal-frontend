@@ -44,12 +44,14 @@ interface AddPaymentProps {
 
 const defaultPaymentDetail: PostPaymentDetail = {
   pay: '0',
+  latestPay: '0',
   workingDay: '209',
   extendWorkingTime: '0',
   extendWorkingMulti: 1.5,
   dayOffWorkingTime: '0',
   dayOffWorkingMulti: 1.5,
   annualLeaveAllowanceMulti: 2,
+  unusedAnnualLeaveAllowance: '0',
   mealAllowance: '0',
 }
 const defaultDeductionDetail: PostDeductionDetail[] = defaultDeductionList.map((item) => ({
@@ -58,8 +60,14 @@ const defaultDeductionDetail: PostDeductionDetail[] = defaultDeductionList.map((
 }))
 const leftRows: readonly TableColumns<PaymentTableRow>[] = [
   {
-    id: PaymentTableRow.PAY,
+    id: PaymentTableRow.LATEST_PAY,
     label: '기본급',
+    minWidth: 100,
+    format: formatCurrency,
+  },
+  {
+    id: PaymentTableRow.PAY,
+    label: '기본급(시급계산용)',
     minWidth: 100,
     format: formatCurrency,
   },
@@ -145,64 +153,6 @@ const AddPayment = ({
                       onClose,
                       onSuccess,
                     }: AddPaymentProps): React.JSX.Element => {
-  /*
-          "payments": [
-            {
-                "id": "1eea8b4b-b4ae-4532-9010-c145762b67e9",
-                "employeeName": "나나나",
-                "employeePosition": "사무직",
-                "memo": "",
-                "paymentDetail": {
-                    "id": "061c7789-a6f6-400d-bd03-c47a79f2b69d",
-                    "pay": "3000000",
-                    "workingDay": 209,
-                    "hourlyWage": "14354",
-                    "extendWorkingTime": 0,
-                    "dayOffWorkingTime": 0,
-                    "extendWokringWage": "0",
-                    "dayOffWorkingWage": "0",
-                    "annualLeaveAllowance": "229664",
-                    "mealAllowance": "0",
-                    "multis": {
-                        "dayOffWorkingMulti": 1.5,
-                        "extendWorkingMulti": 1.5,
-                        "annualLeaveAllowanceMulti": 2
-                    },
-                    "createdAt": "2025-07-08T18:48:50.296Z"
-                },
-                "deductionDetail": [
-                    {
-                        "value": "0",
-                        "purpose": "소득세"
-                    },
-                    {
-                        "value": "20000",
-                        "purpose": "주민세"
-                    },
-                    {
-                        "value": "0",
-                        "purpose": "건강보험료(요양포함)"
-                    },
-                    {
-                        "value": "0",
-                        "purpose": "국민연금"
-                    },
-                    {
-                        "value": "0",
-                        "purpose": "고용보험"
-                    },
-                    {
-                        "value": "0",
-                        "purpose": "작년연말정산"
-                    }
-                ],
-                "salary": "3229664",
-                "deduction": "20000",
-                "totalSalary": "3209664",
-                "createdAt": "2025-07-08T18:48:50.296Z",
-                "startWorkingAt": "2025-07-08T00:00:00.000Z"
-            },
-  * */
   const [restEmployee, setRestEmployee] = useState<Employee[] | null>(null);
   const [formData, setFormData] = useState<PostPayment>({
     employeeId: '',
@@ -241,6 +191,8 @@ const AddPayment = ({
     ) onlyNums = formatInputQuality(value, 0);
     else if (name === PaymentTableRow.PAY
       || name === PaymentTableRow.MEAL_ALLOWANCE
+      || name === PaymentTableRow.LATEST_PAY
+      || name === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE
     ) onlyNums = formatInputPrice(value, 0);
 
     setFormData(prev => ({
@@ -275,6 +227,7 @@ const AddPayment = ({
         dayOffWorkingTime: Number(formData.paymentDetail.dayOffWorkingTime) || 0,
         dayOffWorkingMulti: Number(formData.paymentDetail.dayOffWorkingMulti) || 0,
         annualLeaveAllowanceMulti: Number(formData.paymentDetail.annualLeaveAllowanceMulti) || 0,
+        unusedAnnualLeaveAllowance: Number(formData.paymentDetail.unusedAnnualLeaveAllowance) || 0
       }
     }
 
@@ -426,7 +379,8 @@ const AddPayment = ({
                 else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
                   || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -2
                 else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -3
-                else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -4
+                else if (row.id === PaymentTableRow.MEAL_ALLOWANCE
+                  || row.id === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE) delta = -4
 
                 if (row.id === PaymentTableRow.HOURLY_WAGE
                   || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
