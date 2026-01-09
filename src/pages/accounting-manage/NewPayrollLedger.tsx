@@ -31,7 +31,7 @@ import {Payment} from '../../types/payrollRes.ts';
 import {Deduction, PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
 import {cacheManager} from '../../utils/cacheManager.ts';
 import {formatCurrency, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
-import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
 import {tableSelectedRowWithoutDesign} from '../../utils/tableDisignSx.ts';
@@ -46,6 +46,7 @@ import {arrowNavAtRegister} from '../../utils/arrowNavAtRegister.ts';
 
 const defaultPayment: PostPaymentDetail = {
   pay: '0',
+  latestPay: '0',
   workingDay: '209',
   extendWorkingTime: '0',
   extendWorkingMulti: 1.5,
@@ -53,11 +54,18 @@ const defaultPayment: PostPaymentDetail = {
   dayOffWorkingMulti: 1.5,
   annualLeaveAllowanceMulti: 2,
   mealAllowance: '0',
+  unusedAnnualLeaveAllowance: '0',
 }
 const leftRows: readonly TableColumns<PaymentTableRow>[] = [
   {
-    id: PaymentTableRow.PAY,
+    id: PaymentTableRow.LATEST_PAY,
     label: '기본급',
+    minWidth: 100,
+    format: formatCurrency,
+  },
+  {
+    id: PaymentTableRow.PAY,
+    label: '기본급(시급계산용)',
     minWidth: 100,
     format: formatCurrency,
   },
@@ -121,6 +129,12 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
     format: formatCurrency,
   },
   {
+    id: PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE,
+    label: '미사용 연차',
+    minWidth: 100,
+    format: formatCurrency,
+  },
+  {
     id: PaymentTableRow.MEAL_ALLOWANCE,
     label: '식대',
     minWidth: 100,
@@ -169,7 +183,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       const ew = (hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
       const dw = (hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
       const al = (hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
-      const totalPayments = Number(item.paymentDetail.pay) + ew + dw + al + Number(item.paymentDetail.mealAllowance);
+      const totalPayments = Number(item.paymentDetail.latestPay) + ew + dw + al + Number(item.paymentDetail.unusedAnnualLeaveAllowance) + Number(item.paymentDetail.mealAllowance);
 
       // deductions calc
       const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
@@ -284,6 +298,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
     ) onlyNums = formatInputQuality(value, 0);
     else if (name === PaymentTableRow.PAY
       || name === PaymentTableRow.MEAL_ALLOWANCE
+      || name === PaymentTableRow.LATEST_PAY
+      || name === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE
     ) onlyNums = formatInputPrice(value, 0);
 
     setFormData(prev =>
@@ -400,6 +416,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
         dayOffWorkingTime: Number(p.paymentDetail.dayOffWorkingTime) || 0,
         dayOffWorkingMulti: Number(p.paymentDetail.dayOffWorkingMulti) || 0,
         annualLeaveAllowanceMulti: Number(p.paymentDetail.annualLeaveAllowanceMulti) || 0,
+        unusedAnnualLeaveAllowance: Number(p.paymentDetail.unusedAnnualLeaveAllowance) || 0,
       }
     }));
     try {
@@ -528,20 +545,17 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
   const deletePayment = async () => {
     try {
-      await axiosInstance.patch('/payroll/payment/pop', {
-        paymentId: selectedPaymentId,
-        payrollRegisterId: payrollId,
-      })
+      await axiosInstance.delete(`/payroll/payment?id=${selectedPaymentId}`)
       setFormData((prev: PatchPayment[]) =>
         prev.filter((item) => item.id !== selectedPaymentId)
       );
 
       setIsConfirmDialogOpen(false);
       setSelectedPaymentId(null);
+      showAlert('해당 사원의 급여내역을 삭제했습니다.', 'success');
     } catch {
       showAlert('해당 사원 급여내역 삭제 실패', 'error')
     }
-    showAlert('해당 사원의 급여내역을 삭제했습니다.', 'success');
   }
 
 
@@ -938,7 +952,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   else if (row.id === PaymentTableRow.DAY_OFF_WORKING_TIME
                     || row.id === PaymentTableRow.DAY_OFF_WORKING_MULTI) delta = -3
                   else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -4
-                  else if (row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
+                  else if (row.id === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE
+                    || row.id === PaymentTableRow.MEAL_ALLOWANCE) delta = -5
 
                   return (
                     <TableRow key={rowIdx + 1}
@@ -1061,13 +1076,13 @@ const NewPayrollLedger = (): React.JSX.Element => {
             </Table>
           </TableContainer>
         </Box>
-        <DeletePaymentConfirmDialog isOpen={isConfirmDialogOpen}
+        <DeleteConfirmDialog isOpen={isConfirmDialogOpen}
           // paymentId={selectedPaymentId}
           // payrollRegisterId={payrollId}
-                                    dialogContentText='정말 해당 사원의 급여내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
-                                    onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
-                                    onClose={() => setIsConfirmDialogOpen(false)}
-                                    onClick={deletePayment}
+                             dialogContentText='정말 해당 사원의 급여내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
+                             onSuccess={() => handleRemoveEmployee(selectedPaymentId)}
+                             onClose={() => setIsConfirmDialogOpen(false)}
+                             onClick={deletePayment}
         />
 
         {/* 합산 */}

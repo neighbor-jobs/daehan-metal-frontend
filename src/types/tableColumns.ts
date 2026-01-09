@@ -15,6 +15,7 @@ export interface TableColumns<T> {
 */
 export enum PaymentTableRow {
   PAY = 'pay',
+  LATEST_PAY = 'latestPay',
   WORKING_DAY = 'workingDay',
   HOURLY_WAGE = 'hourlyWage',
   EXTEND_WORKING_TIME = 'extendWorkingTime',
@@ -25,6 +26,7 @@ export enum PaymentTableRow {
   DAY_OFF_WORKING_WAGE = 'dayOffWorkingWage',
   ANNUAL_LEAVE_ALLOWANCE_MULTI = 'annualLeaveAllowanceMulti',
   ANNUAL_LEAVE_ALLOWANCE = 'annualLeaveAllowance',
+  UNUSED_ANNUAL_LEAVE_ALLOWANCE = 'unusedAnnualLeaveAllowance',
   MEAL_ALLOWANCE = 'mealAllowance',
   TOTAL_PAYMENT = 'totalPayment',
   SALARY = 'salary',

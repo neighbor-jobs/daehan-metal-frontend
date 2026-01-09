@@ -30,11 +30,18 @@ import AddPayment from './AddPayment.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import cacheManager from '../../utils/cacheManager.ts';
 import DateInputDialog from '../../components/DateInputDialog.tsx';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog.tsx';
 
 const paymentRows = [
   {
-    id: PaymentTableRow.PAY,
+    id: PaymentTableRow.LATEST_PAY,
     label: '기본급',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
+    id: PaymentTableRow.PAY,
+    label: '기본급(시급계산용)',
     minWidth: 100,
     format: formatCurrency
   },
@@ -114,6 +121,7 @@ const PayrollLedger = (): React.JSX.Element => {
   const [standardAt, setStandardAt] = useState<string>(paramStandardAt || dayjs().format('YYYY-MM-01'));
   const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false);
   const [isOpenDateInputDialog, setIsOpenDateInputDialog] = useState<boolean>(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const refreshKeyRef = useRef(0);
   const {showAlert} = useAlertStore();
@@ -179,6 +187,7 @@ const PayrollLedger = (): React.JSX.Element => {
       setLedger(null);
       setLeftLedger([]);
       setRightLedger([]);
+      setIsDeleteDialogOpen(false);
       showAlert('삭제 완료', 'success');
     } catch {
       showAlert('급여대장 삭제 실패. 다시 시도해 주세요.', 'error');
@@ -288,9 +297,13 @@ const PayrollLedger = (): React.JSX.Element => {
                         whiteSpace: 'pre-line',
                         lineHeight: 1.2,
                         height: 23
-                      }}>{p.memo || ""}</Typography>
+                      }}>
+                        {p.memo || ""}
+                      </Typography>
                       {p.employeeName}
-                      <Typography sx={{m: 0, fontSize: 11}}>{p.employeePosition}</Typography>
+                      <Typography sx={{m: 0, fontSize: 11}}>
+                        {p.employeePosition}
+                      </Typography>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -520,6 +533,12 @@ const PayrollLedger = (): React.JSX.Element => {
         }))}
       />
 
+      <DeleteConfirmDialog isOpen={isDeleteDialogOpen}
+                           onClose={() => setIsDeleteDialogOpen(false)}
+                           onClick={deletePayroll}
+                           dialogContentText="정말 해당 월 급여대장을 삭제하시겠습니까?"
+      />
+
       {/* 버튼들 */}
       <Box sx={{
         display: 'flex',
@@ -532,7 +551,8 @@ const PayrollLedger = (): React.JSX.Element => {
         <Box>
           <Button variant='contained'
                   color='error'
-                  onClick={deletePayroll}
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  // onClick={deletePayroll}
                   sx={{mr: 2}}
           >
             삭제
