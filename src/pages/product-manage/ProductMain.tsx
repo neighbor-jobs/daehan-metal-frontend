@@ -20,6 +20,7 @@ import {useAlertStore} from '../../stores/alertStore.ts';
 import ProductForm from '../../components/ProductForm.tsx';
 import EditIcon from '@mui/icons-material/Edit';
 import cacheManager from '../../utils/cacheManager.ts';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog.tsx';
 
 const columns: readonly ProductMainColumn[] = [
   {
@@ -46,6 +47,12 @@ const ProductMain = (): React.JSX.Element => {
     page: 1,
     totalPages: 1,
   });
+  const [selectedTarget, setSelectedTarget] = useState<{
+    id: string;
+    scale: string;
+    name: string;
+  } | null>(null);
+  const [isOpenDeleteConfirmDialog, setIsOpenDeleteConfirmDialog] = useState(false);
   const {showAlert} = useAlertStore();
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -83,6 +90,19 @@ const ProductMain = (): React.JSX.Element => {
     setDialogType(ProductDialogType.EDIT);
     setOpen(true);
   }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedTarget) return;
+
+    await delProduct(
+      selectedTarget.id,
+      selectedTarget.scale,
+      selectedTarget.name
+    );
+
+    setIsOpenDeleteConfirmDialog(false);
+    setSelectedTarget(null);
+  };
 
   const handleChangePage = (_event, newPage: number) => {
     setPage(prevState => ({
@@ -223,7 +243,14 @@ const ProductMain = (): React.JSX.Element => {
                           <EditIcon fontSize='small'/>
                         </IconButton>
                         <IconButton size='small' color='error'
-                                    onClick={() => delProduct(row.id, row.scale, row.name)}
+                                    onClick={() => {
+                                      setSelectedTarget({
+                                        id: row.id,
+                                        scale: row.scale,
+                                        name: row.name,
+                                      });
+                                      setIsOpenDeleteConfirmDialog(true);
+                                    }}
                         >
                           <CloseIcon fontSize='small'/>
                         </IconButton>
@@ -243,6 +270,19 @@ const ProductMain = (): React.JSX.Element => {
           />
         </Box>
       </Paper>
+      <DeleteConfirmDialog
+        isOpen={isOpenDeleteConfirmDialog}
+        onClose={() => {
+          setIsOpenDeleteConfirmDialog(false);
+          setSelectedTarget(null);
+        }}
+        onClick={handleConfirmDelete}
+        dialogContentText={
+          selectedTarget?.scale
+            ? `"${selectedTarget.name}  ${selectedTarget.scale}" 규격을 삭제하시겠습니까?`
+            : `"${selectedTarget?.name}" 품목을 삭제하시겠습니까?`
+        }
+      />
     </Box>
   )
 }

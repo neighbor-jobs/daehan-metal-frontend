@@ -18,7 +18,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import PrintButton from '../../layout/PrintButton.tsx';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import SalesCompanyForm from './SalesCompanyForm.tsx';
-import DeletePaymentConfirmDialog from '../../components/DeletePaymentConfirmDialog.tsx';
+import DeleteConfirmDialog from '../../components/DeleteConfirmDialog.tsx';
 
 const columns: readonly SalesCompanyColumn[] = [
   {
@@ -261,10 +261,10 @@ const SalesCompany = (): React.JSX.Element => {
           </Table>
         </TableContainer>
       </Paper>
-      <DeletePaymentConfirmDialog isOpen={isConfirmDialog}
-                                  onClose={() => setIsConfirmDialog(false)}
-                                  onClick={() => delSalesCompany(selectedCompany)}
-                                  dialogContentText='정말 해당 거래처를 삭제하시겠습니까? 삭제 시 해당 거래처와의 거래 내역도 함께 삭제됩니다.'
+      <DeleteConfirmDialog isOpen={isConfirmDialog}
+                           onClose={() => setIsConfirmDialog(false)}
+                           onClick={() => delSalesCompany(selectedCompany)}
+                           dialogContentText='정말 해당 거래처를 삭제하시겠습니까? 삭제 시 해당 거래처와의 거래 내역도 함께 삭제됩니다.'
       />
       <PrintButton printData={salesCompanyList}/>
     </Box>
