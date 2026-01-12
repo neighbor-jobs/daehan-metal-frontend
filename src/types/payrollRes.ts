@@ -21,6 +21,7 @@ export interface Payment {
 export interface PaymentDetail {
   id: string;
   pay: string;
+  latestPay: string;
   workingDay: number;
   hourlyWage: string;
   extendWorkingTime: number;
@@ -28,6 +29,7 @@ export interface PaymentDetail {
   extendWokringWage: string;
   dayOffWorkingWage: string;
   annualLeaveAllowance: string;
+  unusedAnnualLeaveAllowance: string;
   multis: Multi;
   mealAllowance: string;
   createdAt: string; // ISO 8601 날짜 문자열

@@ -80,6 +80,12 @@ const paymentRows = [
     format: formatCurrency
   },
   {
+    id: PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE,
+    label: '미사용 연차',
+    minWidth: 100,
+    format: formatCurrency
+  },
+  {
     id: PaymentTableRow.MEAL_ALLOWANCE,
     label: '식대',
     minWidth: 100,
@@ -325,7 +331,7 @@ const PayrollLedger = (): React.JSX.Element => {
                       else if (row.id === PaymentTableRow.TOTAL_SALARY || row.id === PaymentTableRow.SALARY)
                         value = Math.ceil((Number(payment[row.id]) / 10)) * 10;
                       else if (row.id === 'DEDUCTION')
-                        value = payment.deductionDetail[rowIdx - 9]?.['value'];
+                        value = payment.deductionDetail[rowIdx - 11]?.['value'];
                       return (
                         <TableCellForPayroll value={row.format ? row.format(value) : String(value)}
                                              key={`${payment.id}-${colIdx}`}
@@ -552,7 +558,7 @@ const PayrollLedger = (): React.JSX.Element => {
           <Button variant='contained'
                   color='error'
                   onClick={() => setIsDeleteDialogOpen(true)}
-                  // onClick={deletePayroll}
+            // onClick={deletePayroll}
                   sx={{mr: 2}}
           >
             삭제
