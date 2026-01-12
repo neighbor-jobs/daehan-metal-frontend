@@ -178,14 +178,14 @@ const EmployeeForm = ({
       birth: formData.info.birth || undefined,
     };
 
-    let newEmpId: string;
+    let newEmp: any;
     try {
       const res = await axiosInstance.post('/employee', {
         info: infoPayload,
         banks,
         startWorkingAt: formData.startWorkingAt ? formData.startWorkingAt : undefined,
       });
-      newEmpId = res.data.data.id;
+      newEmp = res.data.data;
       showAlert('사원 등록이 완료되었습니다.', 'success');
       setFormData(defaultFormData);
       if (onSuccess) onSuccess();
@@ -195,7 +195,7 @@ const EmployeeForm = ({
     }
 
     try {
-      await cacheManager.addEmployee(newEmpId);
+      await cacheManager.addEmployee(newEmp.id, newEmp.info.name);
     } catch {
       console.error('사원 등록 정보 업데이트 실패')
     }
