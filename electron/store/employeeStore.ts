@@ -1,25 +1,38 @@
 import Store from 'electron-store';
 import {Employee} from '../../src/types/employeeRes.ts';
 import axios from 'axios';
+import {Deduction} from '../../src/types/ledger.ts';
 
-// TODO: memo 관련 스토어 코드 마저 작성
-interface CacheEmployee {
+// TODO: 공제 관련 코드 추가
+export interface CacheEmployee {
   id: string;
+  name: string;
   pay: string;
+  deductions: Deduction[];
   memo: string;
 }
 
 /*김상동	이우석	최종인	퀀 제이슨	브라얀	레이니어	양희경	신진아*/
-
 const schema = {
   employees: {
     type: 'array',
     items: {
       type: 'object',
       properties: {
-        id: { type: 'string' },
-        pay: { type: 'string', default: '0' },
-        memo: { type: 'string', default: '' },
+        id: {type: 'string'},
+        name: {type: 'string'},
+        pay: {type: 'string', default: '0'},
+        deductions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              purpose: {type: 'string'},
+              value: {type: 'string', default: '0'},
+            }
+          }
+        },
+        memo: {type: 'string', default: ''},
       },
       required: ['id']
     },
@@ -39,7 +52,9 @@ const fetchEmployees = async (): Promise<CacheEmployee[] | undefined> => {
     const res = await axios.get('http://localhost:3000/employee?includesRetirement=true&orderIds=&includesPayment=false');
     return res.data.data?.map((e: Employee) => ({
       id: e.id,
+      name: e.info.name,
       pay: '0',
+      deductions: [],
       memo: '',
     }));
   } catch {
@@ -237,11 +252,17 @@ export const validateEmployeesAgainstAPI = async () => {
 };
 
 /** 사원 추가 */
-export const addEmployee = (newEmployeeId: string): void => {
- const prev = getEmployees();
+export const addEmployee = (newEmployeeId: string, newEmployeeName: string): void => {
+  const prev = getEmployees();
   const cur: CacheEmployee[] = [
     ...prev,
-    {id: newEmployeeId, pay: '0', memo: ''}
+    {
+      id: newEmployeeId,
+      name: newEmployeeName,
+      pay: '0',
+      deductions: [],
+      memo: ''
+    }
   ];
   employeeStore.set('employees', cur);
 }
@@ -256,13 +277,20 @@ export const replaceEmployees = (newEmployees: Employee[]): void => {
   // 새 Employees 순서대로 정렬 (기존 pay 유지)
   const reordered = newEmployees.map(item => {
     const existing = storedMap.get(item.id);
-    return existing ?? { id: item.id, pay: '0', memo: '' };
+    return existing
+      ?? {
+        id: item.id,
+        name: item.info.name,
+        pay: '0',
+        deductions: [],
+        memo: ''
+      };
   });
 
   employeeStore.set('employees', reordered);
 };
 
-/** 최근 급여 및 메모 싹 다 업데이트 */
+/** 최근 급여 & 공제 & 메모 싹 다 업데이트 */
 export const updateEmployees = (newEmployees: CacheEmployee[]) => {
   const stored = getEmployees();
 
@@ -277,6 +305,7 @@ export const updateEmployees = (newEmployees: CacheEmployee[]) => {
       ? {
         ...item,
         pay: next.pay,
+        deductions: next.deductions,
         memo: next.memo,
       } : item;
   });

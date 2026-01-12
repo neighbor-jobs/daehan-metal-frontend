@@ -316,7 +316,7 @@ ipcMain.handle('deductions:replace', (_event, newDeductions: string[]) => replac
 // ------------------------------------------------------------------------------------------
 ipcMain.handle('employees:get', () => getEmployees());
 
-ipcMain.handle('employees:add', (_event, newEmployeeId: string) => addEmployee(newEmployeeId))
+ipcMain.handle('employees:add', (_event, newEmployeeId: string, newEmployeeName: string) => addEmployee(newEmployeeId, newEmployeeName))
 
 ipcMain.handle('employees:replace', (_event, newEmployees) => replaceEmployees(newEmployees));
 

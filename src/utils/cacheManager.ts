@@ -161,8 +161,8 @@ export const cacheManager = {
     return await window.ipcRenderer.invoke('employees:get');
   },
 
-  async addEmployee(newEmployeeId: string) {
-    return await window.ipcRenderer.invoke('employees:add', newEmployeeId);
+  async addEmployee(newEmployeeId: string, newEmployeeName: string) {
+    return await window.ipcRenderer.invoke('employees:add', newEmployeeId, newEmployeeName);
   },
 
   async replaceEmployees(newEmployees: Employee[]) {
