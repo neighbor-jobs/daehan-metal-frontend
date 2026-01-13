@@ -10,11 +10,12 @@ export const updateCacheAfterCreate = async ({
                                              }) => {
   const updateEmployees = formData.map((item: any) => ({
     id: item.employeeId,
-    name: item.name,
+    name: item.employeeName,
     pay: item.paymentDetail.pay,
     deductions: item.deductionDetail,
     memo: item.memo && "",
   }));
+  console.log('updateCacheAfterCreate', updateEmployees);
 
   await Promise.all([
     cacheManager.updateEmployees(updateEmployees),

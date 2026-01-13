@@ -304,6 +304,7 @@ export const updateEmployees = (newEmployees: CacheEmployee[]) => {
     return next
       ? {
         ...item,
+        name: next.name,
         pay: next.pay,
         deductions: next.deductions,
         memo: next.memo,
