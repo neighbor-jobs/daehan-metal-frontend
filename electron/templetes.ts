@@ -1,4 +1,4 @@
-import {TDocumentDefinitions} from 'pdfmake/interfaces';
+import {Content, TDocumentDefinitions} from 'pdfmake/interfaces';
 import {formatCurrency, formatDate, formatDecimal} from '../src/utils/format.ts';
 import {Ledger, Payment, Payroll, PayrollRegister} from './types/payroll.ts';
 
@@ -13,6 +13,12 @@ const basicTableLayout = {
   paddingRight: () => 1,
   // paddingTop: () => 1,
   // paddingBottom: () => 1,
+}
+const basicFooter: Content = {
+  text: "대한금속이엔지(주)",
+  alignment: 'center',
+  fontSize: 11,
+  margin: [0, 5, 0, 0],
 }
 
 /**
@@ -32,13 +38,14 @@ export const dailySalesDocDef = (dailySalesData) => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },*/
-    pageMargins: [24, 20, 24, 20],
+    pageMargins: [24, 20, 24, 30],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
       ],
       margin: [15, 20, 15, 0], // 좌우 여백 조정
     }),
+    footer: () => basicFooter,
     content: [
       {
         text: `일별 매출 현황`,
@@ -166,13 +173,14 @@ export const companySalesDocDef = (companySalesData) => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },*/
-    pageMargins: [24, 20, 24, 10],
+    pageMargins: [24, 20, 24, 30],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
       ],
       margin: [5, 10, 5, 0], // 좌우 여백 조정
     }),
+    footer: () => basicFooter,
     content: [
       {
         text: `${companySalesData.companyName} 매출 현황`,
@@ -488,13 +496,14 @@ export const companySalesSumDocDef = (companySalesSumData) => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },
-    pageMargins: [24, 20, 24, 10],
+    pageMargins: [24, 20, 24, 30],
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
       ],
       margin: [40, 10, 40, 0], // 좌우 여백 조정
     }),
+    footer: () => basicFooter,
     content: [
       {
         text: `거래처별 매출집계`,
@@ -518,7 +527,7 @@ export const companySalesSumDocDef = (companySalesSumData) => {
           headerRows: 1,
           widths: ['*', '*', '*', '*', '*', '*', '*', '*'],
           body: [
-            ['거래처명', '재료비', '가공비', '세액', '운임비', '총액', '입금액', '잔액'].map(header => ({
+            ['거래처명', '재료비', '가공비', '세액', '운임비', '매출액', '입금액', '잔액'].map(header => ({
               text: header,
               alignment: 'center',
             })),
@@ -743,7 +752,8 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },
-    pageMargins: [24, 20, 24, 10],
+    pageMargins: [24, 20, 24, 30],
+    footer: () => basicFooter,
     header: (currentPage, pageCount) => ({
       columns: [
         {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
@@ -823,25 +833,6 @@ export const itemSalesSumDocDef = (itemSalesSumData) => {
 /**
  * 미수금 현황
  */
-/*
-{
-  data: [
-    {
-      companyName: '(구,동성)경영산업',
-      salesAmount: '65317',
-      payingAmount: '0',
-      carryoverAmount: '0',
-      outstandingAmount: '65317',
-      phoneNumber: '010-2266-2022'
-    }
-  ],
-  startAt: '2025-04-20',
-  sumSalesAmount: '65,317',
-  sumPayingAmount: '0',
-  sumCarryoverAmount: '0',
-  sumOutstandingAmount: '65,317'
-}
-*/
 export const outstandingAmountDocDef = (outstandingAmount) => {
   const today = new Date();
   // console.log(outstandingAmount);
@@ -856,6 +847,7 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
       ],
       margin: [40, 10, 40, 0], // 좌우 여백 조정
     }),
+    footer: () => basicFooter,
     content: [
       {
         text: '미수금현황',
