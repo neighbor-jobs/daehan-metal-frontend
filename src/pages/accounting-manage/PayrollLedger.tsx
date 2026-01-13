@@ -332,6 +332,8 @@ const PayrollLedger = (): React.JSX.Element => {
                         value = Math.ceil((Number(payment[row.id]) / 10)) * 10;
                       else if (row.id === 'DEDUCTION')
                         value = payment.deductionDetail[rowIdx - 11]?.['value'];
+                      else if (row.id === PaymentTableRow.LATEST_PAY)
+                        value = value ?? payment.paymentDetail.pay
                       return (
                         <TableCellForPayroll value={row.format ? row.format(value) : String(value)}
                                              key={`${payment.id}-${colIdx}`}
