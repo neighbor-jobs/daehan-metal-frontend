@@ -429,9 +429,14 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
   const submitEditPayroll = async (data) => {
     await Promise.all(
-      data.map(p =>
-        // pay가 기존 initial의 pay와 동일하지 않다면 payments 삭제 후 재등록
-        axiosInstance.patch('/payroll/payment', p)
+      data.map((p) =>
+        axiosInstance.delete(`/payroll/payment?id=${p.id}`)
+      )
+    );
+
+    await Promise.all(
+      data.map(({ id, ...payment }) =>
+        axiosInstance.post('/payroll/payment', payment)
       )
     );
 
@@ -460,7 +465,6 @@ const NewPayrollLedger = (): React.JSX.Element => {
         navigate(`/account/payroll`, {
           state: standardAt
         });
-        return;
       }
 
       showAlert('등록 성공', 'success');
@@ -552,7 +556,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 },
                 deductionDetail: mergedDedRows.map(d => ({
                   ...d,
-                  value: d.purpose === "건강보험료(요양포함)" || d.purpose === "국민연금"
+                  value: d.purpose === "건강보험료" || d.purpose === "국민연금"
                     ? cachedDeductionMap.get(d.purpose) : '0',
                 })),
                 memo: cachedEmployee?.memo ?? '',
@@ -613,7 +617,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
         const detail = payment.paymentDetail;
         return ({
           id: payment.id,
-          payrollRegisterId: undefined,
+          payrollRegisterId: payrollId,
+          employeeId: payment.employeeId,
           employeeName: payment.employeeName,
           employeePosition: payment.employeePosition,
           paymentDetail: {
@@ -629,7 +634,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
             mealAllowance: detail.mealAllowance
           },
           deductionDetail: [...payment.deductionDetail, ...extra],
-          memo: payment.memo || undefined,
+          startWorkingAt: payment.startWorkingAt.split('T')[0],
+          memo: payment.memo ?? "",
         })
       });
       setFormData(prevData);
