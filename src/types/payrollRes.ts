@@ -6,6 +6,7 @@ export interface PayrollData {
 
 export interface Payment {
   id: string;
+  employeeId?: string;
   employeeName: string;
   employeePosition: string;
   memo?: string;
