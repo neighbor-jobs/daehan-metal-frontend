@@ -12,7 +12,11 @@ interface FooterProps {
   value?: string,
 }
 
-const PrintButton = ({printData, value, propType}: FooterProps): React.JSX.Element => {
+const PrintButton = ({
+                       printData,
+                       value,
+                       propType
+                     }: FooterProps): React.JSX.Element => {
   const {selectedSubType, setHeaderByPath} = useHeaderStore();
   const type = propType ? propType : selectedSubType;
   const location = useLocation();
