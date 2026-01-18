@@ -130,6 +130,12 @@ const leftRows: readonly TableColumns<PaymentTableRow>[] = [
     format: formatCurrency,
   },
   {
+    id: PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE,
+    label: '미사용 연차',
+    minWidth: 100,
+    format: formatCurrency,
+  },
+  {
     id: PaymentTableRow.MEAL_ALLOWANCE,
     label: '식대',
     minWidth: 100,
@@ -300,7 +306,7 @@ const AddPayment = ({
     const ew = Math.round(hw * Number(formData.paymentDetail.extendWorkingMulti) * Number(formData.paymentDetail.extendWorkingTime));
     const dw = Math.round(hw * Number(formData.paymentDetail.dayOffWorkingMulti) * Number(formData.paymentDetail.dayOffWorkingTime));
     const al = Math.round(hw * 8 * Number(formData.paymentDetail.annualLeaveAllowanceMulti));
-    const totalPayments = Number(formData.paymentDetail.pay) + ew + dw + al + Number(formData.paymentDetail.mealAllowance);
+    const totalPayments = Number(formData.paymentDetail.latestPay) + ew + dw + al + + Number(formData.paymentDetail.unusedAnnualLeaveAllowance) + Number(formData.paymentDetail.mealAllowance);
 
     // deductions calc
     const totalDeductions = formData.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
@@ -381,7 +387,6 @@ const AddPayment = ({
                 else if (row.id === PaymentTableRow.ANNUAL_LEAVE_ALLOWANCE_MULTI) delta = -3
                 else if (row.id === PaymentTableRow.MEAL_ALLOWANCE
                   || row.id === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE) delta = -4
-
                 if (row.id === PaymentTableRow.HOURLY_WAGE
                   || row.id === PaymentTableRow.EXTEND_WORKING_WAGE
                   || row.id === PaymentTableRow.DAY_OFF_WORKING_WAGE
@@ -445,7 +450,7 @@ const AddPayment = ({
                              name={dec.purpose}
                              inputProps={{
                                'data-col-index': 0,
-                               'data-row-index': decIdx + 8,
+                               'data-row-index': decIdx + 10,
                                onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                                  arrowNavAtRegister(e, 0, false)
                                }

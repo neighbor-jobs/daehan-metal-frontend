@@ -1245,6 +1245,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     '휴일 근무시간': [{text: "휴일 근무시간", style: 'subheader'}],
     '휴일 근무수당': [{text: "휴일 근무수당", style: 'subheader'}],
     '연차수당': [{text: "연차수당", style: 'subheader'}],
+    '미사용 연차': [{text: "미사용 연차", style: 'subheader'}],
     '식대': [{text: "식대", style: 'subheader'}],
   }
   const deductionDetails: object = {}
@@ -1267,7 +1268,7 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     employees.push({text: payment.employeeName, style: 'cell', alignment: 'center'})
 
     salaryDetails['기본급'].push({
-      text: `${formatCurrency(payment.paymentDetail.pay)}`,
+      text: `${formatCurrency(payment.paymentDetail.latestPay)}`,
       style: 'cell',
       alignment: 'center'
     })
@@ -1298,6 +1299,11 @@ const createPayrollRegisterContent = (payrollRegisterData: Payroll): any[] => {
     })
     salaryDetails['연차수당'].push({
       text: `${formatCurrency(payment.paymentDetail.annualLeaveAllowance)}`,
+      style: 'cell',
+      alignment: 'center'
+    })
+    salaryDetails['미사용 연차'].push({
+      text: `${formatCurrency(payment.paymentDetail.unusedAnnualLeaveAllowance)}`,
       style: 'cell',
       alignment: 'center'
     })
@@ -1544,17 +1550,17 @@ export const payrollRegisterDocRef = (data: PayrollRegister): TDocumentDefinitio
  * */
 const getSalaryContent = (data: Payment, date: Date): any[] => {
   const printDate = new Date(date ?? new Date());
-  console.log(printDate)
   const today = formatDate(printDate);
   printDate.setMonth(printDate.getMonth() - 1);
   const paymentRows = [
-    ['기본급', formatCurrency(data.paymentDetail.pay)],
+    ['기본급', formatCurrency(data.paymentDetail.latestPay)],
     ['시급', formatCurrency(data.paymentDetail.hourlyWage)],
     ['연장 근무시간', `${data.paymentDetail.extendWorkingTime}`],
     ['연장 근무수당', `${formatCurrency(data.paymentDetail.extendWokringWage)}`],
     ['휴일 근무시간', `${data.paymentDetail.dayOffWorkingTime}`],
     ['휴일 근무수당', `${formatCurrency(data.paymentDetail.dayOffWorkingWage)}`],
     ['연차수당 (연차+월차)', `${formatCurrency(data.paymentDetail.annualLeaveAllowance)}`],
+    ['미사용 연차', `${formatCurrency(data.paymentDetail.unusedAnnualLeaveAllowance)}`],
   ];
   const deductionRows = data.deductionDetail.map(d => [
     d.purpose,
@@ -1575,7 +1581,7 @@ const getSalaryContent = (data: Payment, date: Date): any[] => {
   });
   const salary = Math.ceil(Number(data.salary) / 10) * 10;
   const totalSalary = Math.ceil((salary - Number(data.deduction)) / 10) * 10;
-  console.log(data);
+
   // debug
   // console.log(deductions)
 
