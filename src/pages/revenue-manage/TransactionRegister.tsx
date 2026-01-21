@@ -365,10 +365,6 @@ const TransactionRegister = ({
       try {
         if (dialogType === 'create') {
           res = await axiosInstance.post('/receipt', data);
-          amountInfo = {
-            carryoverAmount: res.data.data?.outstandingAmount,
-            totalSalesAmount: res.data.data?.receipt.totalAmount,
-          }
           setOutstanding(Number(res.data.data?.outstandingAmount));
         } else {
           res = await axiosInstance.patch('/receipt', {
@@ -379,10 +375,11 @@ const TransactionRegister = ({
             createdAt: formData.createdAt,
             sales: updatedChoices.filter((c) => c.productName.length > 0),
           });
-          amountInfo = {
-            carryoverAmount: String(outstanding),
-            totalSalesAmount: totalSales,
-          }
+        }
+
+        amountInfo = {
+          carryoverAmount: String(outstanding),
+          totalSalesAmount: totalSales,
         }
 
         if (res.data.statusCode === 204) {
@@ -400,10 +397,6 @@ const TransactionRegister = ({
 
         setChoices(Array.from({length: 1}, () => ({...defaultChoice})));
         setFormData((prev) => ({
-          // companyId: '',
-          // companyName: "",
-          // createdAt: prev.createdAt,
-          // sequence: 1,
           ...prev,
           locationName: [] as string[],
           payingAmount: "0",
@@ -418,7 +411,6 @@ const TransactionRegister = ({
         totalSalesAmount: totalSales,
       }
     }
-
     // ===== amountByCompanyStore로 교체: 거래처별 + (선택) 디폴트 업데이트 =====
     for (const c of updatedChoices) {
       if (!c.productName || !c.scale) continue;
