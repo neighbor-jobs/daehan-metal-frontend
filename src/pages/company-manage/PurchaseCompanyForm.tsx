@@ -4,7 +4,7 @@ import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
 import React, {useState} from 'react';
 import axiosInstance from '../../api/axios.ts';
 import {useAlertStore} from '../../stores/alertStore.ts';
-import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
+import {formatBusinessNumber} from '../../utils/format.ts';
 
 interface PurchaseCompanyFormProps {
   isOpen: boolean;
@@ -41,12 +41,14 @@ const PurchaseCompanyForm = ({
     });
   };
 
+/*
   const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [event.target.name]: formatPhoneNumber(event.target.value),
     });
   };
+*/
   const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const val = formatBusinessNumber(event.target.value);
     setFormData({
@@ -117,7 +119,7 @@ const PurchaseCompanyForm = ({
                           }
                         }}
                         value={formData.name}/>
-        <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handlePhoneNumberChange}
+        <InputWithLabel name='phoneNumber' label='핸드폰번호' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `phoneNumber`,
                           onKeyDown: (e) => {
@@ -126,7 +128,7 @@ const PurchaseCompanyForm = ({
                           }
                         }}
                         value={formData?.phoneNumber}/>
-        <InputWithLabel name='telNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
+        <InputWithLabel name='telNumber' label='전화번호' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `telNumber`,
                           onKeyDown: (e) => {
@@ -135,7 +137,7 @@ const PurchaseCompanyForm = ({
                           }
                         }}
                         value={formData?.telNumber}/>
-        <InputWithLabel name='subTelNumber' label='fax' labelPosition='left' onChange={handlePhoneNumberChange}
+        <InputWithLabel name='subTelNumber' label='fax' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `subTelNumber`,
                           onKeyDown: (e) => {
