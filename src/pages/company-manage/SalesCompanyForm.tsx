@@ -4,7 +4,7 @@ import {moveFocusToNextInput, moveFocusToPrevInput} from '../../utils/focus.ts';
 import React, {useState} from 'react';
 import {useAlertStore} from '../../stores/alertStore.ts';
 import axiosInstance from '../../api/axios.ts';
-import {formatBusinessNumber, formatPhoneNumber} from '../../utils/format.ts';
+import {formatBusinessNumber} from '../../utils/format.ts';
 
 interface SalesCompanyFormProps {
   isOpen: boolean;
@@ -42,12 +42,6 @@ const SalesCompanyForm = ({
       [event.target.name]: event.target.value
     });
   };
-  const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [event.target.name] : formatPhoneNumber(event.target.value),
-    });
-  };
   const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const val = formatBusinessNumber(event.target.value);
     setFormData({
@@ -73,15 +67,15 @@ const SalesCompanyForm = ({
 
     const data = {
       id: formData?.id || undefined,
-      companyName: formData.companyName,
+      companyName: formData.companyName.trim(),
       infoArgs: {
-        ownerName: formData.ownerName,
-        address: formData.address,
-        fax: formData.fax || undefined,
-        phoneNumber: formData.phoneNumber,
+        ownerName: formData.ownerName?.trim(),
+        address: formData.address?.trim(),
+        fax: formData.fax?.trim() || undefined,
+        phoneNumber: formData.phoneNumber?.trim(),
         businessNumber: formData.businessNumber || undefined,
-        businessType: formData.businessType || undefined,
-        businessCategory: formData.businessCategory || undefined,
+        businessType: formData.businessType?.trim() || undefined,
+        businessCategory: formData.businessCategory?.trim() || undefined,
       },
     }
     try {
@@ -136,7 +130,7 @@ const SalesCompanyForm = ({
                           }
                         }}
                         value={formData.ownerName}/>
-        <InputWithLabel name='phoneNumber' label='전화번호' labelPosition='left' onChange={handlePhoneNumberChange}
+        <InputWithLabel name='phoneNumber' label='전화번호' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `phoneNumber`,
                           onKeyDown: (e) => {
@@ -145,7 +139,7 @@ const SalesCompanyForm = ({
                           }
                         }}
                         placeholder='필수 입력 값입니다.' value={formData.phoneNumber}/>
-        <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handlePhoneNumberChange}
+        <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `fax`,
                           onKeyDown: (e) => {

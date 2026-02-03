@@ -41,14 +41,6 @@ const PurchaseCompanyForm = ({
     });
   };
 
-/*
-  const handlePhoneNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [event.target.name]: formatPhoneNumber(event.target.value),
-    });
-  };
-*/
   const handleBusinessNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const val = formatBusinessNumber(event.target.value);
     setFormData({
@@ -63,11 +55,11 @@ const PurchaseCompanyForm = ({
       return;
     }
     const data = {
-      telNumber: formData.telNumber?.length > 0 ? formData.telNumber : undefined,
-      phoneNumber: formData.phoneNumber?.length > 0 ? formData.phoneNumber : undefined,
-      subTelNumber: formData.subTelNumber?.length > 0 ? formData.subTelNumber : undefined,
-      businessNumber: formData.businessNumber?.length > 0 ? formData.businessNumber : undefined,
-      address: formData.address?.length > 0 ? formData.address : undefined,
+      telNumber: formData.telNumber?.length > 0 ? formData.telNumber.trim() : undefined,
+      phoneNumber: formData.phoneNumber?.length > 0 ? formData.phoneNumber.trim() : undefined,
+      subTelNumber: formData.subTelNumber?.length > 0 ? formData.subTelNumber.trim() : undefined,
+      businessNumber: formData.businessNumber?.length > 0 ? formData.businessNumber.trim() : undefined,
+      address: formData.address?.length > 0 ? formData.address.trim() : undefined,
     }
     try {
       if (isEditing) {
@@ -81,9 +73,9 @@ const PurchaseCompanyForm = ({
           ...data,
           name: formData.name,
         });
+        setFormData(defaultFormData);
       }
       if (onSuccess) onSuccess();
-      setFormData(defaultFormData);
       onClose();
     } catch (err) {
       if (err.status === 400) {

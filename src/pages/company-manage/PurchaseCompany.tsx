@@ -107,11 +107,11 @@ const PurchaseCompany = (): React.JSX.Element => {
     setFormData({
       id: row.id,
       name: row.name,
-      phoneNumber: row.info.phoneNumber,
-      telNumber: row.info.telNumber,
-      subTelNumber: row.info.subTelNumber,
-      businessNumber: row.info.businessNumber,
-      address: row.info.address,
+      phoneNumber: row.info.phoneNumber || '',
+      telNumber: row.info.telNumber || '',
+      subTelNumber: row.info.subTelNumber || '',
+      businessNumber: row.info.businessNumber || '',
+      address: row.info.address || '',
     })
     setOpen(true);
   }
