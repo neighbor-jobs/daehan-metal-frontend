@@ -271,9 +271,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
   };
 
   const handleMemoInputByEmployee = useCallback((newMemo, id) => {
-    if (getLineCount(newMemo) > 2) return;
-
-    if (getByteLength(newMemo) > 50) return;
+    if (getLineCount(newMemo) > 4) return;
+    if (getByteLength(newMemo) > 100) return;
 
     setFormData((prev) =>
       prev.map(item => {
@@ -556,8 +555,8 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 },
                 deductionDetail: mergedDedRows.map(d => ({
                   ...d,
-                  value: d.purpose === "건강보험료" || d.purpose === "국민연금"
-                    ? cachedDeductionMap.get(d.purpose) : '0',
+                  value: d.purpose === "건강보험료" || d.purpose === "국민연금" || d.purpose === "장기요양보험" || d.purpose === "고용보험"
+                    ? cachedDeductionMap.get(d.purpose) || '0' : '0',
                 })),
                 memo: cachedEmployee?.memo ?? '',
               };
@@ -792,6 +791,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                       <Input disableUnderline
                              multiline
                              name="memo"
+                             value={formData[index].memo}
                              sx={{marginRight: 1, fontSize: 11}}
                              onClick={() => setActiveRowIdx(0)}
                              inputProps={{
@@ -817,7 +817,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  }
                                }
                              }}
-                             onChange={(e) => handleMemoInputByEmployee(e.target.value, employee.id)}
+                             onChange={(e) => {handleMemoInputByEmployee(e.target.value, employee.id)}}
                       />
                       <Typography variant='body2' sx={{mx: 1.5}}>
                         {employee.info.name}
