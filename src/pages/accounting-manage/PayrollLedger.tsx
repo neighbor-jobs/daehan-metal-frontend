@@ -128,6 +128,7 @@ const PayrollLedger = (): React.JSX.Element => {
   const [isOpenedAddPayments, setIsOpenedAddPayments] = useState<boolean>(false);
   const [isOpenDateInputDialog, setIsOpenDateInputDialog] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   const refreshKeyRef = useRef(0);
   const {showAlert} = useAlertStore();
@@ -198,6 +199,11 @@ const PayrollLedger = (): React.JSX.Element => {
     } catch {
       showAlert('급여대장 삭제 실패. 다시 시도해 주세요.', 'error');
     }
+  }
+
+  const resetPayroll = async () => {
+    await axiosInstance.delete(`/payroll/${standardAt.slice(0, 7)}`);
+    await axiosInstance.delete(`/ledger/${standardAt.slice(0, 7)}`);
   }
 
   const buildRowsFromPayments = (payments: Payment[]) => {
@@ -544,7 +550,15 @@ const PayrollLedger = (): React.JSX.Element => {
       <DeleteConfirmDialog isOpen={isDeleteDialogOpen}
                            onClose={() => setIsDeleteDialogOpen(false)}
                            onClick={deletePayroll}
-                           dialogContentText="정말 해당 월 급여대장을 삭제하시겠습니까?"
+                           onSuccess={() => setIsDeleteDialogOpen(false)}
+                           dialogContentText="정말 해당 월 급여대장을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
+      />
+
+      <DeleteConfirmDialog isOpen={isResetDialogOpen}
+                           onClose={() => setIsResetDialogOpen(false)}
+                           dialogContentText="해당 월 급여대장 내역을 초기화하시겠습니까? 이 작업은 취소할 수 없습니다."
+                           onClick={resetPayroll}
+                           onSuccess={() => setIsResetDialogOpen(false)}
       />
 
       {/* 버튼들 */}
@@ -557,6 +571,15 @@ const PayrollLedger = (): React.JSX.Element => {
       }}
       >
         <Box>
+          <Button variant='contained'
+                  color='error'
+                  size='small'
+                  sx={{mr: 2}}
+                  onClick={() => setIsResetDialogOpen(true)}
+          >
+            초기화하기
+          </Button>
+
           <Button variant='contained'
                   color='error'
                   onClick={() => setIsDeleteDialogOpen(true)}
