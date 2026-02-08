@@ -186,7 +186,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
       const ew = (hw * Number(item.paymentDetail.extendWorkingMulti) * Number(item.paymentDetail.extendWorkingTime));
       const dw = (hw * Number(item.paymentDetail.dayOffWorkingMulti) * Number(item.paymentDetail.dayOffWorkingTime));
       const al = (hw * 8 * Number(item.paymentDetail.annualLeaveAllowanceMulti));
-      const totalPayments = Number(item.paymentDetail.latestPay) + ew + dw + al + Number(item.paymentDetail.unusedAnnualLeaveAllowance) + Number(item.paymentDetail.mealAllowance);
+      const totalPayments = Math.ceil((Number(item.paymentDetail.latestPay)
+        + ew
+        + dw
+        + al
+        + Number(item.paymentDetail.unusedAnnualLeaveAllowance)
+        + Number(item.paymentDetail.mealAllowance)) / 10) * 10;
 
       // deductions calc
       const totalDeductions = item.deductionDetail.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
@@ -196,7 +201,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
         extendWokringWage: ew,
         dayOffWorkingWage: dw,
         annualLeaveAllowance: al,
-        totalPayment: Math.ceil(totalPayments / 10) * 10,                    // RoundUp
+        totalPayment: totalPayments,                    // RoundUp
         totalDeductions: totalDeductions,
         totalSalary: Math.ceil((totalPayments - totalDeductions) / 10) * 10  // RoundUp
       };
@@ -425,8 +430,20 @@ const NewPayrollLedger = (): React.JSX.Element => {
       throw new Error('DUPLICATE');
     }
   };
-
   const submitEditPayroll = async (data) => {
+    const isChangedMonth = prevStandardAt.slice(0, 7) !== standardAt.slice(0, 7);
+
+    if (standardAt !== prevStandardAt) {
+      const resPatchPayroll = await axiosInstance.patch('/payroll', {
+        id: payrollId,
+        createdAt: standardAt,
+        changeMonth: isChangedMonth,
+      })
+
+      if (resPatchPayroll.data.statusCode === 409)
+        return 409;
+    }
+
     await Promise.all(
       data.map((p) =>
         axiosInstance.delete(`/payroll/payment?id=${p.id}`)
@@ -434,13 +451,15 @@ const NewPayrollLedger = (): React.JSX.Element => {
     );
 
     await Promise.all(
-      data.map(({ id, ...payment }) =>
+      data.map(({id, ...payment}) =>
         axiosInstance.post('/payroll/payment', payment)
       )
     );
 
-    await axiosInstance.patch('/ledger', {
+    const resPatchLedger = await axiosInstance.patch('/ledger', {
       ...ledger,
+      createdAt: isChangedMonth ? standardAt : undefined,
+      changeMonth: isChangedMonth,
       paying: [...leftLedger, ...rightLedger],
       deduction: [{
         memo,
@@ -449,6 +468,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
         purpose: '메모',
       }],
     });
+    if (resPatchLedger.data.statusCode === 409) {
+      return 409;
+    }
+    return 200;
   };
 
   const submitPayroll = async () => {
@@ -460,7 +483,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
           state: standardAt
         });
       } else {  // 수정
-        await submitEditPayroll(data);
+        const res = await submitEditPayroll(data);
+
+        if (res === 409) {
+          showAlert('이미 급여대장이 존재하는 달입니다.', 'error');
+          return;
+        }
         navigate(`/account/payroll`, {
           state: standardAt
         });
@@ -552,6 +580,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                   ...defaultPayment,
                   pay: cachedEmployee?.pay ?? defaultPayment.pay,
                   latestPay: cachedEmployee?.pay ?? defaultPayment.pay,
+                  annualLeaveAllowanceMulti: emp.info.countryCode === '외국인' ? 1 : 2,
                 },
                 deductionDetail: mergedDedRows.map(d => ({
                   ...d,
@@ -817,7 +846,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
                                  }
                                }
                              }}
-                             onChange={(e) => {handleMemoInputByEmployee(e.target.value, employee.id)}}
+                             onChange={(e) => {
+                               handleMemoInputByEmployee(e.target.value, employee.id)
+                             }}
                       />
                       <Typography variant='body2' sx={{mx: 1.5}}>
                         {employee.info.name}
