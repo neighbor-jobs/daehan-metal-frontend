@@ -1,5 +1,5 @@
 import React, {memo} from 'react';
-import {TableCell} from '@mui/material';
+import {SxProps, TableCell} from '@mui/material';
 import {arrowNavAtRegister} from '../utils/arrowNavAtRegister.ts';
 
 interface TableCellForPayroll {
@@ -17,6 +17,12 @@ interface TableCellForPayroll {
   cellW?: number | string;
   validation?: boolean;
   fontSize?: number;
+  cellSx?: SxProps;
+}
+
+const defaultCellSx : SxProps = {
+  borderRight: '1px solid lightgray',
+  py: '2.5px'
 }
 
 const TableCellForPayroll = memo(function TableCellForPayroll({
@@ -32,12 +38,13 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
                                                                 align = 'right',
                                                                 cellW,
                                                                 validation,
-                                                                fontSize
+                                                                fontSize,
+                                                                cellSx = defaultCellSx
                                                               }: TableCellForPayroll) {
   return (
     <TableCell align={align}
                width={cellW}
-               sx={{borderRight: '1px solid lightgray', py: '2.5px'}}
+               sx={cellSx}
     >
       <input type="text"
              disabled={disabled || false}
