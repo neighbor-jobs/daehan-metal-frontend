@@ -426,9 +426,10 @@ const NewPayrollLedger = (): React.JSX.Element => {
       }),
     ]);
 
-    if (payrollRes.data.statusCode === 409 || ledgerRes.data.statusCode === 409) {
-      throw new Error('DUPLICATE');
+    if (payrollRes.data.statusCode === 409 && ledgerRes.data.statusCode === 409) {
+      return 409;
     }
+    return 200;
   };
   const submitEditPayroll = async (data) => {
     const isChangedMonth = prevStandardAt.slice(0, 7) !== standardAt.slice(0, 7);
@@ -478,7 +479,12 @@ const NewPayrollLedger = (): React.JSX.Element => {
     const data = normalizePostPayments(formData);
     try {
       if (mode === 'create') {
-        await submitCreatePayroll(data);
+        const res = await submitCreatePayroll(data);
+
+        if (res === 409) {
+          showAlert('이미 급여대장이 존재하는 달입니다.', 'error');
+          return;
+        }
         navigate(`/account/payroll`, {
           state: standardAt
         });
