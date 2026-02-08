@@ -169,36 +169,42 @@ export const companySalesDocDef = (companySalesData) => {
 
   const today = new Date();
   const docDef: TDocumentDefinitions = {
-    /*   pageSize: {
-         width: A4_W * PAGE_SCALE,
-         height: A4_H * PAGE_SCALE,
-       },*/
-    pageMargins: [24, 20, 24, 30],
+    pageMargins: [24, 80, 24, 30],
     header: (currentPage, pageCount) => ({
-      columns: [
-        {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
+      stack: [
+        {
+          text: `${companySalesData.companyName} 매출 현황`,
+          fontSize: 14,
+          alignment: 'center',
+        },
+        {
+          text: `검색기간: ${companySalesData.startAt} ~ ${companySalesData.endAt}`,
+          fontSize: 11,
+          alignment: 'center',
+          margin: [0, 0, 0, 20]
+        },
+        {
+          columns: [
+            {
+              text: `출력일자: ${today.toLocaleString('ko-KR')}`,
+              fontSize: 8,
+              alignment: 'left',
+              width: '*'
+            },
+            {
+              text: `Page ${currentPage} / ${pageCount}`,
+              fontSize: 8,
+              alignment: 'right',
+              width: '*'
+            }
+          ],
+          margin: [24, 3, 24, 0]
+        }
       ],
-      margin: [5, 10, 5, 0], // 좌우 여백 조정
-    }),
+      margin: [5, 15, 5, 0], // 좌우 여백 조정
+    }) as Content,
     footer: () => basicFooter,
     content: [
-      {
-        text: `${companySalesData.companyName} 매출 현황`,
-        style: 'header',
-        alignment: 'center',
-      },
-      {
-        text: `검색기간: ${companySalesData.startAt} ~ ${companySalesData.endAt}`,
-        style: 'subheader',
-        alignment: 'center',
-      },
-      {
-        text: `출력일자: ${today.toLocaleString('ko-KR')}`,
-        style: {
-          fontSize: 8,
-          marginBottom: 5,
-        }
-      },
       {
         table: {
           headerRows: 1,
@@ -1137,8 +1143,8 @@ const basicInvoiceTable = (data, index) => {
             {text: '계', alignment: 'center', border: [true, false, true, true]}
           ],
           ...data.sales.map((item, index) => [
-            {text: `${item.productName}`, alignment: 'center', padding: [0, 0, 0, 0], noWrap: true,},
-            {text: `${item.productScale || item.scale}`, alignment: 'center', padding: [0, 0, 0, 0], noWrap: true},
+            {text: `${item.productName}`, alignment: 'center', padding: [0, 0, 0, 0], noWrap: true, wordBreak: 'break-all'},
+            {text: `${item.productScale || item.scale}`, alignment: 'center', padding: [0, 0, 0, 0], noWrap: true, wordBreak: 'break-all'},
             {text: `${item.quantity.toFixed(3)}`, alignment: 'right', noWrap: true},
             {text: `${formatCurrency(item.rawMatAmount)}`, alignment: 'right', noWrap: true},
             {text: `${formatCurrency(item.manufactureAmount)}`, alignment: 'right', noWrap: true},
@@ -1181,8 +1187,7 @@ const basicInvoiceTable = (data, index) => {
 }
 
 export const invoiceDocDef = (data: any) => {
-  /*
-  *{
+  /*{
   companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',
   locationName: [],
   companyName: '푸주옥',
@@ -1211,7 +1216,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 13 ? 25 : 13;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [30, 32, 30, 10],
+    pageMargins: [40, 32, 40, 10],
     pageSize: 'A4',
     content: [
       {text: "기업: 311 - 059245 - 04 - 019 / 대한금속이엔지(주)"},
