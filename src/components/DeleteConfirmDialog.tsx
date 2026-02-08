@@ -19,8 +19,13 @@ const DeleteConfirmDialog = ({
                                isOpen,
                                onClose,
                                onClick,
-                               dialogContentText
+                               dialogContentText,
+                               onSuccess
                              }: DeleteConfirmDialogProps) => {
+  const click = () => {
+    onClick();
+    if (onSuccess) onSuccess();
+  }
   return (
     <Dialog
       open={isOpen}
@@ -34,7 +39,7 @@ const DeleteConfirmDialog = ({
       </DialogContent>
       <DialogActions>
         <Button variant='outlined' onClick={onClose}>취소</Button>
-        <Button variant='outlined' color='error' onClick={onClick} autoFocus>
+        <Button variant='outlined' color='error' onClick={click} autoFocus>
           삭제
         </Button>
       </DialogActions>
