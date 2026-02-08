@@ -37,7 +37,7 @@ const TableCellForPayroll = memo(function TableCellForPayroll({
   return (
     <TableCell align={align}
                width={cellW}
-               sx={{borderRight: '1px solid lightgray', py: '1px'}}
+               sx={{borderRight: '1px solid lightgray', py: '2.5px'}}
     >
       <input type="text"
              disabled={disabled || false}

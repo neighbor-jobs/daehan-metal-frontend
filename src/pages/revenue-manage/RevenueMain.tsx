@@ -43,6 +43,7 @@ const columns: readonly TableColumns<RevenueMainColumn>[] = [
     id: RevenueMainColumn.SCALE,
     label: '규격',
     minWidth: 140,
+    typoSx: {whiteSpace: 'pre-line'},
   },
   {
     id: RevenueMainColumn.LOCATION_NAMES,
@@ -394,7 +395,7 @@ const RevenueMain = (): React.JSX.Element => {
                       {columns.map((column) => {
                         const value = row[column.id];
                         return (
-                          <TableCell key={column.id} align={column.align}>
+                          <TableCell key={column.id} align={column.align} style={{minWidth: column.minWidth}}>
                             {column.format ?
                               <Typography variant='body2' sx={column.typoSx || undefined}>
                                 {column.format(value)}
