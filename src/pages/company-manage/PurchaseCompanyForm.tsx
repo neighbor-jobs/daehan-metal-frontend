@@ -32,7 +32,6 @@ const PurchaseCompanyForm = ({
                              }: PurchaseCompanyFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState(prevFormData || defaultFormData);
   const { showAlert, openAlert } = useAlertStore();
-
   // handler
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -55,11 +54,11 @@ const PurchaseCompanyForm = ({
       return;
     }
     const data = {
-      telNumber: formData.telNumber?.length > 0 ? formData.telNumber.trim() : undefined,
-      phoneNumber: formData.phoneNumber?.length > 0 ? formData.phoneNumber.trim() : undefined,
-      subTelNumber: formData.subTelNumber?.length > 0 ? formData.subTelNumber.trim() : undefined,
+      telNumber: formData.telNumber?.length > 0 ? formData.telNumber.trim() : '',
+      phoneNumber: formData.phoneNumber?.length > 0 ? formData.phoneNumber.trim() : '',
+      subTelNumber: formData.subTelNumber?.length > 0 ? formData.subTelNumber.trim() : '',
       businessNumber: formData.businessNumber?.length > 0 ? formData.businessNumber.trim() : undefined,
-      address: formData.address?.length > 0 ? formData.address.trim() : undefined,
+      address: formData.address?.length > 0 ? formData.address.trim() : '',
     }
     try {
       if (isEditing) {
@@ -79,10 +78,10 @@ const PurchaseCompanyForm = ({
       onClose();
     } catch (err) {
       if (err.status === 400) {
-        showAlert('전화번호 또는 사업자 등록번호의 형식이 올바르지 않습니다.', 'error');
+        showAlert('사업자 등록번호의 형식이 올바르지 않습니다.', 'error');
         return;
       }
-      showAlert('제출 실패. 재시도 해주세요', 'error');
+      showAlert('제출 실패. 재시도 해주세요', 'warning');
     }
   }
 
@@ -143,11 +142,21 @@ const PurchaseCompanyForm = ({
                         inputProps={{
                           'data-input-id': `businessNumber`,
                           onKeyDown: async (e) => {
-                            if (e.key === 'Enter') await handleSubmit();
+                            if (e.key === 'Enter' || e.key === 'ArrowDown') moveFocusToNextInput('businessNumber');
                             else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessNumber');
                           }
                         }}
                         value={formData?.businessNumber}/>
+        <InputWithLabel name='address' label='주소' labelPosition='left'
+                        onChange={handleInputChange}
+                        inputProps={{
+                          'data-input-id': `address`,
+                          onKeyDown: async (e) => {
+                            if (e.key === 'Enter') await handleSubmit();
+                            else if (e.key === 'ArrowUp') moveFocusToPrevInput('address');
+                          }
+                        }}
+                        value={formData?.address}/>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>취소</Button>

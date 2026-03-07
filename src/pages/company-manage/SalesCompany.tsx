@@ -63,6 +63,18 @@ const columns: readonly SalesCompanyColumn[] = [
   }*/
 ];
 
+const defaultFormData = {
+  id: undefined,
+  companyName: '',
+  ownerName: '',
+  phoneNumber: '',
+  fax: '',
+  address: '',
+  businessType: '',
+  businessCategory: '',
+  businessNumber: '',
+}
+
 const SalesCompany = (): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -71,34 +83,14 @@ const SalesCompany = (): React.JSX.Element => {
     index: null as number | null,
   });
   const [salesCompanyList, setSalesCompanyList] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    id: undefined,
-    companyName: '',
-    ownerName: '',
-    phoneNumber: '',
-    fax: undefined,
-    address: '',
-    businessType: undefined,
-    businessCategory: undefined,
-    businessNumber: undefined,
-  })
+  const [formData, setFormData] = useState(defaultFormData)
   const [isConfirmDialog, setIsConfirmDialog] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState();
   const { showAlert } = useAlertStore();
 
   const handleCreate = () => {
     setIsEditing(false)
-    setFormData({
-      id: undefined,
-      companyName: '',
-      ownerName: '',
-      phoneNumber: '',
-      fax: undefined,
-      address: '',
-      businessType: undefined,
-      businessCategory: undefined,
-      businessNumber: undefined,
-    });
+    setFormData(defaultFormData);
     setOpen(true);
   }
   const handleEdit = (row) => {

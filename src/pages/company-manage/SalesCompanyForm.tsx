@@ -18,11 +18,11 @@ const defaultFormData = {
   companyName: '',
   ownerName: '',
   phoneNumber: '',
-  fax: undefined,
+  fax: '',
   address: '',
-  businessType: undefined,
-  businessCategory: undefined,
-  businessNumber: undefined,
+  businessType: '',
+  businessCategory: '',
+  businessNumber: '',
 }
 
 const SalesCompanyForm = ({
@@ -54,9 +54,6 @@ const SalesCompanyForm = ({
   const handleSubmit = async () => {
     const requiredFields = [
       { name: '거래처명', value: formData.companyName },
-      /*{ name: '대표이름', value: formData.ownerName },
-      { name: '전화번호', value: formData.phoneNumber },
-      { name: '주소', value: formData.address },*/
     ];
 
     const missingField = requiredFields.find(field => !field.value || field.value.trim() === '');
@@ -71,11 +68,11 @@ const SalesCompanyForm = ({
       infoArgs: {
         ownerName: formData.ownerName?.trim(),
         address: formData.address?.trim(),
-        fax: formData.fax?.trim() || undefined,
+        fax: formData.fax?.trim() || '',
         phoneNumber: formData.phoneNumber?.trim(),
-        businessNumber: formData.businessNumber || undefined,
-        businessType: formData.businessType?.trim() || undefined,
-        businessCategory: formData.businessCategory?.trim() || undefined,
+        businessNumber: formData.businessNumber?.length > 0 ? formData.businessNumber.trim() : undefined,
+        businessType: formData.businessType?.trim() || '',
+        businessCategory: formData.businessCategory?.trim() || '',
       },
     }
     try {
@@ -84,15 +81,19 @@ const SalesCompanyForm = ({
         showAlert('거래처가 수정되었습니다.', 'success');
       } else {
         await axiosInstance.post('/company', data);
+        setFormData(defaultFormData)
         showAlert('거래처가 등록되었습니다.', 'success');
       }
       if (onSuccess) onSuccess();
       onClose();
-    } catch {
-      showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
+    } catch (err) {
+      if (err.status === 400) {
+        showAlert('사업자 등록번호의 형식이 올바르지 않습니다.', 'error');
+        return;
+      } else
+        showAlert('요청이 실패했습니다. 재시도 해주세요.', 'error');
     }
   }
-
 
   return (
     <Dialog
@@ -138,7 +139,7 @@ const SalesCompanyForm = ({
                             else if (e.key === 'ArrowUp') moveFocusToPrevInput('phoneNumber');
                           }
                         }}
-                        placeholder='필수 입력 값입니다.' value={formData.phoneNumber}/>
+                        value={formData.phoneNumber}/>
         <InputWithLabel name='fax' label='팩스번호' labelPosition='left' onChange={handleInputChange}
                         inputProps={{
                           'data-input-id': `fax`,
@@ -149,7 +150,6 @@ const SalesCompanyForm = ({
                         }}
                         value={formData.fax}/>
         <InputWithLabel name='address' label='주소' labelPosition='left' onChange={handleInputChange}
-                        placeholder='필수 입력 값입니다.'
                         inputProps={{
                           'data-input-id': `address`,
                           onKeyDown: (e) => {
@@ -187,7 +187,8 @@ const SalesCompanyForm = ({
                             else if (e.key === 'ArrowUp') moveFocusToPrevInput('businessNumber');
                           }
                         }}
-                        placeholder='000-00-00000' value={formData.businessNumber}/>
+                        placeholder='000-00-00000'
+                        value={formData.businessNumber}/>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>취소</Button>
