@@ -39,7 +39,7 @@ const DeleteConfirmDialog = ({
       </DialogContent>
       <DialogActions>
         <Button variant='outlined' onClick={onClose}>취소</Button>
-        <Button variant='outlined' color='error' onClick={click} autoFocus>
+        <Button variant='outlined' color='error' onClick={click}>
           삭제
         </Button>
       </DialogActions>

@@ -56,7 +56,7 @@ export const formatPhoneNumber = (input: string): string => {
 export const formatBusinessNumber = (input : string): string | null => {
   const digitsOnly = input.replace(/[^0-9]/g, '');
 
-  if (digitsOnly.length !== 10) return null;
+  if (digitsOnly.length !== 10) return input;
 
   // 포맷팅
   const formatted = `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 5)}-${digitsOnly.slice(5)}`;
