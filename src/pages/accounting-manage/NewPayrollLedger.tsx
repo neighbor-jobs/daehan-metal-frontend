@@ -30,7 +30,12 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {Payment} from '../../types/payrollRes.ts';
 import {Deduction, PatchLedger, Paying, PostLedger} from '../../types/ledger.ts';
 import {cacheManager} from '../../utils/cacheManager.ts';
-import {formatCurrency, formatInputPrice, formatInputQuality} from '../../utils/format.ts';
+import {
+  formatCurrency,
+  formatInputPrice,
+  formatInputPriceOnlyPositive,
+  formatInputQuality
+} from '../../utils/format.ts';
 import DeleteConfirmDialog from '../../components/DeleteConfirmDialog.tsx';
 import TableCellForPayroll from '../../components/TableCellForPayroll.tsx';
 import AssignEmployees from './AssignEmployees.tsx';
@@ -307,7 +312,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
       || name === PaymentTableRow.MEAL_ALLOWANCE
       || name === PaymentTableRow.LATEST_PAY
       || name === PaymentTableRow.UNUSED_ANNUAL_LEAVE_ALLOWANCE
-    ) onlyNums = formatInputPrice(value, 0);
+    ) onlyNums = formatInputPriceOnlyPositive(value, 0);
 
     setFormData(prev =>
       prev.map(item => {

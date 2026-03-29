@@ -94,7 +94,25 @@ export const formatAccountNumber = (accountNumber: string) => {
   return accountNumber.replace(/[^\d-]/g, '');
 }
 
-/** 가격 입력 포맷팅
+/** 가격 입력 포맷팅(양수만)
+ * @param {string} value - 원본 문자열 값
+ * @param {number} type - 0: 빈칸 허용, 1: 기본값 '0'
+ * @return {string} price - 가격
+ * */
+export const formatInputPriceOnlyPositive = (value, type) => {
+  // 1. 숫자가 아닌 모든 문자 제거 (부호 '-' 포함 제거로 양수 보장)
+  let newValue = value.replace(/[^0-9]/g, '');
+
+  // 2. 값이 없으면 type에 따라 기본값 반환
+  if (!newValue) return type === 1 ? '0' : '';
+
+  // 3. 앞자리에 붙은 불필요한 0 제거 (예: "0123" -> "123")
+  newValue = newValue.replace(/^0+(?!$)/, '');
+
+  return newValue;
+};
+
+/** 가격 입력 포맷팅(음수 포함)
  * @param {string} value - 원본 문자열 값
  * @param {number} type - 0: 빈칸 허용, 1: 기본값 '0'
  * @return {string} price - 가격

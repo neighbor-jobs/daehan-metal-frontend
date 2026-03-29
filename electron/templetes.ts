@@ -318,12 +318,13 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
   // console.log(data);
 
   const bankData = data.bankArr?.map((b) => `${b.bankName} : ${b.accountNumber}`).join(' ');
+
   return {
     pageSize: {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },
-    pageMargins: [15, 20, 24, 20], // 좌 25, 상 20, 우 25, 하 20
+    pageMargins: [14, 20, 24, 20], // 좌 25, 상 20, 우 25, 하 20
     content: [
       {
         text: `${data.companyName}`,
@@ -334,7 +335,7 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       {
         text: `T ${data.telNumber}${headerSpacing} F ${data.subTelNumber}${headerSpacing}  HP ${data.phoneNumber}${headerSpacing}  ${bankData}`,
         style: {
-          fontSize: 8,
+          fontSize: 9,
         },
         marginBottom: 5,
         alignment: 'center'
@@ -407,8 +408,8 @@ export const purchaseReceiptDocRef = (data): TDocumentDefinitions => {
       fontSize: 9,
     },
     styles: {
-      header: {fontSize: 14},
-      subheader: {fontSize: 10, marginBottom: 20},
+      header: {fontSize: 20},
+      subheader: {fontSize: 13, marginBottom: 20},
     },
   }
 }
@@ -579,8 +580,8 @@ export const companySalesSumDocDef = (companySalesSumData) => {
         },
         layout: {
           ...basicTableLayout,
-          paddingBottom: () => 2,
-          paddingTop: () => 2,
+          paddingBottom: () => 3,
+          paddingTop: () => 3,
         },
         margin: [0, 0, 0, 0]
       },
@@ -590,8 +591,8 @@ export const companySalesSumDocDef = (companySalesSumData) => {
       fontSize: 9,
     },
     styles: {
-      header: {fontSize: 14,},
-      subheader: {fontSize: 10, marginBottom: 20},
+      header: {fontSize: 20,},
+      subheader: {fontSize: 12, marginBottom: 20},
     },
   };
   return docDef;
@@ -1187,39 +1188,13 @@ const basicInvoiceTable = (data, index) => {
 }
 
 export const invoiceDocDef = (data: any) => {
-  /*{
-  companyId: 'dbf69606-797b-4f78-8c4a-bd6ddbfda2da',
-  locationName: [],
-  companyName: '푸주옥',
-  payingAmount: '0',
-  sequence: 2,
-  createdAt: '2025-03-29',
-  choices: [
-    {
-      bridgeId: '375dc75a-1796-46e4-84dc-0509d3b6dcfb',
-      productName: '회색징크',
-      quantity: 0,
-      productScale: '0.5TX4X3000',
-      productScaleSequence: 2
-    }
-  ],
-  amount: [
-    {
-      cachedRawMatAmount: '200',
-      cachedManufactureAmount: '300',
-      newRawMatAmount: '200',
-      newManufactureAmount: '300'
-    }
-  ]
-}
-  * */
   const totalRowsNum = data.sales?.length > 13 ? 25 : 13;
 
   const docDef: TDocumentDefinitions = {
     pageMargins: [40, 32, 40, 10],
     pageSize: 'A4',
     content: [
-      {text: "기업: 311 - 059245 - 04 - 019 / 대한금속이엔지(주)"},
+      {text: "기업: 311 - 059245 - 04 - 019 / 대한금속이엔지(주)", alignment: 'right'},
       ...basicInvoiceTable(data, 0),
       ...(totalRowsNum !== 25
           ? [{
