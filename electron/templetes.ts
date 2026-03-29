@@ -933,116 +933,79 @@ export const outstandingAmountDocDef = (outstandingAmount) => {
 /**
  * 거래명세서
  */
+/*export const invoiceMock1 = {
+  locationName: [],
+  companyName: '가',
+  payingAmount: '10000',
+  carryoverAmount: '460535',
+  totalSalesAmount: '28901',
+  createdAt: '2026-03-16',
+  sales: [
+    {
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '가나,(박병인)',
+      productName: '갈바',
+      vCutAmount: '0',
+      rawMatAmount: '53530',
+      manufactureAmount: '33000',
+      quantity: 0.334,
+      productLength: '0',
+      scale: '1.2TX4X4000',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: [],
+      productScale: null,
+    }
+  ]
+}
+export const invoiceMock2 = {
+  locationName: [],
+  companyName: '회사명 다르게',
+  payingAmount: '48',
+  carryoverAmount: '-48500',
+  totalSalesAmount: '4514800',
+  createdAt: '2026-03-10',
+  sales: [
+    {
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '가나유리',
+      productName: '가이드라인',
+      vCutAmount: '0',
+      rawMatAmount: '128190',
+      manufactureAmount: '36000',
+      quantity: 0.250,
+      productLength: '0',
+      scale: '1.2TX1X3000',
+      vCut: '0',
+      vatAmount: '0',
+      deliveryCharge: '0',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: [],
+      productScale: null,
+    },
+    {
+      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
+      companyName: '가나유리',
+      productName: '세액',
+      vCutAmount: '0',
+      rawMatAmount: '0',
+      manufactureAmount: '0',
+      quantity: 0,
+      productLength: '0',
+      scale: '',
+      vCut: '0',
+      vatAmount: '4100',
+      deliveryCharge: '0',
+      createdAt: '2025-10-16T00:00:00.000Z',
+      locationNames: [],
+      productScale: null,
+    }
+  ]
+}*/
+
 const basicInvoiceTable = (data, index) => {
-  /* data 형식 */
-  /*
-  * {
-  locationName: [],
-  companyName: '(구,동성)경영산업',
-  payingAmount: '0',
-  carryoverAmount: '11503730',
-  totalSalesAmount: '22000',
-  createdAt: '2025-10-16',
-  sales: [
-    {
-      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
-      companyName: '(구,동성)경영산업',
-      productName: '2B',
-      vCutAmount: '0',
-      rawMatAmount: '1000',
-      manufactureAmount: '1000',
-      quantity: 10,
-      productLength: '0',
-      scale: '0.3TX1X2',
-      vCut: '0',
-      vatAmount: '1000',
-      deliveryCharge: '1000',
-      createdAt: '2025-10-16T00:00:00.000Z',
-      locationNames: []
-    }
-  ]
-}
-{
-  locationName: [],
-  companyName: '(구,동성)경영산업',
-  payingAmount: '0',
-  carryoverAmount: '11503730',
-  totalSalesAmount: '22000',
-  createdAt: '2025-10-16',
-  sales: [
-    {
-      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
-      companyName: '(구,동성)경영산업',
-      productName: '2B',
-      vCutAmount: '0',
-      rawMatAmount: '1000',
-      manufactureAmount: '1000',
-      quantity: 10,
-      productLength: '0',
-      scale: '0.3TX1X2',
-      vCut: '0',
-      vatAmount: '1000',
-      deliveryCharge: '1000',
-      createdAt: '2025-10-16T00:00:00.000Z',
-      locationNames: []
-    }
-  ]
-}
-[25649:1016/223155.283299:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-10:32:58 PM [vite] hmr update /src/pages/revenue-manage/RevenueMain.tsx
-{
-  locationName: [],
-  companyName: '(구,동성)경영산업',
-  payingAmount: '0',
-  carryoverAmount: '11503730',
-  totalSalesAmount: '22000',
-  createdAt: '2025-10-16',
-  sales: [
-    {
-      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
-      companyName: '(구,동성)경영산업',
-      productName: '2B',
-      vCutAmount: '0',
-      rawMatAmount: '1000',
-      manufactureAmount: '1000',
-      quantity: 10,
-      productLength: '0',
-      scale: '0.3TX1X2',
-      vCut: '0',
-      vatAmount: '1000',
-      deliveryCharge: '1000',
-      createdAt: '2025-10-16T00:00:00.000Z',
-      locationNames: []
-    }
-  ]
-}
-{
-  locationName: [],
-  companyName: '(구,동성)경영산업',
-  payingAmount: '0',
-  carryoverAmount: '11503730',
-  totalSalesAmount: '22000',
-  createdAt: '2025-10-16',
-  sales: [
-    {
-      receiptId: '86d47d1a-9eef-44c1-8c0d-f9c36bb31b12',
-      companyName: '(구,동성)경영산업',
-      productName: '2B',
-      vCutAmount: '0',
-      rawMatAmount: '1000',
-      manufactureAmount: '1000',
-      quantity: 10,
-      productLength: '0',
-      scale: '0.3TX1X2',
-      vCut: '0',
-      vatAmount: '1000',
-      deliveryCharge: '1000',
-      createdAt: '2025-10-16T00:00:00.000Z',
-      locationNames: []
-    }
-  ]
-}
-*/
   // console.log(data);
   const text = index === 0 ? '(공급자보관용)' : '(공급받는자보관용)'
   const totalRowsNum = data.sales.length > 13 ? 25 : 13;
@@ -1065,7 +1028,7 @@ const basicInvoiceTable = (data, index) => {
   return [
     {
       table: {
-        widths: ['*', '*', 'auto', '*', 'auto', 'auto', '*'],
+        widths: [87, 87, 58, 87, 25, 25, 87.1],
         body: [
           [{
             text: `거${headerSpacing}래${headerSpacing}명${headerSpacing}세${headerSpacing}서`,
@@ -1133,7 +1096,7 @@ const basicInvoiceTable = (data, index) => {
     },
     {
       table: {
-        widths: [80, 120, 50, '*', '*', '*'],
+        widths: [80, 118.5, 50, 72, 72, 72],
         body: [
           [
             {text: '품  목', alignment: 'center', border: [true, false, true, true]},
@@ -1191,7 +1154,7 @@ export const invoiceDocDef = (data: any) => {
   const totalRowsNum = data.sales?.length > 13 ? 25 : 13;
 
   const docDef: TDocumentDefinitions = {
-    pageMargins: [40, 32, 40, 10],
+    pageMargins: [40, 28, 40, 10],
     pageSize: 'A4',
     content: [
       {text: "기업: 311 - 059245 - 04 - 019 / 대한금속이엔지(주)", alignment: 'right'},
