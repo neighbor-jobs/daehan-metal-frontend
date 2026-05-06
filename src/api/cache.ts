@@ -15,10 +15,12 @@ export const updateCacheAfterCreate = async ({
     deductions: item.deductionDetail,
     memo: item.memo && "",
   }));
-  console.log('updateCacheAfterCreate', updateEmployees);
-
+  // console.log('updateCacheAfterCreate', updateEmployees);
+  const deductions = formData[0]?.deductionDetail.map((d) => d.purpose);
+  // console.log('공제: ', deductions);
   await Promise.all([
     cacheManager.updateEmployees(updateEmployees),
+    cacheManager.replaceDeductions(deductions),
     cacheManager.replacePayrollMemo({date: standardAt, totalMemo}),
     cacheManager.replaceLedgers([...leftLedger, ...rightLedger]),
   ]);

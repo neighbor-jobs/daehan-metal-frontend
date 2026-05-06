@@ -480,8 +480,18 @@ const NewPayrollLedger = (): React.JSX.Element => {
     return 200;
   };
 
+  console.log(formData);
   const submitPayroll = async () => {
     const data = normalizePostPayments(formData);
+
+    await updateCacheAfterCreate({
+      formData: data,
+      standardAt: standardAt,
+      totalMemo: memo,
+      leftLedger: leftLedger,
+      rightLedger: rightLedger,
+    });
+
     try {
       if (mode === 'create') {
         const res = await submitCreatePayroll(data);
@@ -490,9 +500,11 @@ const NewPayrollLedger = (): React.JSX.Element => {
           showAlert('이미 급여대장이 존재하는 달입니다.', 'error');
           return;
         }
+
         navigate(`/account/payroll`, {
           state: standardAt
         });
+
       } else {  // 수정
         const res = await submitEditPayroll(data);
 
@@ -500,19 +512,13 @@ const NewPayrollLedger = (): React.JSX.Element => {
           showAlert('이미 급여대장이 존재하는 달입니다.', 'error');
           return;
         }
+
         navigate(`/account/payroll`, {
           state: standardAt
         });
       }
 
       showAlert('등록 성공', 'success');
-      await updateCacheAfterCreate({
-        formData: data,
-        standardAt: standardAt,
-        totalMemo: memo,
-        leftLedger: leftLedger,
-        rightLedger: rightLedger,
-      });
     } catch {
       showAlert('등록 실패', 'error');
     }
@@ -573,9 +579,54 @@ const NewPayrollLedger = (): React.JSX.Element => {
 
         try {
           const employees = await axiosInstance.get(`/employee?includesRetirement=true&orderIds=${list}&includesPayment=false`);
+          // const employeesMock = [
+          //   {
+          //     id: 'c389dcb7-60c7-4cc4-a9b7-133cf9962346',
+          //     startWorkingAt: '2021-03-15T00:00:00.000Z',
+          //     info: { id: 'c389dcb7-60c7-4cc4-a9b7-133cf9962346', age: 38, name: '김상동', position: '팀장', countryCode: '내국인' },
+          //   },
+          //   {
+          //     id: 'c0ca8d6b-e196-4601-861c-e725ca84bc99',
+          //     startWorkingAt: '2022-05-01T00:00:00.000Z',
+          //     info: { id: 'c0ca8d6b-e196-4601-861c-e725ca84bc99', age: 35, name: '최종인', position: '과장', countryCode: '내국인' },
+          //   },
+          //   {
+          //     id: '82548def-d149-4431-8975-4785e3519668',
+          //     startWorkingAt: '2022-09-01T00:00:00.000Z',
+          //     info: { id: '82548def-d149-4431-8975-4785e3519668', age: 31, name: '이우석', position: '대리', countryCode: '내국인' },
+          //   },
+          //   {
+          //     id: '86f79ad1-76cf-4089-85c7-ccd7d53dd8b2',
+          //     startWorkingAt: '2023-03-01T00:00:00.000Z',
+          //     info: { id: '86f79ad1-76cf-4089-85c7-ccd7d53dd8b2', age: 29, name: '레이니어', position: '사원', countryCode: '외국인' },
+          //   },
+          //   {
+          //     id: '6c4bbd19-cd07-46dd-9454-408632d808ee',
+          //     startWorkingAt: '2024-01-01T00:00:00.000Z',
+          //     info: { id: '6c4bbd19-cd07-46dd-9454-408632d808ee', age: 27, name: '브라얀', position: '사원', countryCode: '외국인' },
+          //   },
+          //   {
+          //     id: '9ce94b95-8fea-4efd-951a-0b73c6110daf',
+          //     startWorkingAt: '2023-06-01T00:00:00.000Z',
+          //     info: { id: '9ce94b95-8fea-4efd-951a-0b73c6110daf', age: 30, name: '제이슨', position: '사원', countryCode: '외국인' },
+          //   },
+          //   {
+          //     id: '3437cbc9-8668-4087-b312-25dca112e03a',
+          //     startWorkingAt: '2022-01-10T00:00:00.000Z',
+          //     info: { id: '3437cbc9-8668-4087-b312-25dca112e03a', age: 33, name: '양희경', position: '대리', countryCode: '내국인' },
+          //   },
+          //   {
+          //     id: '550e8ed1-ee4c-4bd6-a4ff-8bd16a941665',
+          //     startWorkingAt: '2020-11-01T00:00:00.000Z',
+          //     info: { id: '550e8ed1-ee4c-4bd6-a4ff-8bd16a941665', age: 45, name: '가가가가', position: '부장', countryCode: '내국인' },
+          //   },
+          // ];
           setEmployees(employees.data.data);
+          // setEmployees(employeesMock);
           setFormData(
-            employees.data.data.map((emp: Employee) => {
+            employees.data.data
+            // employeesMock
+              .map((emp: Employee) => {
               const cachedEmployee = payMap.get(emp.id);
 
               const cachedDeductionMap = new Map(
@@ -595,7 +646,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
                 },
                 deductionDetail: mergedDedRows.map(d => ({
                   ...d,
-                  value: d.purpose === "건강보험료" || d.purpose === "국민연금" || d.purpose === "장기요양보험" || d.purpose === "고용보험"
+                  value: d.purpose === "건강보험료" || d.purpose === "국민연금" || d.purpose === "장기요양 보험" || d.purpose === "고용보험"
                     ? cachedDeductionMap.get(d.purpose) || '0' : '0',
                 })),
                 memo: cachedEmployee?.memo ?? '',
