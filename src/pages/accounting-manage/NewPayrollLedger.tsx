@@ -480,7 +480,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
     return 200;
   };
 
-  console.log(formData);
+  // console.log(formData);
   const submitPayroll = async () => {
     const data = normalizePostPayments(formData);
 
