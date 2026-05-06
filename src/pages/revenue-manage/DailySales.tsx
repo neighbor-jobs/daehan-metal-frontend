@@ -317,6 +317,7 @@ const DailySales = () => {
       {/* 인쇄 */}
       <Box sx={{mx: 1, my: 1, display: 'flex', gap: 2}}>
         <PrintButton value='인쇄'
+                     // printData={mockDailySalesData}
                      printData={{
                        startAt: date.startAt.format('YYYY-MM-DD'),
                        endAt: date.endAt.format('YYYY-MM-DD'),

@@ -24,6 +24,93 @@ const basicFooter: Content = {
 /**
  * 일별매출현황
  */
+export const mockDailySalesData = {
+  startAt: '2026-04-01',
+  endAt: '2026-04-05',
+
+  dailySalesList: [
+    {
+      createdAt: '2026-04-01T09:12:33',
+      companyName: '한빛산업',
+      productName: '철판 가공',
+      scale: '10T x 2000',
+      quantity: 12.5,
+      totalRawMatAmount: 250000,
+      totalManufactureAmount: 120000,
+      vatAmount: 37000,
+      deliveryCharge: 10000,
+      payingAmount: 0,
+    },
+    {
+      createdAt: '2026-04-01T14:22:10',
+      companyName: '대성테크',
+      productName: '알루미늄 절단',
+      scale: '5T x 1500',
+      quantity: 8,
+      totalRawMatAmount: 180000,
+      totalManufactureAmount: 90000,
+      vatAmount: 27000,
+      deliveryCharge: 5000,
+      payingAmount: 0,
+    },
+    {
+      createdAt: '2026-04-02T11:05:44',
+      companyName: '한빛산업',
+      productName: '입금액',
+      scale: '',
+      quantity: 0,
+      totalRawMatAmount: 0,
+      totalManufactureAmount: 0,
+      vatAmount: 0,
+      deliveryCharge: 0,
+      payingAmount: 300000, // 입금 (음수 처리됨)
+    },
+    {
+      createdAt: '2026-04-03T10:33:21',
+      companyName: '미래금속',
+      productName: '스테인리스 가공',
+      scale: '3T x 1000',
+      quantity: 15.75,
+      totalRawMatAmount: 320000,
+      totalManufactureAmount: 150000,
+      vatAmount: 47000,
+      deliveryCharge: 15000,
+      payingAmount: 0,
+    },
+    {
+      createdAt: '2026-04-04T16:18:02',
+      companyName: '대성테크',
+      productName: '입금액',
+      scale: '',
+      quantity: 0,
+      totalRawMatAmount: 0,
+      totalManufactureAmount: 0,
+      vatAmount: 0,
+      deliveryCharge: 0,
+      payingAmount: 200000,
+    },
+    {
+      createdAt: '2026-04-05T13:47:55',
+      companyName: '한빛산업',
+      productName: '철판 가공',
+      scale: '8T x 1800',
+      quantity: 10,
+      totalRawMatAmount: 210000,
+      totalManufactureAmount: 100000,
+      vatAmount: 31000,
+      deliveryCharge: 8000,
+      payingAmount: 0,
+    },
+  ],
+
+  amount: {
+    totalRawMatAmount: 960000,        // 250000 + 180000 + 320000 + 210000
+    totalManufactureAmount: 460000,   // 120000 + 90000 + 150000 + 100000
+    totalVatAmount: 142000,           // 37000 + 27000 + 47000 + 31000
+    totalDeliveryCharge: 38000,       // 10000 + 5000 + 15000 + 8000
+    totalPayingAmount: 500000,        // 300000 + 200000
+  }
+};
 export const dailySalesDocDef = (dailySalesData) => {
   // console.log(dailySalesData)
   const today = new Date();
@@ -38,32 +125,41 @@ export const dailySalesDocDef = (dailySalesData) => {
       width: A4_W * PAGE_SCALE,
       height: A4_H * PAGE_SCALE,
     },*/
-    pageMargins: [24, 20, 24, 30],
+    pageMargins: [24, 80, 24, 30],
     header: (currentPage, pageCount) => ({
-      columns: [
-        {text: `Page ${currentPage} / ${pageCount}`, alignment: 'right'},
+      stack: [
+        {
+          text: `일별 매출 현황`,
+          fontSize: 14,
+          alignment: 'center',
+        },
+        {
+          text: `검색기간: ${dailySalesData.startAt} ~ ${dailySalesData.endAt}`,
+          fontSize: 11,
+          alignment: 'center',
+        },
+        {
+          columns: [
+            {
+              text: `출력일자: ${today.toLocaleString('ko-KR')}`,
+              fontSize: 8,
+              alignment: 'left',
+              width: '*',
+            },
+            {
+              text: `Page ${currentPage} / ${pageCount}`,
+              fontSize: 8,
+              alignment: 'right',
+              width: '*',
+            },
+          ],
+          margin: [24, 3, 24, 0]
+        },
       ],
-      margin: [15, 20, 15, 0], // 좌우 여백 조정
-    }),
+      margin: [5, 15, 5, 0], // 좌우 여백 조정
+    }) as Content,
     footer: () => basicFooter,
     content: [
-      {
-        text: `일별 매출 현황`,
-        style: 'header',
-        alignment: 'center',
-      },
-      {
-        text: `검색기간: ${dailySalesData.startAt} ~ ${dailySalesData.endAt}`,
-        style: 'subheader',
-        alignment: 'center',
-      },
-      {
-        text: `출력일자: ${today.toLocaleString('ko-KR')}`,
-        style: {
-          fontSize: 8,
-          marginBottom: 5,
-        }
-      },
       {
         table: {
           headerRows: 1,

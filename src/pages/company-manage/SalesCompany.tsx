@@ -170,7 +170,10 @@ const SalesCompany = (): React.JSX.Element => {
                   <TableCell
                     key={column.id}
                     align={column.align}
-                    style={{minWidth: column.minWidth}}
+                    style={{
+                      minWidth: column.minWidth,
+                      width: '100%',
+                    }}
                   >
                     {column.label}
                   </TableCell>
@@ -187,7 +190,9 @@ const SalesCompany = (): React.JSX.Element => {
                       {columns.map((column) => {
                         const value = row[column.id];
                         return (
-                          <TableCell key={column.id} align={column.align}>
+                          <TableCell key={column.id} align={column.align}
+                                     sx={{maxWidth: '100%'}}
+                          >
                             {column.format ? column.format(value) : value}
                           </TableCell>
                         );
