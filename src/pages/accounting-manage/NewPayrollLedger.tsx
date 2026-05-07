@@ -717,9 +717,9 @@ const NewPayrollLedger = (): React.JSX.Element => {
             workingDay: detail.workingDay,
             extendWorkingTime: String(detail.extendWorkingTime),
             dayOffWorkingTime: String(detail.dayOffWorkingTime),
-            extendWorkingMulti: detail.multis.extendWorkingMulti,
-            dayOffWorkingMulti: detail.multis.dayOffWorkingMulti,
-            annualLeaveAllowanceMulti: detail.multis.annualLeaveAllowanceMulti,
+            extendWorkingMulti: String(detail.multis.extendWorkingMulti),
+            dayOffWorkingMulti: String(detail.multis.dayOffWorkingMulti),
+            annualLeaveAllowanceMulti: String(detail.multis.annualLeaveAllowanceMulti),
             unusedAnnualLeaveAllowance: detail.unusedAnnualLeaveAllowance,
             mealAllowance: detail.mealAllowance
           },
@@ -774,7 +774,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }, [activeRowIdx, deduction.length]);
 
   // debug
-  // console.log(formData);
+  console.log(formData);
 
   return (
     <Box>
