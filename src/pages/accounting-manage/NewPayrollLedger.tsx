@@ -774,7 +774,7 @@ const NewPayrollLedger = (): React.JSX.Element => {
   }, [activeRowIdx, deduction.length]);
 
   // debug
-  console.log(formData);
+  // console.log(formData);
 
   return (
     <Box>
